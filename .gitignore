@@ -1,3 +1,9 @@
+# Custom
+CARLA_0.9.15/*
+AdditionalMaps_0.9.15/*
+*.tar.gz
+*.zip
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
