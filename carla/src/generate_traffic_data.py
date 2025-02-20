@@ -2,14 +2,14 @@
 import carla
 import random
 import os
-import pkg_resources
-from pathlib import Path
-import shutil
+##import pkg_resources
+#from pathlib import Path
+#import shutil
 import time
 import numpy as np
-from pascal_voc_writer import Writer
-import queue
-import matplotlib.pyplot as plt
+#from pascal_voc_writer import Writer
+#import queue
+#import matplotlib.pyplot as plt
 from tqdm import tqdm
 import pandas as pd
 
@@ -37,6 +37,7 @@ def spawn_scene(n_actors:int, client, seed = 1000, sync_mode = True):
     random.seed(seed)
     client.load_world(random.choice(client.get_available_maps()))
     world = client.get_world()
+    tm = client.get_trafficmanager(8000)
     # Set up the simulator in synchronous mode
     if sync_mode:
         settings = world.get_settings()
@@ -44,6 +45,8 @@ def spawn_scene(n_actors:int, client, seed = 1000, sync_mode = True):
         settings.synchronous_mode = True 
         settings.fixed_delta_seconds = 0.1
         world.apply_settings(settings)
+        tm.set_synchronous_mode(True)
+        # tm.set_auto_pilot(True)
     print(world.get_map().name)
     map = world.get_map()
     spawn_points = map.get_spawn_points()
@@ -51,17 +54,18 @@ def spawn_scene(n_actors:int, client, seed = 1000, sync_mode = True):
     for i in range(n_actors):
         world.try_spawn_actor(random.choice(vehicle_blueprints), random.choice(spawn_points))
     for vehicle in world.get_actors().filter('*vehicle*'):
-        vehicle.set_autopilot(True)
-    return world
+        vehicle.set_autopilot(True, tm.get_port())
+    return world, tm
 
 
 
 def run_scene(world, n_steps):
+    """Run the scene for n_steps and return the data. Not meant for synchronous mode."""
     tracks = []
     world_map = world.get_map()
     for i in tqdm(range(n_steps)):
         #update_spectator()
-        world.tick()
+        #world.tick()
         for act in world.get_actors().filter("vehicle.*"):
             row = {}
             row['actor_id'] = act.id
@@ -85,7 +89,7 @@ def run_scene(world, n_steps):
             row['actor_speed'] = speed
             row['actor_acceleration'] = acceleration
             tracks.append(row)
+            time.sleep(0.2)
     tracks_df = pd.DataFrame(tracks)
     tracks_df['map'] = world.get_map().name
-    # tracks_df.to_parquet("tracks.parquet")
     return tracks_df
