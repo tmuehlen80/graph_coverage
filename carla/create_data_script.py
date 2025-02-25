@@ -20,28 +20,21 @@ tm = client.get_trafficmanager(8000)  # Port 8000
 tm.set_synchronous_mode(True)  # Make TM sync with simulation
 n_steps = 500
 
-for j in range(10):
+for j in range(10, 15):
     clean_carla(world)
-
     client.load_world(random.choice(client.get_available_maps()))
-    # Get the world and set synchronous mode
-
     # Get blueprint library
     blueprint_library = world.get_blueprint_library()
-
     # Spawn vehicles
     spawn_points = world.get_map().get_spawn_points()
     random.shuffle(spawn_points)
-
     for i in range(20):
         spawn_point = spawn_points[i]
         vehicle = world.spawn_actor(random.choice(blueprint_library.filter("vehicle.*")), spawn_point)    
         # Enable autopilot
         vehicle.set_autopilot(True, tm.get_port())
-
     tracks = []
     world_map = world.get_map()
-
     for i in tqdm(range(n_steps)):
         world.tick()
         for act in world.get_actors().filter("vehicle.*"):
@@ -67,7 +60,6 @@ for j in range(10):
             row['actor_acceleration'] = acceleration
             tracks.append(row)
             time.sleep(0.2)
-
     tracks_df = pd.DataFrame(tracks)
     tracks_df['map'] = world.get_map().name
     tracks_df['scene_id'] = j
