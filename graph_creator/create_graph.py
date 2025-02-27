@@ -4,7 +4,7 @@ from random import choices
 from argparse import Namespace
 import networkx as nx
 import matplotlib.pyplot as plt
-
+import av2.rendering.vector as vector_plotting_utils
 
 from av2.datasets.motion_forecasting import scenario_serialization
 from av2.datasets.motion_forecasting.viz.scenario_visualization import (
@@ -181,18 +181,18 @@ def create_track_relationship_graph(G_map, track_lane_ids, scenario, follow_vehi
                 # Check for "neighbor_vehicle"
                 if nx.has_path(G_map, lane_ids_A[t], lane_ids_B[t]):
                     path = nx.shortest_path(G_map, lane_ids_A[t], lane_ids_B[t], weight=None)
-                    if len(path) - 1 <= follow_vehicle_steps and any(G_map[u][v][0]['edge_type'] == 'neighbor' for u, v in zip(path[:-1], path[1:])):
+                    if len(path) - 1 <= follow_vehicle_steps and any(G_map[u][v][0]['edge_type'] == 'neighbor' for u, v in zip(path[:-1], path[1:])) and not G_t.has_edge(track_id_A, track_id_B):
                         G_t.add_edge(track_id_A, track_id_B, edge_type='neighbor_vehicle')
+                        G_t.add_edge(track_id_B, track_id_A, edge_type='neighbor_vehicle')
 
         timestep_graphs.append(G_t)
-
 
         #TODO: opposite direction is missing
 
     return timestep_graphs
 
 def visualize_actor_graph(G, save_path=None):
-    pos = nx.spring_layout(G)
+    pos = nx.spring_layout(G, scale=1.0, k =0.1)
     labels = {node: node for node in G.nodes() if G.degree(node) > 0}
     nodes_with_edges = [node for node in G.nodes() if G.degree(node) > 0]
 
@@ -206,7 +206,7 @@ def visualize_actor_graph(G, save_path=None):
     edge_type_neighbor_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d['edge_type'] == 'neighbor_vehicle']
 
     nx.draw_networkx_edges(G, pos, edgelist=edge_type_following_lead, width=2, edge_color='blue', label='following_lead')
-    nx.draw_networkx_edges(G, pos, edgelist=edge_type_leading_vehicle, width=2, edge_color='cyan', label='leading_vehicle')
+    #nx.draw_networkx_edges(G, pos, edgelist=edge_type_leading_vehicle, width=2, edge_color='cyan', label='leading_vehicle')
     nx.draw_networkx_edges(G, pos, edgelist=edge_type_direct_neighbor_vehicle, width=2, edge_color='green', label='direct_neighbor_vehicle')
     nx.draw_networkx_edges(G, pos, edgelist=edge_type_neighbor_vehicle, width=2, edge_color='red', label='neighbor_vehicle')
 
@@ -216,24 +216,53 @@ def visualize_actor_graph(G, save_path=None):
     else:
         plt.show()
 
+def plot_map(map, save_path = None):
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot()
+
+    for _, ls in map.vector_lane_segments.items():
+        vector_plotting_utils.draw_polygon_mpl(
+            ax, ls.polygon_boundary, color="g", linewidth=0.5
+        )
+        vector_plotting_utils.plot_polygon_patch_mpl(
+            ls.polygon_boundary, ax, color="g", alpha=0.2
+        )
+
+        # plot all pedestrian crossings
+        for _, pc in map.vector_pedestrian_crossings.items():
+            vector_plotting_utils.draw_polygon_mpl(ax, pc.polygon, color="r", linewidth=0.5)
+            vector_plotting_utils.plot_polygon_patch_mpl(
+                pc.polygon, ax, color="r", alpha=0.2
+            )
+
+    if save_path:
+        fig.savefig(save_path)
+    else:
+        fig.show()
+
 
 if __name__=="__main__":
     # path to where the logs live
-    dataroot = Path.home() /  'code' /  'graph_coverage' / "argoverse_data"/ "motion-forecasting" / "train" 
+    repo_root = Path(__file__).parents[1]  
+    dataroot = repo_root / "argoverse_data"/ "motion-forecasting" / "test" 
+
+    
 
     # unique log identifier
-    log_id = "69f3a835-119f-48ea-a9a9-ca36c7f63e7f"
+    log_id = "ffed77d2-3c42-436c-93e5-6cc696b6e6bb"
 
     scenario, map = get_scenario_data(dataroot, log_id)
     G_map = create_graph_from_lanes(map)
-    visualize_map_graph(G_map, save_path="map_graph.png")
-    #visualize_scenario(scenario, map, save_path="scenario_plot.mp4)
+    visualize_map_graph(G_map, save_path= (repo_root / "map_graph.png" ))
+    visualize_scenario(scenario, map, save_path=(repo_root / "scenario_plot.mp4") )
     num_timesteps = len(scenario.timestamps_ns)
     track_lane_ids = create_track_lane_dict(scenario, map, num_timesteps)
 
     follow_vehicle_steps = 5  # Example value, adjust as needed
     timestep_track_graphs = create_track_relationship_graph(G_map, track_lane_ids, scenario, follow_vehicle_steps)
-    visualize_actor_graph(timestep_track_graphs[0], save_path="vehicle_graph.png")
+    visualize_actor_graph(timestep_track_graphs[0], save_path=(repo_root / "vehicle_graph.png"))
+
+    plot_map(map, save_path=(repo_root / "map.png"))
 
     #for track_id, lane_ids in track_lane_ids.items():
     #    print(f"Track ID: {track_id}, Visited Lane IDs: {lane_ids}")
