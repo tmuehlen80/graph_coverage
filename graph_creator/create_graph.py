@@ -183,11 +183,15 @@ def create_track_relationship_graph(G_map, track_lane_ids, scenario, follow_vehi
                     path = nx.shortest_path(G_map, lane_ids_A[t], lane_ids_B[t], weight=None)
                     if len(path) - 1 <= follow_vehicle_steps and any(G_map[u][v][0]['edge_type'] == 'neighbor' for u, v in zip(path[:-1], path[1:])) and not G_t.has_edge(track_id_A, track_id_B):
                         G_t.add_edge(track_id_A, track_id_B, edge_type='neighbor_vehicle')
-                        G_t.add_edge(track_id_B, track_id_A, edge_type='neighbor_vehicle')
+                        G_t.add_edge(track_id_B, track_id_A, edge_type='neighbor_vehicle') # works in both direction - maybe another type here? 
 
         timestep_graphs.append(G_t)
 
         #TODO: opposite direction is missing
+
+        # use length of segments
+        # work throuh all scens
+        # aktoren glieche lane
 
     return timestep_graphs
 
