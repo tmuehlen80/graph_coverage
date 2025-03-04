@@ -102,11 +102,13 @@ class ActorGraph:
     def visualize_actor_graph(self,timestep, save_path=None):
         G = self.actor_graphs[timestep]
         pos = nx.spring_layout(G, scale=1.0, k=0.1)
+        node_size = 1600
         labels = {node: node for node in self.actor_graphs[timestep].nodes() if G.degree(node) > 0}
         nodes_with_edges = [node for node in G.nodes() if G.degree(node) > 0]
 
         plt.figure(figsize=(12, 12))
-        nx.draw(G, pos, nodelist=nodes_with_edges, labels=labels, with_labels=True, node_size=200, font_size=10, font_color='black')
+        nx.draw_networkx_nodes(G, pos, nodelist=nodes_with_edges, node_size=node_size)
+        nx.draw_networkx_labels(G, pos, labels=labels, font_size=10, font_color='black')
 
         # Draw edges with different styles based on edge type
         edge_type_following_lead = [(u, v) for u, v, d in G.edges(data=True) if d['edge_type'] == 'following_lead']
@@ -114,10 +116,10 @@ class ActorGraph:
         edge_type_direct_neighbor_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d['edge_type'] == 'direct_neighbor_vehicle']
         edge_type_neighbor_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d['edge_type'] == 'neighbor_vehicle']
 
-        nx.draw_networkx_edges(G, pos, edgelist=edge_type_following_lead, width=2, edge_color='blue', label='following_lead')
+        nx.draw_networkx_edges(G, pos, edgelist=edge_type_following_lead, width=2, edge_color='blue', arrows=True, node_size=node_size, label='following_lead')
         #nx.draw_networkx_edges(G, pos, edgelist=edge_type_leading_vehicle, width=2, edge_color='cyan', label='leading_vehicle')
-        nx.draw_networkx_edges(G, pos, edgelist=edge_type_direct_neighbor_vehicle, width=2, edge_color='green', label='direct_neighbor_vehicle')
-        nx.draw_networkx_edges(G, pos, edgelist=edge_type_neighbor_vehicle, width=2, edge_color='red', label='neighbor_vehicle')
+        nx.draw_networkx_edges(G, pos, edgelist=edge_type_direct_neighbor_vehicle, width=2, edge_color='green', arrows=True,  node_size=node_size,label='direct_neighbor_vehicle')
+        nx.draw_networkx_edges(G, pos, edgelist=edge_type_neighbor_vehicle, width=2, edge_color='red', arrows=True, node_size=node_size, label='neighbor_vehicle')
 
         plt.legend()
         if save_path:
