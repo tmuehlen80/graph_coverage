@@ -84,11 +84,12 @@ def plot_scene_at_timestep(scenario, map, timestep, save_path=None, lane_label=F
 
     # Plot the position of each actor at the given timestep
     for track in scenario.tracks:
-        if timestep < len(track.object_states):
-            object_state = track.object_states[timestep]
+        timestep_list = [step.timestep for step in track.object_states]
+        if timestep in timestep_list:
+            object_state = track.object_states[timestep_list.index(timestep)]
             position = object_state.position
             ax.plot(position[0], position[1], 'bo', markersize=5)
-            ax.text(position[0], position[1] - 2.5, str(track.track_id), fontsize=8, ha='center', va='center', color='blue')
+            ax.text(position[0], position[1] - 2.5, track.track_id, fontsize=8, ha='center', va='center', color='blue')
 
     if save_path:
         fig.savefig(save_path)
@@ -111,8 +112,9 @@ if __name__=="__main__":
     #visualize_scenario(scenario, map, save_path=(repo_root / "scenario_plot.mp4") )
     #plot_argoverse_map(map, save_path=(repo_root / "map.png"))
 
-    plot_scene_at_timestep(scenario,map, timestep=40, save_path=(repo_root / "map.png"))
+    
 
     actor_graph = ActorGraph.from_argoverse_scenario(scenario, G_map)
-
-    actor_graph.visualize_actor_graph(20, save_path=(repo_root / "actor_graph.png"))
+    show_timestep= 40
+    plot_scene_at_timestep(scenario,map, timestep= show_timestep, save_path=(repo_root / "map.png"))
+    actor_graph.visualize_actor_graph(timestep=show_timestep, save_path=(repo_root / "actor_graph.png"))

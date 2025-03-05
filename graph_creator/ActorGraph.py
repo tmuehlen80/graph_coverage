@@ -23,19 +23,22 @@ class ActorGraph:
         return None
 
     def find_lane_ids_for_track(self, track):
+        """
+        create a list of length of number of timesteps, where each element holds the lane_id of an object at that timestep. 
+
+        Missing information is represented by None.
+        """
         lane_ids = []
-        for ii, object_state in enumerate(track.object_states):
-            if ii == object_state.timestep:
-                position = object_state.position
+        timestep_list = [step.timestep for step in track.object_states]
+        for ii in range(self.num_timesteps):
+            if ii in timestep_list:
+                position = track.object_states[timestep_list.index(ii)].position
                 lane_id = self.find_lane_id_from_pos(position)
                 lane_ids.append(lane_id)
             else:
                 lane_ids.append(None)
-        
-        if len(lane_ids) > self.num_timesteps:
+        if not len(lane_ids) == self.num_timesteps:
             raise ValueError(f"There are too many lane IDs for track {track.track_id}")
-        elif len(lane_ids) < self.num_timesteps:
-            lane_ids.extend([None] * (self.num_timesteps - len(lane_ids)))
             
         return lane_ids
 
