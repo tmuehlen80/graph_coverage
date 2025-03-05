@@ -81,8 +81,8 @@ class ActorGraph:
                     if nx.has_path(G_map.graph, lane_ids_A[t], lane_ids_B[t]):
                         path = nx.shortest_path(G_map.graph, lane_ids_A[t], lane_ids_B[t], weight=None)
                         if len(path) - 1 <= self.follow_vehicle_steps and all(G_map.graph[u][v][0]['edge_type'] == 'following' for u, v in zip(path[:-1], path[1:])):
-                            G_t.add_edge(track_id_A, track_id_B, edge_type='following_lead')
-                            G_t.add_edge(track_id_B, track_id_A, edge_type='leading_vehicle')
+                            G_t.add_edge(track_id_A, track_id_B, edge_type='leading_vehicle')
+                            G_t.add_edge(track_id_B, track_id_A, edge_type='following_lead')
 
                     # Check for "direct_neighbor_vehicle"
                     if G_map.graph.has_edge(lane_ids_A[t], lane_ids_B[t]) and G_map.graph[lane_ids_A[t]][lane_ids_B[t]][0]['edge_type'] == 'neighbor':
@@ -104,6 +104,7 @@ class ActorGraph:
                                 if len(path_A) - 1 + len(path_B) - 1 <= self.follow_vehicle_steps:
                                     G_t.add_edge(track_id_A, track_id_B, edge_type='opposite_vehicle')
                                     G_t.add_edge(track_id_B, track_id_A, edge_type='opposite_vehicle')
+                                    print(t)
 
             timestep_graphs.append(G_t)
 
@@ -129,8 +130,8 @@ class ActorGraph:
 
         nx.draw_networkx_edges(G, pos, edgelist=edge_type_following_lead, width=2, edge_color='blue', arrows=True, node_size=node_size, label='following_lead')
         #nx.draw_networkx_edges(G, pos, edgelist=edge_type_leading_vehicle, width=2, edge_color='cyan', label='leading_vehicle')
-        nx.draw_networkx_edges(G, pos, edgelist=edge_type_direct_neighbor_vehicle, width=2, edge_color='green', arrows=True,  node_size=node_size,label='direct_neighbor_vehicle')
-        nx.draw_networkx_edges(G, pos, edgelist=edge_type_neighbor_vehicle, width=2, edge_color='red', arrows=True, node_size=node_size, label='neighbor_vehicle')
+        nx.draw_networkx_edges(G, pos, edgelist=edge_type_direct_neighbor_vehicle, width=2, edge_color='springgreen', arrows=True,  node_size=node_size,label='direct_neighbor_vehicle')
+        nx.draw_networkx_edges(G, pos, edgelist=edge_type_neighbor_vehicle, width=2, edge_color='forestgreen', arrows=True, node_size=node_size, label='neighbor_vehicle')
         nx.draw_networkx_edges(G, pos, edgelist=edge_type_opposite_vehicle, width=2, edge_color='orange', arrows=True, node_size=node_size, label='opposite_vehicle')
 
         plt.legend()

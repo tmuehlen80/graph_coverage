@@ -76,7 +76,7 @@ class MapGraph:
         labels = {node: node for node in self.graph.nodes()}
 
         plt.figure(figsize=(12, 12))
-        nx.draw(self.graph, pos, labels=labels, with_labels=True, node_size=50, font_size=8, font_color='black')
+        nx.draw(self.graph, pos, labels=labels, with_labels=True, node_size=50, font_size=8, font_color='black') # TODO: update for directed graph
 
         # Draw edges with different styles based on edge type
         edge_type_fol = [(u, v) for u, v, d in self.graph.edges(data=True) if d['edge_type'] == 'following']

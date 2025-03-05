@@ -2,11 +2,14 @@ from pathlib import Path
 from argparse import Namespace
 import matplotlib.pyplot as plt
 import av2.rendering.vector as vector_plotting_utils
+from shapely.geometry import Polygon
 
 from MapGraph import MapGraph
 from ActorGraph import ActorGraph
 
+from av2.map.map_api import ArgoverseStaticMap
 from av2.datasets.motion_forecasting import scenario_serialization
+
 from av2.datasets.motion_forecasting.viz.scenario_visualization import (
     visualize_scenario,
 )
@@ -53,20 +56,63 @@ def plot_argoverse_map(map, save_path = None):
         fig.show()
 
 
+
+def plot_scene_at_timestep(scenario, map, timestep, save_path=None, lane_label=False):
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot()
+
+    for _, ls in map.vector_lane_segments.items():
+        vector_plotting_utils.draw_polygon_mpl(
+            ax, ls.polygon_boundary, color="g", linewidth=0.5
+        )
+        vector_plotting_utils.plot_polygon_patch_mpl(
+            ls.polygon_boundary, ax, color="g", alpha=0.2
+        )
+
+        if lane_label:
+            # Write the label ID in the middle of each polygon
+            polygon = Polygon(ls.polygon_boundary)
+            centroid = polygon.centroid
+            ax.text(centroid.x, centroid.y, str(ls.id), fontsize=8, ha='center', va='center', color='black')
+
+    # Plot all pedestrian crossings
+    for _, pc in map.vector_pedestrian_crossings.items():
+        vector_plotting_utils.draw_polygon_mpl(ax, pc.polygon, color="r", linewidth=0.5)
+        vector_plotting_utils.plot_polygon_patch_mpl(
+            pc.polygon, ax, color="r", alpha=0.2
+        )
+
+    # Plot the position of each actor at the given timestep
+    for track in scenario.tracks:
+        if timestep < len(track.object_states):
+            object_state = track.object_states[timestep]
+            position = object_state.position
+            ax.plot(position[0], position[1], 'bo', markersize=5)
+            ax.text(position[0], position[1], str(track.track_id), fontsize=8, ha='center', va='center', color='blue')
+
+    if save_path:
+        fig.savefig(save_path)
+    else:
+        fig.show()
+
+   
+
 if __name__=="__main__":
     # path to where the logs live
     repo_root = Path(__file__).parents[1]  
     dataroot = repo_root / "argoverse_data"/ "motion-forecasting" / "train" 
 
     # unique log identifier
-    log_id = "1c12bb8a-2683-4854-b519-ab084e68c0fb"
+    log_id = "54d48595-70e2-4144-ba20-4fa1bec898fc"
 
     scenario, map = get_scenario_data(dataroot, log_id)
     G_map =  MapGraph.create_from_argoverse_map(map)
     G_map.visualize_graph(save_path= (repo_root / "map_graph.png" ))
-    visualize_scenario(scenario, map, save_path=(repo_root / "scenario_plot.mp4") )
-    plot_argoverse_map(map, save_path=(repo_root / "map.png"))
+    #visualize_scenario(scenario, map, save_path=(repo_root / "scenario_plot.mp4") )
+    #plot_argoverse_map(map, save_path=(repo_root / "map.png"))
+
+    plot_scene_at_timestep(scenario,map, timestep=40, save_path=(repo_root / "map.png"))
 
     actor_graph = ActorGraph.from_argoverse_scenario(scenario, G_map)
 
-    actor_graph.visualize_actor_graph(0, save_path=(repo_root / "actor_graph.png"))
+    actor_graph.visualize_actor_graph(40, save_path=(repo_root / "actor_graph.png"))
