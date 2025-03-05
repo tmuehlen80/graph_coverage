@@ -88,7 +88,7 @@ def plot_scene_at_timestep(scenario, map, timestep, save_path=None, lane_label=F
             object_state = track.object_states[timestep]
             position = object_state.position
             ax.plot(position[0], position[1], 'bo', markersize=5)
-            ax.text(position[0], position[1], str(track.track_id), fontsize=8, ha='center', va='center', color='blue')
+            ax.text(position[0], position[1] - 2.5, str(track.track_id), fontsize=8, ha='center', va='center', color='blue')
 
     if save_path:
         fig.savefig(save_path)
@@ -103,7 +103,7 @@ if __name__=="__main__":
     dataroot = repo_root / "argoverse_data"/ "motion-forecasting" / "train" 
 
     # unique log identifier
-    log_id = "54d48595-70e2-4144-ba20-4fa1bec898fc"
+    log_id = "54a79237-9df8-46bd-aa87-6aa5b02cbb66"
 
     scenario, map = get_scenario_data(dataroot, log_id)
     G_map =  MapGraph.create_from_argoverse_map(map)
@@ -115,4 +115,4 @@ if __name__=="__main__":
 
     actor_graph = ActorGraph.from_argoverse_scenario(scenario, G_map)
 
-    actor_graph.visualize_actor_graph(40, save_path=(repo_root / "actor_graph.png"))
+    actor_graph.visualize_actor_graph(20, save_path=(repo_root / "actor_graph.png"))

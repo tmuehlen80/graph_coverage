@@ -68,7 +68,6 @@ class ActorGraph:
                     G_t.add_node(track_id, lane_id=lane_ids[t])
                     # Do we need to add for information about the track here? 
 
-
             # Add edges based on the conditions
             for track_id_A, lane_ids_A in self.track_lane_dict.items():
                 if lane_ids_A[t] is None:
@@ -81,8 +80,10 @@ class ActorGraph:
                     if nx.has_path(G_map.graph, lane_ids_A[t], lane_ids_B[t]):
                         path = nx.shortest_path(G_map.graph, lane_ids_A[t], lane_ids_B[t], weight=None)
                         if len(path) - 1 <= self.follow_vehicle_steps and all(G_map.graph[u][v][0]['edge_type'] == 'following' for u, v in zip(path[:-1], path[1:])):
-                            G_t.add_edge(track_id_A, track_id_B, edge_type='leading_vehicle')
-                            G_t.add_edge(track_id_B, track_id_A, edge_type='following_lead')
+                            G_t.add_edge(track_id_B, track_id_A, edge_type='leading_vehicle')
+                            G_t.add_edge(track_id_A, track_id_B, edge_type='following_lead')
+                            #if (t==20 and track_id_A == '73020' and track_id_B == 'AV'):
+                            #    print("wrong")
 
                     # Check for "direct_neighbor_vehicle"
                     if G_map.graph.has_edge(lane_ids_A[t], lane_ids_B[t]) and G_map.graph[lane_ids_A[t]][lane_ids_B[t]][0]['edge_type'] == 'neighbor':
@@ -101,10 +102,15 @@ class ActorGraph:
                             if nx.has_path(G_map.graph, lane_ids_A[t], u) and nx.has_path(G_map.graph, lane_ids_B[t], v):
                                 path_A = nx.shortest_path(G_map.graph, lane_ids_A[t], u, weight=None)
                                 path_B = nx.shortest_path(G_map.graph, lane_ids_B[t], v, weight=None)
-                                if len(path_A) - 1 + len(path_B) - 1 <= self.follow_vehicle_steps:
+                                # This ensures that the both paths combined are limited in length. 
+                                # Next, we are only looking for vehicle on a direct opposite lane, so no neighbors are allowed. If we allow neighbors, we have to careful to ignore double neighbors, that lead to the same lane again. 
+                                if (len(path_A) - 1 + len(path_B) - 1 <= self.follow_vehicle_steps and
+                                    all(G_map.graph[u][v][0]['edge_type'] != 'neighbor' for u, v in zip(path_A[:-1], path_A[1:])) and
+                                    all(G_map.graph[u][v][0]['edge_type'] != 'neighbor' for u, v in zip(path_B[:-1], path_B[1:])) and
+                                    sum(1 for u, v in zip(path_A[:-1], path_A[1:]) if G_map.graph[u][v][0]['edge_type'] == 'opposite') == 1 and
+                                    sum(1 for u, v in zip(path_B[:-1], path_B[1:]) if G_map.graph[u][v][0]['edge_type'] == 'opposite') == 1):
                                     G_t.add_edge(track_id_A, track_id_B, edge_type='opposite_vehicle')
                                     G_t.add_edge(track_id_B, track_id_A, edge_type='opposite_vehicle')
-                                    print(t)
 
             timestep_graphs.append(G_t)
 

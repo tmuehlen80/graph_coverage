@@ -76,16 +76,20 @@ class MapGraph:
         labels = {node: node for node in self.graph.nodes()}
 
         plt.figure(figsize=(12, 12))
-        nx.draw(self.graph, pos, labels=labels, with_labels=True, node_size=50, font_size=8, font_color='black') # TODO: update for directed graph
+        node_size = 50
+        nx.draw_networkx_nodes(self.graph, pos, node_size=node_size)
+        nx.draw_networkx_labels(self.graph, pos, labels=labels, font_size=8, font_color='black', verticalalignment='bottom')
 
+        # move label away from nodes.. 
         # Draw edges with different styles based on edge type
         edge_type_fol = [(u, v) for u, v, d in self.graph.edges(data=True) if d['edge_type'] == 'following']
         edge_type_nei = [(u, v) for u, v, d in self.graph.edges(data=True) if d['edge_type'] == 'neighbor']
         edge_type_opp = [(u, v) for u, v, d in self.graph.edges(data=True) if d['edge_type'] == 'opposite']
 
-        nx.draw_networkx_edges(self.graph, pos, edgelist=edge_type_fol, width=2, edge_color='blue')
-        nx.draw_networkx_edges(self.graph, pos, edgelist=edge_type_nei, width=1, edge_color='green')
-        nx.draw_networkx_edges(self.graph, pos, edgelist=edge_type_opp, width=1, edge_color='red')
+
+        nx.draw_networkx_edges(self.graph, pos, edgelist=edge_type_fol, width=2, edge_color='blue', node_size=node_size)
+        nx.draw_networkx_edges(self.graph, pos, edgelist=edge_type_nei, width=1, edge_color='green', node_size=node_size)
+        nx.draw_networkx_edges(self.graph, pos, edgelist=edge_type_opp, width=1, edge_color='red', node_size=node_size)
 
         if save_path:
             plt.savefig(save_path)
