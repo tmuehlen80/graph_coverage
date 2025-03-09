@@ -1,6 +1,8 @@
 import networkx as nx
 from shapely.geometry import Polygon
 import matplotlib.pyplot as plt
+import numpy as np
+import carla
 
 class MapGraph:
     def __init__(self):
@@ -67,6 +69,54 @@ class MapGraph:
         # Rename edges to 'opposite'
         for u, v in edges_opposite:
             G[u][v][0]['edge_type'] = 'opposite'
+
+        return instance
+    
+    def _to_2d(self, location):
+        return (location.x, location.y)
+    
+    @classmethod
+    def create_from_carla_map(cls, map):
+        """map has to be something like 
+        world = client.get_world()
+        map = world.get_map()
+        """
+        instance = cls()
+        G = instance.graph
+        topo = map.get_topology()
+
+        for item in topo:
+            G.add_edge(f"{item[0].road_id}_{item[0].lane_id}", f"{item[1].road_id}_{item[1].lane_id}", edge_type = 'following')
+            if item[0].get_right_lane():
+                if item[0].get_right_lane().lane_type == carla.libcarla.LaneType.Driving:
+                    G.add_edge(f"{item[0].road_id}_{item[0].lane_id}", f"{item[0].get_right_lane().road_id}_{item[0].get_right_lane().lane_id}", edge_type = 'neighbor')
+            if item[0].get_left_lane():
+                if item[0].get_left_lane().lane_type == carla.libcarla.LaneType.Driving:
+                    if np.sign(item[0].lane_id) == np.sign(item[0].get_left_lane().lane_id):
+                        G.add_edge(f"{item[0].road_id}_{item[0].lane_id}", f"{item[0].get_left_lane().road_id}_{item[0].get_left_lane().lane_id}", edge_type = 'neighbor')
+                    else:
+                        G.add_edge(f"{item[0].road_id}_{item[0].lane_id}", f"{item[0].get_left_lane().road_id}_{item[0].get_left_lane().lane_id}", edge_type = 'opposite')
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['lane_type'] = item[0].lane_type
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['is_intersection'] = item[0].is_intersection
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['left_mark_type'] = item[0].left_lane_marking.type
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['right_mark_type'] = item[0].right_lane_marking.type
+            # Create lane polygon
+            forward_vector = item[0].transform.get_forward_vector()
+            right_vector = carla.Vector3D(-forward_vector.y, forward_vector.x, 0)  # Perpendicular to forward
+            # Compute lane width
+            lane_width = item[0].lane_width
+            # Compute boundary points
+            left_boundary_start = item[0].transform.location + right_vector * (lane_width / 2.0)
+            right_boundary_start = item[0].transform.location - right_vector * (lane_width / 2.0)
+            left_boundary_end = item[1].transform.location + right_vector * (lane_width / 2.0)
+            right_boundary_end = item[1].transform.location - right_vector * (lane_width / 2.0)
+            lane_polygon = Polygon([
+                instance._to_2d(left_boundary_start), 
+                instance._to_2d(left_boundary_end),
+                instance._to_2d(right_boundary_end),
+                instance._to_2d(right_boundary_start)
+            ])
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['lane_polygon'] = lane_polygon
 
         return instance
     
