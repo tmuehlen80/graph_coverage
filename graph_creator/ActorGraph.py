@@ -55,11 +55,11 @@ class ActorGraph:
         instance.num_timesteps = len(scenario.timestamps_ns)
         instance.follow_vehicle_steps = follow_vehicle_steps
         instance.track_lane_dict = instance._create_track_lane_dict_argoverse(scenario)
-        instance.actor_graphs = instance.create_actor_graphs(G_Map)
+        instance.actor_graphs = instance.create_argoverse_actor_graphs(G_Map)
 
         return instance
 
-    def create_actor_graphs(self, G_map):
+    def create_argoverse_actor_graphs(self, G_map):
         timestep_graphs = []
 
         for t in range(len(next(iter(self.track_lane_dict.values())))):

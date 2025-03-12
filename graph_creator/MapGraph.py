@@ -3,6 +3,7 @@ from shapely.geometry import Polygon
 import matplotlib.pyplot as plt
 import numpy as np
 import carla
+import pickle
 
 class MapGraph:
     def __init__(self):
@@ -80,6 +81,10 @@ class MapGraph:
         """map has to be something like 
         world = client.get_world()
         map = world.get_map()
+        
+        using a similar strategy as the global route planer:
+        https://github.com/carla-simulator/carla/blob/master/PythonAPI/carla/agents/navigation/global_route_planner.py#L118
+
         """
         instance = cls()
         G = instance.graph
@@ -96,10 +101,10 @@ class MapGraph:
                         G.add_edge(f"{item[0].road_id}_{item[0].lane_id}", f"{item[0].get_left_lane().road_id}_{item[0].get_left_lane().lane_id}", edge_type = 'neighbor')
                     else:
                         G.add_edge(f"{item[0].road_id}_{item[0].lane_id}", f"{item[0].get_left_lane().road_id}_{item[0].get_left_lane().lane_id}", edge_type = 'opposite')
-            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['lane_type'] = item[0].lane_type
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['lane_type'] = str(item[0].lane_type)
             G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['is_intersection'] = item[0].is_intersection
-            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['left_mark_type'] = item[0].left_lane_marking.type
-            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['right_mark_type'] = item[0].right_lane_marking.type
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['left_mark_type'] = str(item[0].left_lane_marking.type)
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['right_mark_type'] = str(item[0].right_lane_marking.type)
             # Create lane polygon
             forward_vector = item[0].transform.get_forward_vector()
             right_vector = carla.Vector3D(-forward_vector.y, forward_vector.x, 0)  # Perpendicular to forward
@@ -146,5 +151,12 @@ class MapGraph:
         else:
             plt.show()
 
+    def store_graph_to_file(self, save_path=str):
+        # nx.write_graphml(self.graph, save_path)
+        #nx.write_gml(self.graph, save_path)
+        with open(save_path, 'wb') as file:
+            pickle.dump(self.graph, file)
     
-
+    def read_graph_from_file(self, load_path=str):
+        with open(load_path, 'rb') as file:
+            self.graph = pickle.load(file)
