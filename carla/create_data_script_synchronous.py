@@ -32,6 +32,19 @@ j = 0
 world_map = world.get_map()
 map_g = MapGraph()
 map_g = map_g.create_from_carla_map(world_map)
+
+# map_g.graph.nodes(data=True)
+
+#topo = world_map.get_topology()
+
+#dir(topo[0][0])
+
+#wps = topo[0][0].next_until_lane_end(0.5)
+#lane_length = sum([wps[i].transform.location.distance(wps[i + 1].transform.location) for i in range(len(wps) - 1)])
+
+#topo[0][0].transform.location.distance(topo[0][1].transform.location)
+#len(wps)
+
 map_g.store_graph_to_file(f"carla/data/scene_{j}_{str(datetime.now().date())}_map_graph.pickle")
 
 # Get the world and set synchronous mode

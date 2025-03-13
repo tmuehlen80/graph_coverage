@@ -62,6 +62,7 @@ class ActorGraph:
     def create_argoverse_actor_graphs(self, G_map):
         timestep_graphs = []
 
+        
         for t in range(len(next(iter(self.track_lane_dict.values())))):
             G_t = nx.MultiDiGraph()
 

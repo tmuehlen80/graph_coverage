@@ -5,6 +5,13 @@ CARLA_0.9.15/*
 AdditionalMaps_0.9.15/*
 *.tar.gz
 *.zip
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
 
 argoverse_data
 
