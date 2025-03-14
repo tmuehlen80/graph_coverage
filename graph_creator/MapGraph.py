@@ -105,6 +105,9 @@ class MapGraph:
             G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['is_intersection'] = item[0].is_intersection
             G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['left_mark_type'] = str(item[0].left_lane_marking.type)
             G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['right_mark_type'] = str(item[0].right_lane_marking.type)
+            wps = item[0].next_until_lane_end(0.25)
+            lane_length = sum([wps[i].transform.location.distance(wps[i + 1].transform.location) for i in range(len(wps) - 1)])
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]['length'] = lane_length
             # Create lane polygon
             forward_vector = item[0].transform.get_forward_vector()
             right_vector = carla.Vector3D(-forward_vector.y, forward_vector.x, 0)  # Perpendicular to forward

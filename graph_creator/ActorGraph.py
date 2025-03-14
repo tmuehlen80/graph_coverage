@@ -1,6 +1,7 @@
 from shapely.geometry import Point
 import networkx as nx
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 class ActorGraph:
     # add opposite direction
@@ -40,13 +41,16 @@ class ActorGraph:
         if not len(lane_ids) == self.num_timesteps:
             raise ValueError(f"There are too many lane IDs for track {track.track_id}")
             
-        return lane_ids
-
+        return lane_ids 
+    
+    
     def _create_track_lane_dict_argoverse(self, scenario):
         track_lane_dict = {}
         for track in scenario.tracks:
             track_lane_dict[track.track_id] = self.find_lane_ids_for_track(track)
+    
         return track_lane_dict
+    
     
     @classmethod
     def from_argoverse_scenario(cls, scenario, G_Map, follow_vehicle_steps=3):
@@ -55,14 +59,42 @@ class ActorGraph:
         instance.num_timesteps = len(scenario.timestamps_ns)
         instance.follow_vehicle_steps = follow_vehicle_steps
         instance.track_lane_dict = instance._create_track_lane_dict_argoverse(scenario)
-        instance.actor_graphs = instance.create_argoverse_actor_graphs(G_Map)
+        instance.actor_graphs = instance.create_actor_graphs(G_Map)
 
         return instance
 
-    def create_argoverse_actor_graphs(self, G_map):
+    def _create_track_lane_dict_carla(self, scenario):
+        track_lane_dict = {}
+        actors = scenario.actor_id.unique().tolist()
+        for actor in actors:
+            mask = scenario.actor_id == actor
+            track_lane_dict[actor] = scenario[mask].road_lane_id.tolist()
+
+        return track_lane_dict
+
+
+    @classmethod
+    def from_carla_scenario(cls, scenario, G_Map, follow_vehicle_steps=3):
+        """
+        Args:
+            scenario: A pd dataframe with the following columns: 'track_id', 'timestep', 'x', 'y'
+            G_Map: A GraphMap object
+            follow_vehicle_steps: The maximum number of timesteps a vehicle can follow another vehicle
+        """
+        instance = cls()
+        instance.G_map = G_Map
+        instance.num_timesteps = scenario.timestamp.nunique()
+        instance.follow_vehicle_steps = follow_vehicle_steps
+        instance.track_lane_dict = instance._create_track_lane_dict_carla(scenario)
+        instance.actor_graphs = instance.create_actor_graphs(G_Map)
+
+        return instance
+
+    def create_actor_graphs(self, G_map):
         timestep_graphs = []
 
-        for t in range(len(next(iter(self.track_lane_dict.values())))):
+        # das ist aber irgendwie eine ziemlich interessante Art die Anzahl an timestamps herauszufinden...
+        for t in tqdm(range(len(next(iter(self.track_lane_dict.values()))))):
             G_t = nx.MultiDiGraph()
 
             # Add nodes with attributes

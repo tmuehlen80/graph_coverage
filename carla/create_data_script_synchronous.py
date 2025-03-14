@@ -32,6 +32,7 @@ j = 0
 world_map = world.get_map()
 map_g = MapGraph()
 map_g = map_g.create_from_carla_map(world_map)
+
 map_g.store_graph_to_file(f"carla/data/scene_{j}_{str(datetime.now().date())}_map_graph.pickle")
 
 # Get the world and set synchronous mode
@@ -43,8 +44,6 @@ world.apply_settings(settings)
 # Get the traffic manager
 tm = client.get_trafficmanager(8000)  # Port 8000
 tm.set_synchronous_mode(True)  # Make TM sync with simulation
-
-
 
 
 # Get blueprint library
