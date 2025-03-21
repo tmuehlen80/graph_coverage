@@ -79,10 +79,6 @@ for i in range(25):
 
 
 
-#all_waypoints = world_map.generate_waypoints(.1)  # Generate waypoints with 1m spacing
-#len(all_waypoints)
-#lane_waypoints = [wp for wp in all_waypoints if wp.road_id == road_id and wp.lane_id == lane_id]
-
 tracks = []
 n_steps = 500
 
@@ -140,38 +136,6 @@ tracks_df['map'] = world.get_map().name
 tracks_df['scene_id'] = j
 
 tracks_df.to_parquet(f"carla/data/scene_{j}_{str(datetime.now().date())}_tracks.parquet")
-
-
-
-
-# get_t_coordinate(act, world_map)
-
-# #world_map.get_waypoint(act.get_location(), project_to_road=True)
-
-# center_waypoint = world_map.get_waypoint(act.get_location(), project_to_road=True, lane_type=carla.LaneType.Driving)
-# center_waypoint.transform.location.distance(act.get_location())
-
-# center_waypoint.transform.get_right_vector().z
-# center_waypoint.s
-# act.transform.get_transform()
-# act_waypoint = world_map.get_waypoint(act.get_location())
-
-# act_waypoint.s
-
-
-# # manually check:
-
-# print(center_waypoint.transform.location.x, act_waypoint.transform.location.x)
-# print(center_waypoint.transform.location.y, act_waypoint.transform.location.y)
-# print(center_waypoint.transform.location.z, act_waypoint.transform.location.z)
-
-
-# dir(world_map.get_waypoint(act.get_location()))
-# dir(world_map.get_waypoint(act.get_location()).left_lane_marking)
-# world_map.get_waypoint(act.get_location()).left_lane_marking.width
-
-# world_map.get_waypoint(act.get_location()).left_lane_marking
-
 
 
 

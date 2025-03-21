@@ -190,7 +190,7 @@ class ActorGraph:
 
 
 
-    def create_actor_graphs_w_details(self, G_map, follow_vehicle_steps, max_distance_lead_veh_m, max_distance_neighbor_veh_m, max_distance_opposite_veh_m):
+    def create_actor_graphs_w_details(self, G_map, max_distance_lead_veh_m, max_distance_neighbor_veh_m, max_distance_opposite_veh_m):
         timestep_graphs = []
 
         # das ist aber irgendwie eine ziemlich interessante Art die Anzahl an timestamps herauszufinden...
@@ -258,7 +258,6 @@ class ActorGraph:
             timestep_graphs.append(G_t)
 
         return timestep_graphs
-
 
 
     def visualize_actor_graph(self,timestep, save_path=None):
