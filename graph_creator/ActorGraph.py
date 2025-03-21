@@ -151,6 +151,7 @@ class ActorGraph:
 
         return timestep_graphs
 
+
     def visualize_actor_graph(self,timestep, save_path=None):
         G = self.actor_graphs[timestep]
         pos = nx.spring_layout(G, scale=1.0, k=0.1)
