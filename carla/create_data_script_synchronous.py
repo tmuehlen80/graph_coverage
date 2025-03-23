@@ -42,7 +42,7 @@ def get_t_coordinate(actor, world_map):
     return t
 
 
-j = 1
+j = 0
 
 # create the lane map graph and store it to file:
 world_map = world.get_map()
@@ -50,6 +50,10 @@ map_g = MapGraph()
 map_g = map_g.create_from_carla_map(world_map)
 
 map_g.store_graph_to_file(f"carla/data/scene_{j}_{str(datetime.now().date())}_map_graph.pickle")
+
+xodr = world_map.to_opendrive()
+with open(f"carla/data/scene_{j}_{str(datetime.now().date())}_map.xodr", "w") as f:
+    f.write(xodr)
 
 # Get the world and set synchronous mode
 settings = world.get_settings()
@@ -69,6 +73,7 @@ blueprint_library = world.get_blueprint_library()
 spawn_points = world.get_map().get_spawn_points()
 random.shuffle(spawn_points)
 
+
 for i in range(25):
     #vehicle_bp = blueprint_library.filter("vehicle.*")[0]
     spawn_point = spawn_points[i]
@@ -81,6 +86,7 @@ for i in range(25):
 
 tracks = []
 n_steps = 500
+
 
 for i in tqdm(range(n_steps)):
     world.tick()
@@ -95,11 +101,18 @@ for i in tqdm(range(n_steps)):
         bbox = act.bounding_box.get_local_vertices()
         row['actor_bbox'] = [[corner.x, corner.y, corner.z] for corner in bbox]
         till_lane_end_wps = world_map.get_waypoint(act.get_location()).next_until_lane_end(0.25)
-        till_lane_end_wps = [world_map.get_waypoint(act.get_location())] + till_lane_end_wps
+        #till_lane_end_wps = [world_map.get_waypoint(act.get_location())] + till_lane_end_wps
         from_lane_start_wps = world_map.get_waypoint(act.get_location()).previous_until_lane_start(0.25)
-        from_lane_start_wps.append(world_map.get_waypoint(act.get_location()))
-        length_from_lane_start = sum([from_lane_start_wps[i].transform.location.distance(from_lane_start_wps[i + 1].transform.location) for i in range(len(from_lane_start_wps) - 1)])
-        length_till_lane_end = sum([till_lane_end_wps[i].transform.location.distance(till_lane_end_wps[i + 1].transform.location) for i in range(len(till_lane_end_wps) - 1)])
+        #from_lane_start_wps.append(world_map.get_waypoint(act.get_location()))
+        if len(from_lane_start_wps) > 1:
+            # No idea why, but cutting of the last waypoint here looks like to be necessary.
+            length_from_lane_start = sum([from_lane_start_wps[i].transform.location.distance(from_lane_start_wps[i + 1].transform.location) for i in range(len(from_lane_start_wps) - 2)])
+        else: 
+            length_from_lane_start = 0
+        if len(till_lane_end_wps) > 1:
+            length_till_lane_end = sum([till_lane_end_wps[i].transform.location.distance(till_lane_end_wps[i + 1].transform.location) for i in range(len(till_lane_end_wps) - 1)])
+        else:
+            length_till_lane_end = 0
         row['distance_till_lane_end'] = length_till_lane_end
         row['distance_from_lane_start'] = length_from_lane_start
         row['t_per_lane_id'] = get_t_coordinate(act, world_map)
@@ -125,9 +138,7 @@ for i in tqdm(range(n_steps)):
         row['actor_acceleration_lat'] = acceleration_lat
         row['lane_width'] = world_map.get_waypoint(act.get_location()).lane_width
         row['lane_type'] = world_map.get_waypoint(act.get_location()).lane_type
-    tracks.append(row)
-    time.sleep(0.2)
-
+        tracks.append(row)
 
 
 tracks_df = pd.DataFrame(tracks)
@@ -138,4 +149,42 @@ tracks_df['scene_id'] = j
 tracks_df.to_parquet(f"carla/data/scene_{j}_{str(datetime.now().date())}_tracks.parquet")
 
 
+
+
+
+
+row
+
+row['carla_road_s']
+row['distance_from_lane_start']
+row['distance_till_lane_end']
+row['road_id']
+row['lane_id']
+
+
+3.5021380700358378e+1 - row['carla_road_s']
+
+
+
+till_lane_end_wps = world_map.get_waypoint(act.get_location()).next_until_lane_end(0.25)
+#till_lane_end_wps = [world_map.get_waypoint(act.get_location())] + till_lane_end_wps
+from_lane_start_wps = world_map.get_waypoint(act.get_location()).previous_until_lane_start(0.25)
+#from_lane_start_wps.append(world_map.get_waypoint(act.get_location()))
+if len(from_lane_start_wps) > 1:
+    length_from_lane_start = sum([from_lane_start_wps[i].transform.location.distance(from_lane_start_wps[i + 1].transform.location) for i in range(len(from_lane_start_wps) - 2)])
+else: 
+    length_from_lane_start = 0
+
+#sum([from_lane_start_wps[i].transform.location.distance(from_lane_start_wps[i + 1].transform.location) for i in range(len(from_lane_start_wps) - 2)])
+#[from_lane_start_wps[i].transform.location.distance(from_lane_start_wps[i + 1].transform.location) for i in range(len(from_lane_start_wps) - 1)]
+
+#from_lane_start_wps[-1].transform.location.distance(world_map.get_waypoint(act.get_location()).transform.location)
+
+if len(till_lane_end_wps) > 1:
+    length_till_lane_end = sum([till_lane_end_wps[i].transform.location.distance(till_lane_end_wps[i + 1].transform.location) for i in range(len(till_lane_end_wps) - 1)])
+else:
+    length_till_lane_end = 0
+
+
+length_from_lane_start + length_till_lane_end
 
