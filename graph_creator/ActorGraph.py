@@ -2,6 +2,17 @@ from shapely.geometry import Point
 import networkx as nx
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from typing import Dict, List
+from pydantic import BaseModel, Field
+
+class TrackData(BaseModel):
+    track_lane_dict: Dict[str, List[str]] = Field(description="Dictionary mapping track IDs to lists of lane IDs")
+    track_s_value_dict: Dict[str, List[float]] = Field(description="Dictionary mapping track IDs to lists of s-values")
+    track_xyz_pos_dict: Dict[str, List[Point]] = Field(description="Dictionary mapping track IDs to lists of 3D points")
+    track_speed_lon_dict: Dict[str, List[float]] = Field(description="Dictionary mapping track IDs to lists of longitudinal speeds")
+
+    class Config:
+        arbitrary_types_allowed = True
 
 class ActorGraph:
     # add opposite direction
@@ -90,84 +101,42 @@ class ActorGraph:
 
         return instance
 
-    def create_actor_graphs(self, G_map):
-        timestep_graphs = []
-
-        # das ist aber irgendwie eine ziemlich interessante Art die Anzahl an timestamps herauszufinden...
-        #for t in tqdm(range(len(next(iter(self.track_lane_dict.values()))))):
-        for t in tqdm(range(10)):
-            G_t = nx.MultiDiGraph()
-
-            # Add nodes with attributes
-            for track_id, lane_ids in self.track_lane_dict.items():
-                if lane_ids[t] is not None:
-                    G_t.add_node(track_id, lane_id=lane_ids[t])
-                    # Do we need to add for information about the track here? 
-
-            # Add edges based on the conditions
-            for track_id_A, lane_ids_A in self.track_lane_dict.items():
-                if lane_ids_A[t] is None:
-                    continue
-                for track_id_B, lane_ids_B in self.track_lane_dict.items():
-                    if track_id_A == track_id_B or lane_ids_B[t] is None:
-                        continue
-
-                    # Check for "following_lead" and "leading_vehicle"
-                    if nx.has_path(G_map.graph, lane_ids_A[t], lane_ids_B[t]):
-                        path = nx.shortest_path(G_map.graph, lane_ids_A[t], lane_ids_B[t], weight=None)
-                        if len(path) - 1 <= self.follow_vehicle_steps and all(G_map.graph[u][v][0]['edge_type'] == 'following' for u, v in zip(path[:-1], path[1:])):
-                            G_t.add_edge(track_id_B, track_id_A, edge_type='leading_vehicle')
-                            G_t.add_edge(track_id_A, track_id_B, edge_type='following_lead')
-                            #if (t==20 and track_id_A == '73020' and track_id_B == 'AV'):
-                            #    print("wrong")
-
-                    # Check for "direct_neighbor_vehicle"
-                    if G_map.graph.has_edge(lane_ids_A[t], lane_ids_B[t]) and G_map.graph[lane_ids_A[t]][lane_ids_B[t]][0]['edge_type'] == 'neighbor':
-                        G_t.add_edge(track_id_A, track_id_B, edge_type='direct_neighbor_vehicle')
-
-                    # Check for "neighbor_vehicle"
-                    if nx.has_path(G_map.graph, lane_ids_A[t], lane_ids_B[t]):
-                        path = nx.shortest_path(G_map.graph, lane_ids_A[t], lane_ids_B[t], weight=None)
-                        if len(path) - 1 <= self.follow_vehicle_steps and any(G_map.graph[u][v][0]['edge_type'] == 'neighbor' for u, v in zip(path[:-1], path[1:])) and not G_t.has_edge(track_id_A, track_id_B):
-                            G_t.add_edge(track_id_A, track_id_B, edge_type='neighbor_vehicle')
-                            G_t.add_edge(track_id_B, track_id_A, edge_type='neighbor_vehicle') # works in both direction - maybe another type here? 
-
-                    # Check for "opposite_vehicle"
-                    for u, v, data in G_map.graph.edges(data=True):
-                        if data['edge_type'] == 'opposite':
-                            if nx.has_path(G_map.graph, lane_ids_A[t], u) and nx.has_path(G_map.graph, lane_ids_B[t], v):
-                                path_A = nx.shortest_path(G_map.graph, lane_ids_A[t], u, weight=None)
-                                path_B = nx.shortest_path(G_map.graph, lane_ids_B[t], v, weight=None)
-                                # This ensures that the both paths combined are limited in length. 
-                                # Next, we are only looking for vehicle on a direct opposite lane, so no neighbors are allowed. If we allow neighbors, we have to careful to ignore double neighbors, that lead to the same lane again. 
-                                if (len(path_A) - 1 + len(path_B) - 1 <= self.follow_vehicle_steps and
-                                    all(G_map.graph[u][v][0]['edge_type'] != 'neighbor' for u, v in zip(path_A[:-1], path_A[1:])) and
-                                    all(G_map.graph[u][v][0]['edge_type'] != 'neighbor' for u, v in zip(path_B[:-1], path_B[1:])) and
-                                    sum(1 for u, v in zip(path_A[:-1], path_A[1:]) if G_map.graph[u][v][0]['edge_type'] == 'opposite') == 1 and
-                                    sum(1 for u, v in zip(path_B[:-1], path_B[1:]) if G_map.graph[u][v][0]['edge_type'] == 'opposite') == 1):
-                                    G_t.add_edge(track_id_A, track_id_B, edge_type='opposite_vehicle')
-                                    G_t.add_edge(track_id_B, track_id_A, edge_type='opposite_vehicle')
-
-            timestep_graphs.append(G_t)
-
-        return timestep_graphs
-
-
-    def _create_track_lane_dict_carla_w_details(self, scenario):
+    def _create_track_data_carla(self, scenario):
         """For carla, scenario is a pd df containing the time indexed actor data."""
         track_lane_dict = {}
         track_s_value_dict = {}
         track_xyz_pos_dict = {}
         track_speed_lon_dict = {}
         actors = scenario.actor_id.unique().tolist()
+        
+        # First pass: collect all data
         for actor in actors:
             mask = scenario.actor_id == actor
-            track_lane_dict[actor] = scenario[mask].road_lane_id.tolist() # potentially do a .reset_index(drop=True)?
-            track_s_value_dict[actor] = scenario[mask].distance_from_lane_start.tolist() # potentially do a .reset_index(drop=True)?
-            track_xyz_pos_dict[actor] = scenario[mask].actor_location_xyz.tolist()
+            track_lane_dict[actor] = scenario[mask].road_lane_id.tolist()
+            track_s_value_dict[actor] = scenario[mask].distance_from_lane_start.tolist()
+            # Convert xyz coordinates to Shapely Points
+            xyz_coords = scenario[mask].actor_location_xyz.tolist()
+            track_xyz_pos_dict[actor] = [Point(x, y, z) for x, y, z in xyz_coords]
             track_speed_lon_dict[actor] = scenario[mask].actor_speed_lon.tolist()
 
-        return track_lane_dict, track_s_value_dict, track_xyz_pos_dict, track_speed_lon_dict
+        # Validate that all lists have the same length for each actor
+        for actor in actors:
+            lengths = [
+                len(track_lane_dict[actor]),
+                len(track_s_value_dict[actor]),
+                len(track_xyz_pos_dict[actor]),
+                len(track_speed_lon_dict[actor])
+            ]
+            if not all(l == lengths[0] for l in lengths):
+                raise ValueError(f"Inconsistent list lengths for actor {actor}")
+
+        # Create and return the Pydantic model
+        return TrackData(
+            track_lane_dict=track_lane_dict,
+            track_s_value_dict=track_s_value_dict,
+            track_xyz_pos_dict=track_xyz_pos_dict,
+            track_speed_lon_dict=track_speed_lon_dict
+        )
 
 
     @classmethod
@@ -187,20 +156,27 @@ class ActorGraph:
         instance.max_distance_neighbor_forward_m = max_distance_m / 2
         instance.max_distance_neighbor_backward_m = max_distance_m / 2
 
-        instance.track_lane_dict, instance.track_s_value_dict, instance.track_xyz_pos_dict, instance.track_speed_lon_dict = instance._create_track_lane_dict_carla_w_details(scenario)
+        # Get track data as Pydantic model
+        track_data = instance._create_track_data_carla(scenario)
+        
+        # Store the data from the Pydantic model
+        instance.track_lane_dict = track_data.track_lane_dict
+        instance.track_s_value_dict = track_data.track_s_value_dict
+        instance.track_xyz_pos_dict = track_data.track_xyz_pos_dict
+        instance.track_speed_lon_dict = track_data.track_speed_lon_dict
 
-        instance.actor_graphs = instance.create_actor_graphs_w_details(G_Map, max_distance_lead_veh_m = 100, max_distance_neighbor_forward_m = 20, max_distance_neighbor_backward_m = 20, max_distance_opposite_m = 100)
+        instance.actor_graphs = instance.create_actor_graphs(G_Map, max_distance_lead_veh_m = 100, max_distance_neighbor_forward_m = 20, max_distance_neighbor_backward_m = 20, max_distance_opposite_m = 100)
 
         return instance
 
 
-    def create_actor_graphs_w_details(self, G_map, max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_neighbor_backward_m, max_distance_opposite_m):
+    def create_actor_graphs(self, G_map, max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_neighbor_backward_m, max_distance_opposite_m):
+        number_graphs = 10 # TODO: replace by delta_time .. Make sure time def in carla and argo is the same!
+        timestep_delta = int(len(self.track_lane_dict) / number_graphs)
+
         timestep_graphs = []
 
-        # das ist aber irgendwie eine ziemlich interessante Art die Anzahl an timestamps herauszufinden...
-        
-        #for t in tqdm(range(len(self.timestamps))):
-        for t in tqdm([0, 100, 200, 300, 400]):
+        for t in tqdm(range(len(self.track_lane_dict), timestep_delta)):
             G_t = nx.MultiDiGraph()
 
             # Add nodes with attributes
@@ -212,14 +188,17 @@ class ActorGraph:
                                  lon_speed = self.track_speed_lon_dict[track_id][t])
                     # Do we need to add for information about the track here? 
 
-
+            # Add edges based on the conditions
             for track_id_A, lane_ids_A in self.track_lane_dict.items():
-
                 if lane_ids_A[t] is None:
                     continue
-
                 for track_id_B, lane_ids_B in self.track_lane_dict.items():
-                    if track_id_A == track_id_B or lane_ids_B[t] is None:
+                    if lane_ids_B[t] is None:
+                        continue
+                    # Skip if we've already processed this pair
+                    if str(track_id_A) == str(track_id_B):
+                        continue
+                    if (track_id_B, track_id_A) in G_t.edges():
                         continue
 
                     # Check for "following_lead" and "leading_vehicle"

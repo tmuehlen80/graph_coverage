@@ -115,6 +115,6 @@ if __name__=="__main__":
     
 
     actor_graph = ActorGraph.from_argoverse_scenario(scenario, G_map)
-    show_timestep= 40
+    show_timestep= 1
     plot_scene_at_timestep(scenario,map, timestep= show_timestep, save_path=(repo_root / "map.png"))
     actor_graph.visualize_actor_graph(timestep=show_timestep, save_path=(repo_root / "actor_graph.png"))
