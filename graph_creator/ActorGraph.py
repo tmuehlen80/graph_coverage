@@ -3,13 +3,62 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from typing import Dict, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
+import numpy as np
 
 class TrackData(BaseModel):
     track_lane_dict: Dict[str, List[str]] = Field(description="Dictionary mapping track IDs to lists of lane IDs")
     track_s_value_dict: Dict[str, List[float]] = Field(description="Dictionary mapping track IDs to lists of s-values")
     track_xyz_pos_dict: Dict[str, List[Point]] = Field(description="Dictionary mapping track IDs to lists of 3D points")
     track_speed_lon_dict: Dict[str, List[float]] = Field(description="Dictionary mapping track IDs to lists of longitudinal speeds")
+
+    @field_validator('track_lane_dict', 'track_s_value_dict', 'track_xyz_pos_dict', 'track_speed_lon_dict')
+    @classmethod
+    def validate_list_lengths(cls, v: Dict[str, List]) -> Dict[str, List]:
+        if not v:  # Skip validation if dictionary is empty
+            return v
+            
+        # Get all actors from the dictionary
+        actors = list(v.keys())
+        
+        # Get the length of the first list for the first actor
+        first_length = len(v[actors[0]])
+        
+        # Check that all lists for all actors have the same length
+        for actor in actors:
+            if len(v[actor]) != first_length:
+                raise ValueError(f"List length mismatch for actor {actor}. Expected {first_length}, got {len(v[actor])}")
+        
+        return v
+
+    @model_validator(mode='after')
+    def validate_dict_consistency(self) -> 'TrackData':
+        # Get all dictionaries
+        lane_dict = self.track_lane_dict
+        s_value_dict = self.track_s_value_dict
+        xyz_dict = self.track_xyz_pos_dict
+        speed_dict = self.track_speed_lon_dict
+
+        # Get all unique actors across all dictionaries
+        all_actors = set(lane_dict.keys()) | set(s_value_dict.keys()) | set(xyz_dict.keys()) | set(speed_dict.keys())
+        
+        # Check that all dictionaries have the same actors
+        for actor in all_actors:
+            if not all(actor in d for d in [lane_dict, s_value_dict, xyz_dict, speed_dict]):
+                raise ValueError(f"Actor {actor} is missing in one or more dictionaries")
+        
+        # Check that all lists have the same length for each actor
+        for actor in all_actors:
+            lengths = [
+                len(lane_dict[actor]),
+                len(s_value_dict[actor]),
+                len(xyz_dict[actor]),
+                len(speed_dict[actor])
+            ]
+            if not all(l == lengths[0] for l in lengths):
+                raise ValueError(f"Inconsistent list lengths for actor {actor}. Expected {lengths[0]}, got {lengths}")
+        
+        return self
 
     class Config:
         arbitrary_types_allowed = True
@@ -55,49 +104,127 @@ class ActorGraph:
         return lane_ids 
     
     
-    def _create_track_lane_dict_argoverse(self, scenario):
+    def _create_track_data_argoverse(self, scenario):
         track_lane_dict = {}
+        track_s_value_dict = {}
+        track_xyz_pos_dict = {}
+        track_speed_lon_dict = {}
+        
         for track in scenario.tracks:
-            track_lane_dict[track.track_id] = self.find_lane_ids_for_track(track)
-    
-        return track_lane_dict
-    
-    
+            track_id = track.track_id
+            lane_ids = self.find_lane_ids_for_track(track)
+            track_lane_dict[track_id] = lane_ids
+            
+            # Initialize other dictionaries with None values for missing timesteps
+            s_values = []
+            xyz_positions = []
+            speeds = []
+            
+            timestep_list = [step.timestep for step in track.object_states]
+            for ii in range(self.num_timesteps):
+                if ii in timestep_list:
+                    state = track.object_states[timestep_list.index(ii)]
+                    s_values.append(0.0)  # Argoverse doesn't provide s-values directly
+                    xyz_positions.append(Point(state.position[0], state.position[1], state.position[2]))
+                    # Calculate longitudinal speed from velocity
+                    speed = np.sqrt(state.velocity[0]**2 + state.velocity[1]**2 + state.velocity[2]**2)
+                    speeds.append(speed)
+                else:
+                    s_values.append(0.0)
+                    xyz_positions.append(Point(0, 0, 0))  # Placeholder point
+                    speeds.append(0.0)
+            
+            track_s_value_dict[track_id] = s_values
+            track_xyz_pos_dict[track_id] = xyz_positions
+            track_speed_lon_dict[track_id] = speeds
+
+        # Create and return the Pydantic model
+        return TrackData(
+            track_lane_dict=track_lane_dict,
+            track_s_value_dict=track_s_value_dict,
+            track_xyz_pos_dict=track_xyz_pos_dict,
+            track_speed_lon_dict=track_speed_lon_dict
+        )
+
     @classmethod
-    def from_argoverse_scenario(cls, scenario, G_Map, follow_vehicle_steps=3):
+    def from_argoverse_scenario(cls, scenario, G_Map, max_distance_lead_veh_m=100, max_distance_opposite_veh_m=100, max_distance_neighbor_forward_m=50, max_distance_neighbor_backward_m=50):
+        """
+        Create an ActorGraph instance from an Argoverse scenario.
+        
+        Args:
+            scenario: An Argoverse scenario object
+            G_Map: A GraphMap object
+            max_distance_lead_veh_m: Maximum distance in meters for leading vehicle relationships
+            max_distance_opposite_veh_m: Maximum distance in meters for opposite vehicle relationships
+            max_distance_neighbor_forward_m: Maximum distance in meters for forward neighbor vehicle relationships
+            max_distance_neighbor_backward_m: Maximum distance in meters for backward neighbor vehicle relationships
+        """
         instance = cls()
         instance.G_map = G_Map
         instance.num_timesteps = len(scenario.timestamps_ns)
-        instance.follow_vehicle_steps = follow_vehicle_steps
-        instance.track_lane_dict = instance._create_track_lane_dict_argoverse(scenario)
-        instance.actor_graphs = instance.create_actor_graphs(G_Map)
+        instance.timestamps = scenario.timestamps_ns
+        instance.max_distance_lead_veh_m = max_distance_lead_veh_m
+        instance.max_distance_opposite_veh_m = max_distance_opposite_veh_m
+        instance.max_distance_neighbor_forward_m = max_distance_neighbor_forward_m
+        instance.max_distance_neighbor_backward_m = max_distance_neighbor_backward_m
+
+        # Get track data as Pydantic model
+        track_data = instance._create_track_data_argoverse(scenario)
+        
+        # Store the data from the Pydantic model
+        instance.track_lane_dict = track_data.track_lane_dict
+        instance.track_s_value_dict = track_data.track_s_value_dict
+        instance.track_xyz_pos_dict = track_data.track_xyz_pos_dict
+        instance.track_speed_lon_dict = track_data.track_speed_lon_dict
+
+        instance.actor_graphs = instance.create_actor_graphs(
+            G_Map, 
+            max_distance_lead_veh_m=max_distance_lead_veh_m,
+            max_distance_neighbor_forward_m=max_distance_neighbor_forward_m,
+            max_distance_neighbor_backward_m=max_distance_neighbor_backward_m,
+            max_distance_opposite_m=max_distance_opposite_veh_m
+        )
 
         return instance
 
-    def _create_track_lane_dict_carla(self, scenario):
-        track_lane_dict = {}
-        actors = scenario.actor_id.unique().tolist()
-        for actor in actors:
-            mask = scenario.actor_id == actor
-            track_lane_dict[actor] = scenario[mask].road_lane_id.tolist()
-
-        return track_lane_dict
-
-
     @classmethod
-    def from_carla_scenario(cls, scenario, G_Map, follow_vehicle_steps=3):
+    def from_carla_scenario(cls, scenario, G_Map, max_distance_lead_veh_m=100, max_distance_opposite_veh_m=100, max_distance_neighbor_forward_m=50, max_distance_neighbor_backward_m=50):
         """
+        Create an ActorGraph instance from a CARLA scenario.
+        
         Args:
             scenario: A pd dataframe with the following columns: 'track_id', 'timestep', 'x', 'y'
             G_Map: A GraphMap object
-            follow_vehicle_steps: The maximum number of timesteps a vehicle can follow another vehicle
+            max_distance_lead_veh_m: Maximum distance in meters for leading vehicle relationships
+            max_distance_opposite_veh_m: Maximum distance in meters for opposite vehicle relationships
+            max_distance_neighbor_forward_m: Maximum distance in meters for forward neighbor vehicle relationships
+            max_distance_neighbor_backward_m: Maximum distance in meters for backward neighbor vehicle relationships
         """
         instance = cls()
         instance.G_map = G_Map
         instance.num_timesteps = scenario.timestamp.nunique()
-        instance.follow_vehicle_steps = follow_vehicle_steps
-        instance.track_lane_dict = instance._create_track_lane_dict_carla(scenario)
-        instance.actor_graphs = instance.create_actor_graphs(G_Map)
+        instance.timestamps = scenario.timestamp.unique().tolist()
+        instance.max_distance_lead_veh_m = max_distance_lead_veh_m
+        instance.max_distance_opposite_veh_m = max_distance_opposite_veh_m
+        instance.max_distance_neighbor_forward_m = max_distance_neighbor_forward_m
+        instance.max_distance_neighbor_backward_m = max_distance_neighbor_backward_m
+
+        # Get track data as Pydantic model
+        track_data = instance._create_track_data_carla(scenario)
+        
+        # Store the data from the Pydantic model
+        instance.track_lane_dict = track_data.track_lane_dict
+        instance.track_s_value_dict = track_data.track_s_value_dict
+        instance.track_xyz_pos_dict = track_data.track_xyz_pos_dict
+        instance.track_speed_lon_dict = track_data.track_speed_lon_dict
+
+        instance.actor_graphs = instance.create_actor_graphs(
+            G_Map, 
+            max_distance_lead_veh_m=max_distance_lead_veh_m,
+            max_distance_neighbor_forward_m=max_distance_neighbor_forward_m,
+            max_distance_neighbor_backward_m=max_distance_neighbor_backward_m,
+            max_distance_opposite_m=max_distance_opposite_veh_m
+        )
 
         return instance
 
@@ -119,16 +246,6 @@ class ActorGraph:
             track_xyz_pos_dict[actor] = [Point(x, y, z) for x, y, z in xyz_coords]
             track_speed_lon_dict[actor] = scenario[mask].actor_speed_lon.tolist()
 
-        # Validate that all lists have the same length for each actor
-        for actor in actors:
-            lengths = [
-                len(track_lane_dict[actor]),
-                len(track_s_value_dict[actor]),
-                len(track_xyz_pos_dict[actor]),
-                len(track_speed_lon_dict[actor])
-            ]
-            if not all(l == lengths[0] for l in lengths):
-                raise ValueError(f"Inconsistent list lengths for actor {actor}")
 
         # Create and return the Pydantic model
         return TrackData(
@@ -137,38 +254,6 @@ class ActorGraph:
             track_xyz_pos_dict=track_xyz_pos_dict,
             track_speed_lon_dict=track_speed_lon_dict
         )
-
-
-    @classmethod
-    def from_carla_scenario_w_details(cls, scenario, G_Map, max_distance_m = 100):
-        """
-        Args:
-            scenario: A pd dataframe with the following columns: 'track_id', 'timestep', 'x', 'y'
-            G_Map: A GraphMap object
-            follow_vehicle_steps: The maximum number of timesteps a vehicle can follow another vehicle
-        """
-        instance = cls()
-        instance.G_map = G_Map
-        instance.num_timesteps = scenario.timestamp.nunique()
-        instance.timestamps = scenario.timestamp.unique().tolist()
-        instance.max_distance_lead_veh_m = max_distance_m
-        instance.max_distance_opposite_veh_m = max_distance_m
-        instance.max_distance_neighbor_forward_m = max_distance_m / 2
-        instance.max_distance_neighbor_backward_m = max_distance_m / 2
-
-        # Get track data as Pydantic model
-        track_data = instance._create_track_data_carla(scenario)
-        
-        # Store the data from the Pydantic model
-        instance.track_lane_dict = track_data.track_lane_dict
-        instance.track_s_value_dict = track_data.track_s_value_dict
-        instance.track_xyz_pos_dict = track_data.track_xyz_pos_dict
-        instance.track_speed_lon_dict = track_data.track_speed_lon_dict
-
-        instance.actor_graphs = instance.create_actor_graphs(G_Map, max_distance_lead_veh_m = 100, max_distance_neighbor_forward_m = 20, max_distance_neighbor_backward_m = 20, max_distance_opposite_m = 100)
-
-        return instance
-
 
     def create_actor_graphs(self, G_map, max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_neighbor_backward_m, max_distance_opposite_m):
         number_graphs = 10 # TODO: replace by delta_time .. Make sure time def in carla and argo is the same!

@@ -13,6 +13,7 @@ shapely = "^2.0.7"
 numpy = "2.1"
 networkx = "^3.4.2"
 matplotlib = "^3.10.1"
+pydantic = "^2.10.6"
 
 
 [build-system]
