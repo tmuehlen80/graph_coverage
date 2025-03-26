@@ -1,8 +1,8 @@
-from shapely.geometry import Point
+from shapely.geometry import Point, LineString
 import networkx as nx
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from pydantic import BaseModel, Field, field_validator, model_validator
 import numpy as np
 
@@ -114,47 +114,88 @@ class ActorGraph:
 
         return lane_ids
 
+    def _calculate_s_t_coordinates(self, position: Point, lane_id: str) -> Tuple[float, float]:
+        """
+        Calculate s and t coordinates for a given position and lane.
+        
+        Args:
+            position: The actor's position as a Point
+            lane_id: The lane ID as a string
+            
+        Returns:
+            Tuple[float, float]: The s and t coordinates
+        """
+        # Get lane boundaries from graph
+        left_boundary = self.G_map.graph.nodes[int(lane_id)]['left_boundary']
+        right_boundary = self.G_map.graph.nodes[int(lane_id)]['right_boundary']
+        
+        # Calculate center line by averaging left and right boundaries
+        # Ignore z-coordinate by using only x,y coordinates
+        center_line = LineString([
+            ((l.x + r.x)/2, (l.y + r.y)/2) 
+            for l, r in zip(left_boundary.waypoints, right_boundary.waypoints)
+        ])
+        
+        # Project actor position onto center line
+        # Convert actor position to 2D point (ignore z)
+        actor_pos_2d = Point(position.x, position.y)
+        
+        # Get the projected point on the center line
+        projected_point = center_line.interpolate(center_line.project(actor_pos_2d))
+        
+        # Calculate s-coordinate (distance from start of center line to projected point)
+        s_coord = center_line.project(actor_pos_2d)
+        
+        # Calculate t-coordinate (perpendicular distance from actor to center line)
+        t_coord = actor_pos_2d.distance(projected_point)
+        
+        return s_coord, t_coord
+
     def _create_track_data_argoverse(self, scenario):
         track_lane_dict = {}
         track_s_value_dict = {}
         track_xyz_pos_dict = {}
         track_speed_lon_dict = {}
-
+        
         for track in scenario.tracks:
             track_id = str(track.track_id)  # Convert to string
             lane_ids = self.find_lane_ids_for_track(track)
             # Convert None values to string 'None' and ensure all lane IDs are strings
-            track_lane_dict[track_id] = [str(lane_id) if lane_id is not None else "None" for lane_id in lane_ids]
-
+            track_lane_dict[track_id] = [str(lane_id) if lane_id is not None else 'None' for lane_id in lane_ids]
+            
             # Initialize other dictionaries with None values for missing timesteps
             s_values = []
             xyz_positions = []
             speeds = []
-
+            
             timestep_list = [step.timestep for step in track.object_states]
             for ii in range(self.num_timesteps):
                 if ii in timestep_list:
                     state = track.object_states[timestep_list.index(ii)]
-                    s_values.append(0.0)  # Argoverse doesn't provide s-values directly
-                    xyz_positions.append(Point(state.position[0], state.position[1], 0.0))
+                    position = Point(state.position[0], state.position[1], 0.0)
+                    xyz_positions.append(position)
+                    if track_lane_dict[track_id][ii] != 'None': # there are cases where the lane is None, i.e. the actor is not on a lane.
+                        s_coord, _ = self._calculate_s_t_coordinates(position, track_lane_dict[track_id][ii])
+                        s_values.append(s_coord)
+                    else:
+                        s_values.append(np.nan)
                     # Calculate longitudinal speed from velocity
-                    speed = np.sqrt(state.velocity[0] ** 2 + state.velocity[1] ** 2)
+                    speed = np.sqrt(state.velocity[0]**2 + state.velocity[1]**2)
                     speeds.append(speed)
                 else:
-                    s_values.append(0.0)
-                    xyz_positions.append(Point(0, 0, 0))  # Placeholder point
-                    speeds.append(0.0)
-
+                    xyz_positions.append(Point(np.nan, np.nan, np.nan))  # Placeholder point
+                    speeds.append(np.nan)
+                    s_values.append(np.nan)
+            
             track_s_value_dict[track_id] = s_values
             track_xyz_pos_dict[track_id] = xyz_positions
             track_speed_lon_dict[track_id] = speeds
-
         # Create and return the Pydantic model
         return TrackData(
             track_lane_dict=track_lane_dict,
             track_s_value_dict=track_s_value_dict,
             track_xyz_pos_dict=track_xyz_pos_dict,
-            track_speed_lon_dict=track_speed_lon_dict,
+            track_speed_lon_dict=track_speed_lon_dict
         )
 
     @classmethod

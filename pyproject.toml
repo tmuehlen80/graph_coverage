@@ -23,6 +23,7 @@ pydantic = "^2.10.6"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
+jupyter = "^1.1.1"
 
 [build-system]
 requires = ["poetry-core"]
