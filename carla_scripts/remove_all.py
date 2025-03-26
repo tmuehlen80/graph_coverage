@@ -18,4 +18,3 @@ for actor_list in [vehicles, walkers, sensors]:
         actor.destroy()
 
 print("All actors removed!")
-

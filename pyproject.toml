@@ -1,3 +1,8 @@
+[tool.black]
+line-length = 120
+target-version = ['py310']
+include = '\.pyi?$'
+
 [tool.poetry]
 name = "graph-creator"
 version = "0.1.0"
@@ -15,6 +20,9 @@ networkx = "^3.4.2"
 matplotlib = "^3.10.1"
 pydantic = "^2.10.6"
 
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
 
 [build-system]
 requires = ["poetry-core"]
