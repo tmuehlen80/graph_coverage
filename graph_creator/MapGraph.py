@@ -23,7 +23,7 @@ class MapGraph:
         for i in range(len(boundary.waypoints) - 1):
             p1 = boundary.waypoints[i]
             p2 = boundary.waypoints[i + 1]
-            length += np.sqrt((p2.x - p1.x)**2 + (p2.y - p1.y)**2)
+            length += np.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
         return length
 
     @classmethod
@@ -37,7 +37,7 @@ class MapGraph:
             left_length = instance._calculate_boundary_length(lane.left_lane_boundary)
             right_length = instance._calculate_boundary_length(lane.right_lane_boundary)
             avg_length = (left_length + right_length) / 2.0
-            
+
             G.add_node(
                 lane_id,
                 is_intersection=lane.is_intersection,

@@ -8,7 +8,9 @@ import numpy as np
 
 
 class TrackData(BaseModel):
-    track_lane_dict: Dict[str, List[Optional[int]]] = Field(description="Dictionary mapping track IDs to lists of lane IDs (can be None)")
+    track_lane_dict: Dict[str, List[Optional[int]]] = Field(
+        description="Dictionary mapping track IDs to lists of lane IDs (can be None)"
+    )
     track_s_value_dict: Dict[str, List[float]] = Field(description="Dictionary mapping track IDs to lists of s-values")
     track_xyz_pos_dict: Dict[str, List[Point]] = Field(description="Dictionary mapping track IDs to lists of 3D points")
     track_speed_lon_dict: Dict[str, List[float]] = Field(
@@ -121,36 +123,36 @@ class ActorGraph:
         t: lateral distance from center line (positive to the left)
         """
         # Get lane boundaries from graph
-        left_boundary = self.G_map.graph.nodes[lane_id]['left_boundary']
-        right_boundary = self.G_map.graph.nodes[lane_id]['right_boundary']
-        
+        left_boundary = self.G_map.graph.nodes[lane_id]["left_boundary"]
+        right_boundary = self.G_map.graph.nodes[lane_id]["right_boundary"]
+
         # Get first and last points of each boundary
         left_start = left_boundary.waypoints[0]
         left_end = left_boundary.waypoints[-1]
         right_start = right_boundary.waypoints[0]
         right_end = right_boundary.waypoints[-1]
-        
+
         # Calculate center line start and end points
-        center_start = Point((left_start.x + right_start.x)/2, (left_start.y + right_start.y)/2)
-        center_end = Point((left_end.x + right_end.x)/2, (left_end.y + right_end.y)/2)
-        
+        center_start = Point((left_start.x + right_start.x) / 2, (left_start.y + right_start.y) / 2)
+        center_end = Point((left_end.x + right_end.x) / 2, (left_end.y + right_end.y) / 2)
+
         # Create center line from start to end point
         center_line = LineString([(center_start.x, center_start.y), (center_end.x, center_end.y)])
-        
+
         # Project actor position onto center line
         actor_pos_2d = Point(position.x, position.y)
         projected_point = center_line.interpolate(center_line.project(actor_pos_2d))
-        
+
         # Calculate s-coordinate (distance from start of center line to projected point)
         s_coord = center_line.project(actor_pos_2d)
-        
+
         # Calculate t-coordinate (perpendicular distance from actor to center line)
         # Use cross product to determine if point is left (negative) or right (positive) of center line
         center_vector = np.array([center_end.x - center_start.x, center_end.y - center_start.y])
         point_vector = np.array([position.x - center_start.x, position.y - center_start.y])
         cross_product = np.cross(center_vector, point_vector)
         t_coord = np.sign(cross_product) * actor_pos_2d.distance(projected_point)
-        
+
         return s_coord, t_coord
 
     def _create_track_data_argoverse(self, scenario):
@@ -158,7 +160,7 @@ class ActorGraph:
         track_s_value_dict = {}
         track_xyz_pos_dict = {}
         track_speed_lon_dict = {}
-        
+
         for track in scenario.tracks:
             track_id = str(track.track_id)  # Convert to string
             lane_ids = self.find_lane_ids_for_track(track)
@@ -167,26 +169,28 @@ class ActorGraph:
             s_values = []
             xyz_positions = []
             speeds = []
-            
+
             timestep_list = [step.timestep for step in track.object_states]
             for ii in range(self.num_timesteps):
                 if ii in timestep_list:
                     state = track.object_states[timestep_list.index(ii)]
                     position = Point(state.position[0], state.position[1], 0.0)
                     xyz_positions.append(position)
-                    if track_lane_dict[track_id][ii] is not None: # there are cases where the lane is None, i.e. the actor is not on a lane.
+                    if (
+                        track_lane_dict[track_id][ii] is not None
+                    ):  # there are cases where the lane is None, i.e. the actor is not on a lane.
                         s_coord, t_coord = self._calculate_s_t_coordinates(position, track_lane_dict[track_id][ii])
                         s_values.append(s_coord)
                     else:
                         s_values.append(np.nan)
                     # Calculate longitudinal speed from velocity
-                    speed = np.sqrt(state.velocity[0]**2 + state.velocity[1]**2)
+                    speed = np.sqrt(state.velocity[0] ** 2 + state.velocity[1] ** 2)
                     speeds.append(speed)
                 else:
                     xyz_positions.append(Point(np.nan, np.nan, np.nan))  # Placeholder point
                     speeds.append(np.nan)
                     s_values.append(np.nan)
-            
+
             track_s_value_dict[track_id] = s_values
             track_xyz_pos_dict[track_id] = xyz_positions
             track_speed_lon_dict[track_id] = speeds
@@ -195,7 +199,7 @@ class ActorGraph:
             track_lane_dict=track_lane_dict,
             track_s_value_dict=track_s_value_dict,
             track_xyz_pos_dict=track_xyz_pos_dict,
-            track_speed_lon_dict=track_speed_lon_dict
+            track_speed_lon_dict=track_speed_lon_dict,
         )
 
     @classmethod
@@ -463,7 +467,7 @@ class ActorGraph:
             pos = nx.spring_layout(G, scale=1.0, k=0.1)
         # node_size = 1600
         # Why remove lonely actors?
-        # -> There are many of them on argopverse data.  
+        # -> There are many of them on argopverse data.
         labels = {node: node for node in G.nodes() if G.degree(node) > 0}
         nodes_with_edges = [node for node in G.nodes() if G.degree(node) > 0]
 
@@ -475,7 +479,7 @@ class ActorGraph:
         edge_type_following_lead = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "following_lead"]
         # edge_type_leading_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d['edge_type'] == 'leading_vehicle']
         # I think with the distance based approach, we don't need to distinguish between direct and general neighbor?
-        #TODO; yes
+        # TODO; yes
         edge_type_direct_neighbor_vehicle = [
             (u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "direct_neighbor_vehicle"
         ]
@@ -533,88 +537,106 @@ class ActorGraph:
     def visualize_s_t_calculation(self, position: Point, lane_id: str, save_path: str = None):
         """
         Visualize the s-t coordinate calculation for a given position and lane.
-        
+
         Args:
             position: The actor's position as a Point
             lane_id: The lane ID as a string
             save_path: Optional path to save the plot
         """
         # Get lane boundaries from graph
-        left_boundary = self.G_map.graph.nodes[int(lane_id)]['left_boundary']
-        right_boundary = self.G_map.graph.nodes[int(lane_id)]['right_boundary']
-        
+        left_boundary = self.G_map.graph.nodes[int(lane_id)]["left_boundary"]
+        right_boundary = self.G_map.graph.nodes[int(lane_id)]["right_boundary"]
+
         # Get first and last points of each boundary
         left_start = left_boundary.waypoints[0]
         left_end = left_boundary.waypoints[-1]
         right_start = right_boundary.waypoints[0]
         right_end = right_boundary.waypoints[-1]
-        
+
         # Calculate center line start and end points
-        center_start = Point((left_start.x + right_start.x)/2, (left_start.y + right_start.y)/2)
-        center_end = Point((left_end.x + right_end.x)/2, (left_end.y + right_end.y)/2)
-        
+        center_start = Point((left_start.x + right_start.x) / 2, (left_start.y + right_start.y) / 2)
+        center_end = Point((left_end.x + right_end.x) / 2, (left_end.y + right_end.y) / 2)
+
         # Create center line from start to end point
         center_line = LineString([(center_start.x, center_start.y), (center_end.x, center_end.y)])
-        
+
         # Project actor position onto center line
         actor_pos_2d = Point(position.x, position.y)
         projected_point = center_line.interpolate(center_line.project(actor_pos_2d))
-        
+
         # Create the plot
         plt.figure(figsize=(10, 10))
-        
+
         # Plot left boundary with arrows
         left_x = [p.x for p in left_boundary.waypoints]
         left_y = [p.y for p in left_boundary.waypoints]
-        plt.plot(left_x, left_y, 'b-', label='Left Boundary')
+        plt.plot(left_x, left_y, "b-", label="Left Boundary")
         # Add arrows to left boundary
-        for i in range(len(left_x)-1):
-            plt.arrow(left_x[i], left_y[i], 
-                     left_x[i+1]-left_x[i], 
-                     left_y[i+1]-left_y[i],
-                     head_width=0.5, head_length=0.8,
-                     fc='blue', ec='blue', alpha=0.5)
-        
+        for i in range(len(left_x) - 1):
+            plt.arrow(
+                left_x[i],
+                left_y[i],
+                left_x[i + 1] - left_x[i],
+                left_y[i + 1] - left_y[i],
+                head_width=0.5,
+                head_length=0.8,
+                fc="blue",
+                ec="blue",
+                alpha=0.5,
+            )
+
         # Plot right boundary with arrows
         right_x = [p.x for p in right_boundary.waypoints]
         right_y = [p.y for p in right_boundary.waypoints]
-        plt.plot(right_x, right_y, 'r-', label='Right Boundary')
+        plt.plot(right_x, right_y, "r-", label="Right Boundary")
         # Add arrows to right boundary
-        for i in range(len(right_x)-1):
-            plt.arrow(right_x[i], right_y[i], 
-                     right_x[i+1]-right_x[i], 
-                     right_y[i+1]-right_y[i],
-                     head_width=0.5, head_length=0.8,
-                     fc='red', ec='red', alpha=0.5)
-        
+        for i in range(len(right_x) - 1):
+            plt.arrow(
+                right_x[i],
+                right_y[i],
+                right_x[i + 1] - right_x[i],
+                right_y[i + 1] - right_y[i],
+                head_width=0.5,
+                head_length=0.8,
+                fc="red",
+                ec="red",
+                alpha=0.5,
+            )
+
         # Plot center line with arrow
         center_x = [center_start.x, center_end.x]
         center_y = [center_start.y, center_end.y]
-        plt.plot(center_x, center_y, 'g--', label='Center Line')
+        plt.plot(center_x, center_y, "g--", label="Center Line")
         # Add arrow to center line
-        plt.arrow(center_start.x, center_start.y, 
-                 center_end.x - center_start.x, 
-                 center_end.y - center_start.y,
-                 head_width=0.5, head_length=0.8,
-                 fc='green', ec='green', alpha=0.5)
-        
+        plt.arrow(
+            center_start.x,
+            center_start.y,
+            center_end.x - center_start.x,
+            center_end.y - center_start.y,
+            head_width=0.5,
+            head_length=0.8,
+            fc="green",
+            ec="green",
+            alpha=0.5,
+        )
+
         # Plot original point
-        plt.plot(position.x, position.y, 'ko', label='Original Point')
-        
+        plt.plot(position.x, position.y, "ko", label="Original Point")
+
         # Plot projected point
-        plt.plot(projected_point.x, projected_point.y, 'ro', label='Projected Point')
-        
+        plt.plot(projected_point.x, projected_point.y, "ro", label="Projected Point")
+
         # Draw line from original to projected point
-        plt.plot([position.x, projected_point.x], [position.y, projected_point.y], 'k--', label='Projection Line')
-        
+        plt.plot([position.x, projected_point.x], [position.y, projected_point.y], "k--", label="Projection Line")
+
         # Calculate and display s and t coordinates
         s_coord, t_coord = self._calculate_s_t_coordinates(position, lane_id)
-        plt.title(f's = {s_coord:.2f}m, t = {t_coord:.2f}m')
-        
+        plt.title(f"s = {s_coord:.2f}m, t = {t_coord:.2f}m")
+
         # Add legend and make plot square
         plt.legend()
-        plt.axis('equal')
-        
+        plt.axis("equal")
+
         # Save or show the plot
         if save_path:
             plt.savefig(save_path)
