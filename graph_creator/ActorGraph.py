@@ -2,13 +2,13 @@ from shapely.geometry import Point, LineString
 import networkx as nx
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 import numpy as np
 
 
 class TrackData(BaseModel):
-    track_lane_dict: Dict[str, List[str]] = Field(description="Dictionary mapping track IDs to lists of lane IDs")
+    track_lane_dict: Dict[str, List[Optional[int]]] = Field(description="Dictionary mapping track IDs to lists of lane IDs (can be None)")
     track_s_value_dict: Dict[str, List[float]] = Field(description="Dictionary mapping track IDs to lists of s-values")
     track_xyz_pos_dict: Dict[str, List[Point]] = Field(description="Dictionary mapping track IDs to lists of 3D points")
     track_speed_lon_dict: Dict[str, List[float]] = Field(
@@ -106,7 +106,7 @@ class ActorGraph:
             if ii in timestep_list:
                 position = track.object_states[timestep_list.index(ii)].position
                 lane_id = self.find_lane_id_from_pos(position)
-                lane_ids.append(lane_id)
+                lane_ids.append(int(lane_id) if lane_id is not None else None)
             else:
                 lane_ids.append(None)
         if not len(lane_ids) == self.num_timesteps:
@@ -114,23 +114,15 @@ class ActorGraph:
 
         return lane_ids
 
-    def _calculate_s_t_coordinates(self, position: Point, lane_id: str) -> Tuple[float, float]:
+    def _calculate_s_t_coordinates(self, position: Point, lane_id: int) -> Tuple[float, float]:
         """
-        Calculate s and t coordinates for a given position and lane.
-        
-        Args:
-            position: The actor's position as a Point
-            lane_id: The lane ID as a string
-            
-        Returns:
-            Tuple[float, float]: The s and t coordinates
-                - s: distance along the center line from start to projected point
-                - t: signed perpendicular distance from actor to center line
-                    (negative for left deviation, positive for right deviation)
+        Calculate s and t coordinates for a point on a lane.
+        s: distance along the lane from start
+        t: lateral distance from center line (positive to the left)
         """
         # Get lane boundaries from graph
-        left_boundary = self.G_map.graph.nodes[int(lane_id)]['left_boundary']
-        right_boundary = self.G_map.graph.nodes[int(lane_id)]['right_boundary']
+        left_boundary = self.G_map.graph.nodes[lane_id]['left_boundary']
+        right_boundary = self.G_map.graph.nodes[lane_id]['right_boundary']
         
         # Get first and last points of each boundary
         left_start = left_boundary.waypoints[0]
@@ -170,9 +162,7 @@ class ActorGraph:
         for track in scenario.tracks:
             track_id = str(track.track_id)  # Convert to string
             lane_ids = self.find_lane_ids_for_track(track)
-            # Convert None values to string 'None' and ensure all lane IDs are strings
-            track_lane_dict[track_id] = [str(lane_id) if lane_id is not None else 'None' for lane_id in lane_ids]
-            
+            track_lane_dict[track_id] = lane_ids
             # Initialize other dictionaries with None values for missing timesteps
             s_values = []
             xyz_positions = []
@@ -184,7 +174,7 @@ class ActorGraph:
                     state = track.object_states[timestep_list.index(ii)]
                     position = Point(state.position[0], state.position[1], 0.0)
                     xyz_positions.append(position)
-                    if track_lane_dict[track_id][ii] != 'None': # there are cases where the lane is None, i.e. the actor is not on a lane.
+                    if track_lane_dict[track_id][ii] is not None: # there are cases where the lane is None, i.e. the actor is not on a lane.
                         s_coord, t_coord = self._calculate_s_t_coordinates(position, track_lane_dict[track_id][ii])
                         s_values.append(s_coord)
                     else:
@@ -318,8 +308,8 @@ class ActorGraph:
         for actor in actors:
             actor_id = str(actor)  # Convert to string
             mask = scenario.actor_id == actor
-            # Convert lane IDs to strings
-            track_lane_dict[actor_id] = [str(lane_id) for lane_id in scenario[mask].road_lane_id.tolist()]
+            # Convert lane IDs to integers
+            track_lane_dict[actor_id] = [int(lane_id) for lane_id in scenario[mask].road_lane_id.tolist()]
             track_s_value_dict[actor_id] = scenario[mask].distance_from_lane_start.tolist()
             # Convert xyz coordinates to Shapely Points
             xyz_coords = scenario[mask].actor_location_xyz.tolist()
@@ -364,10 +354,10 @@ class ActorGraph:
 
             # Add edges based on the conditions
             for track_id_A, lane_ids_A in self.track_lane_dict.items():
-                if lane_ids_A[t] == 'None':
+                if lane_ids_A[t] is None:
                     continue
                 for track_id_B, lane_ids_B in self.track_lane_dict.items():
-                    if lane_ids_B[t] == 'None':
+                    if lane_ids_B[t] is None:
                         continue
                     # Skip if we've already processed this pair
                     if str(track_id_A) == str(track_id_B):
@@ -468,12 +458,13 @@ class ActorGraph:
         G = self.actor_graphs[timestep]
         # not sure, if G is anyhow needed? Why not always use self.actor_graphs[timestep]?
         if use_map_pos:
-            pos = {node: self.actor_graphs[timestep].nodes[node]["xyz"][:2] for node in self.actor_graphs[0].nodes}
+            pos = {node: (G.nodes[node]["xyz"].x, G.nodes[node]["xyz"].y) for node in G.nodes}
         else:
             pos = nx.spring_layout(G, scale=1.0, k=0.1)
         # node_size = 1600
         # Why remove lonely actors?
-        labels = {node: node for node in self.actor_graphs[timestep].nodes() if G.degree(node) > 0}
+        # -> There are many of them on argopverse data.  
+        labels = {node: node for node in G.nodes() if G.degree(node) > 0}
         nodes_with_edges = [node for node in G.nodes() if G.degree(node) > 0]
 
         plt.figure(figsize=(6, 6))
@@ -484,6 +475,7 @@ class ActorGraph:
         edge_type_following_lead = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "following_lead"]
         # edge_type_leading_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d['edge_type'] == 'leading_vehicle']
         # I think with the distance based approach, we don't need to distinguish between direct and general neighbor?
+        #TODO; yes
         edge_type_direct_neighbor_vehicle = [
             (u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "direct_neighbor_vehicle"
         ]

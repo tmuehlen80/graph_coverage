@@ -17,6 +17,15 @@ class MapGraph:
         polygon_points = left_points + right_points[::-1]
         return Polygon(polygon_points)
 
+    def _calculate_boundary_length(self, boundary):
+        """Calculate the length of a boundary by summing the distances between consecutive waypoints."""
+        length = 0.0
+        for i in range(len(boundary.waypoints) - 1):
+            p1 = boundary.waypoints[i]
+            p2 = boundary.waypoints[i + 1]
+            length += np.sqrt((p2.x - p1.x)**2 + (p2.y - p1.y)**2)
+        return length
+
     @classmethod
     def create_from_argoverse_map(cls, map):
         instance = cls()
@@ -25,6 +34,10 @@ class MapGraph:
         # Add nodes with attributes
         for lane_id, lane in map.vector_lane_segments.items():
             lane_polygon = instance._create_lane_polygon(lane.left_lane_boundary, lane.right_lane_boundary)
+            left_length = instance._calculate_boundary_length(lane.left_lane_boundary)
+            right_length = instance._calculate_boundary_length(lane.right_lane_boundary)
+            avg_length = (left_length + right_length) / 2.0
+            
             G.add_node(
                 lane_id,
                 is_intersection=lane.is_intersection,
@@ -34,6 +47,7 @@ class MapGraph:
                 left_boundary=lane.left_lane_boundary,
                 right_boundary=lane.right_lane_boundary,
                 lane_polygon=lane_polygon,
+                length=avg_length,
             )
 
         # Add edges for successors and predecessors (type 1)

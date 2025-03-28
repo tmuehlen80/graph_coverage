@@ -2,7 +2,7 @@ from pathlib import Path
 from argparse import Namespace
 import matplotlib.pyplot as plt
 import av2.rendering.vector as vector_plotting_utils
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point, LineString
 
 from MapGraph import MapGraph
 from ActorGraph import ActorGraph
