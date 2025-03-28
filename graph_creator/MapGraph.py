@@ -6,6 +6,10 @@ import carla
 import pickle
 
 
+
+### TODO: We should create a pydantic model for the map graph.
+# We have to agree on the types beforehand, especially, lane_type, left_mark_type, right_mark_type, etc.
+
 class MapGraph:
     def __init__(self):
         self.graph = nx.MultiDiGraph()
