@@ -23,12 +23,14 @@ print(f"Spawned vehicle at: {spawn_point.location}")
 # Move the spectator camera to follow the vehicle
 spectator = world.get_spectator()
 
+
 # Function to update spectator view
 def update_spectator():
     transform = vehicle.get_transform()  # Get vehicle position
-    location = transform.location + carla.Location(z=5) 
+    location = transform.location + carla.Location(z=5)
     rotation = carla.Rotation(pitch=-90, yaw=transform.rotation.yaw, roll=0)  # Slight downward tilt
     spectator.set_transform(carla.Transform(location, rotation))
+
 
 # Initial camera placement
 update_spectator()

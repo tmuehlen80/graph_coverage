@@ -36,6 +36,7 @@ def find_straight_road_spawn(min_distance=200.0, yaw_tolerance=10):
 
     return None  # No valid straight road found
 
+
 # Try to find a straight road spawn point
 ego_spawn_point = find_straight_road_spawn()
 
@@ -93,16 +94,16 @@ else:
     print("⚠ No opposite lane found! Skipping oncoming vehicle.")
 
 
-#spectator = world.get_spectator()
+# spectator = world.get_spectator()
 #
-#def update_spectator():
+# def update_spectator():
 #    transform = ego_vehicle.get_transform()
 #    camera_location = transform.location + carla.Location(x=-6, y=0, z=3)
 #    camera_rotation = carla.Rotation(pitch=-15, yaw=transform.rotation.yaw, roll=0)
 #    spectator.set_transform(carla.Transform(camera_location, camera_rotation))
 #
 ## Continuously update spectator camera
-#while True:
+# while True:
 #    update_spectator()
 #    time.sleep(0.1)
 #
