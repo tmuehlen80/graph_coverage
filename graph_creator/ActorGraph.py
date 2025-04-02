@@ -189,13 +189,90 @@ class ActorGraph:
 
         instance.track_lane_dict, instance.track_s_value_dict, instance.track_xyz_pos_dict, instance.track_speed_lon_dict = instance._create_track_lane_dict_carla_w_details(scenario)
 
-        instance.actor_graphs = instance.create_actor_graphs_w_details(G_Map, max_distance_lead_veh_m = 100, max_distance_neighbor_forward_m = 20, max_distance_neighbor_backward_m = 20, max_distance_opposite_m = 100)
+        instance.actor_graphs = instance.create_actor_graphs_w_details_2(G_Map, max_distance_lead_veh_m = 100, max_distance_neighbor_forward_m = 20, max_distance_neighbor_backward_m = 20, max_distance_opposite_m = 100)
+        instance.actor_components = {}
+
+        for key, value in instance.actor_graphs.items():
+            components = list(nx.weakly_connected_components(value))
+            subgraphs = [g.subgraph(c).copy() for c in components]
+            instance.actor_components[key] = subgraphs
 
         return instance
 
 
+    # def create_actor_graphs_w_details(self, G_map, max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_neighbor_backward_m, max_distance_opposite_m):
+    #     timestep_graphs = []
+
+    #     # das ist aber irgendwie eine ziemlich interessante Art die Anzahl an timestamps herauszufinden...
+        
+    #     #for t in tqdm(range(len(self.timestamps))):
+    #     for t in tqdm([0, 100, 200, 300, 400]):
+    #         G_t = nx.MultiDiGraph()
+
+    #         # Add nodes with attributes
+    #         for track_id, lane_ids in self.track_lane_dict.items():
+    #             if lane_ids[t] is not None:
+    #                 G_t.add_node(track_id, lane_id=lane_ids[t], 
+    #                              s = self.track_s_value_dict[track_id][t], 
+    #                              xyz = self.track_xyz_pos_dict[track_id][t], 
+    #                              lon_speed = self.track_speed_lon_dict[track_id][t])
+    #                 # Do we need to add for information about the track here? 
+
+
+    #         for track_id_A, lane_ids_A in self.track_lane_dict.items():
+
+    #             if lane_ids_A[t] is None:
+    #                 continue
+
+    #             for track_id_B, lane_ids_B in self.track_lane_dict.items():
+    #                 if track_id_A == track_id_B or lane_ids_B[t] is None:
+    #                     continue
+
+    #                 # Check for "following_lead" and "leading_vehicle"
+    #                 if nx.has_path(G_map.graph, lane_ids_A[t], lane_ids_B[t]):
+
+    #                     path = nx.shortest_path(G_map.graph, lane_ids_A[t], lane_ids_B[t], weight=None)
+
+    #                     if len(path) == 1: # i.e. both on same lane
+    #                         if (self.track_s_value_dict[track_id_B][t] > self.track_s_value_dict[track_id_A][t]) and ((self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t]) < max_distance_lead_veh_m):
+    #                             # isn't this the wrong way around?
+    #                             G_t.add_edge(track_id_B, track_id_A, edge_type='leading_vehicle', path_length = self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t])
+    #                             G_t.add_edge(track_id_A, track_id_B, edge_type='following_lead', path_length = self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t])
+
+    #                     # second case: both on different, but following lanes:
+    #                     if len(path) > 1 and all(G_map.graph[u][v][0]['edge_type'] == 'following' for u, v in zip(path[:-1], path[1:])):
+    #                         path_length = sum([G_map.graph.nodes[node]['length'] for node in path[:-1]]) + self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t]
+    #                         #print(path_length)
+    #                         if (path_length < max_distance_lead_veh_m) :
+    #                             G_t.add_edge(track_id_B, track_id_A, edge_type='leading_vehicle', path_length = path_length)
+    #                             G_t.add_edge(track_id_A, track_id_B, edge_type='following_lead', path_length = path_length)
+
+    #                     # third case: on neighboring lanes, forward
+    #                     if (sum([G_map.graph[u][v][0]['edge_type']  == 'neighbor' for u, v in zip(path[:-1], path[1:])]) == 1) and (sum([G_map.graph[u][v][0]['edge_type']  == 'following' for u, v in zip(path[:-1], path[1:])] )  == len(path) - 2):
+    #                         # remove the neighbor node, otherwise that stretch is counted twice.
+    #                         path_length = sum([G_map.graph.nodes[path[i]]['length'] for i in range(len(path) - 1) if G_map.graph[path[i]][path[i + 1]][0]['edge_type'] != 'neighbor']) + self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t]
+    #                         if path_length <  max_distance_neighbor_forward_m:
+    #                             G_t.add_edge(track_id_B, track_id_A, edge_type='neighbor_vehicle', path_length = path_length)
+    #                             G_t.add_edge(track_id_A, track_id_B, edge_type='neighbor_vehicle', path_length = path_length)
+
+    #                     # fourth case: on opposite, directly next lane:
+    #                     # if (sum([G_map.graph[u][v][0]['edge_type']  == 'neighbor' for u, v in zip(path[:-1], path[1:])]) == 1) and (sum([G_map.graph[u][v][0]['edge_type']  == 'following' for u, v in zip(path[:-1], path[1:])] )  == len(path) - 2):
+    #                     #     # remove the neighbor node, otherwise that stretch is counted twice.
+    #                     #     path_length = sum([G_map.graph.nodes[path[i]]['length'] for i in range(len(path) - 1) if G_map.graph[path[i]][path[i + 1]][0]['edge_type'] != 'neighbor']) + self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t]
+    #                     #     if path_length <  max_distance_neighbor_forward_m:
+    #                     #         G_t.add_edge(track_id_B, track_id_A, edge_type='neighbor_vehicle', path_length = path_length)
+    #                     #         G_t.add_edge(track_id_A, track_id_B, edge_type='neighbor_vehicle', path_length = path_length)
+
+    #                     # still need to add opposite direction.
+
+    #         timestep_graphs.append(G_t)
+
+    #     return timestep_graphs
+
+
+
     def create_actor_graphs_w_details(self, G_map, max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_neighbor_backward_m, max_distance_opposite_m):
-        timestep_graphs = []
+        timestep_graphs = {}
 
         # das ist aber irgendwie eine ziemlich interessante Art die Anzahl an timestamps herauszufinden...
         
@@ -213,12 +290,19 @@ class ActorGraph:
                     # Do we need to add for information about the track here? 
 
 
-            for track_id_A, lane_ids_A in self.track_lane_dict.items():
+            #for track_id_A, lane_ids_A in self.track_lane_dict.items():
+            keys = list(self.track_lane_dict.keys())
+            for i in range(len(keys) - 1):
+                track_id_A = keys[i]
+                lane_ids_A = self.track_lane_dict[keys[i]]
 
                 if lane_ids_A[t] is None:
                     continue
 
-                for track_id_B, lane_ids_B in self.track_lane_dict.items():
+                #for track_id_B, lane_ids_B in self.track_lane_dict.items():
+                for j in range(i + 1, len(keys)):
+                    track_id_B = keys[j]
+                    lane_ids_B = self.track_lane_dict[keys[j]]
                     if track_id_A == track_id_B or lane_ids_B[t] is None:
                         continue
 
@@ -249,23 +333,37 @@ class ActorGraph:
                                 G_t.add_edge(track_id_B, track_id_A, edge_type='neighbor_vehicle', path_length = path_length)
                                 G_t.add_edge(track_id_A, track_id_B, edge_type='neighbor_vehicle', path_length = path_length)
 
+                        # fourth case: on opposite, directly next lane:
+                        if (sum([G_map.graph[u][v][0]['edge_type']  == 'opposite' for u, v in zip(path[:-1], path[1:])]) == 1) and (sum([G_map.graph[u][v][0]['edge_type']  == 'following' for u, v in zip(path[:-1], path[1:])] )  == len(path) - 2):
+                            # remove the opposite node, otherwise that stretch is counted twice. if there is something to check, than if this logic is correct.
+                            # Taking -s from the other actor on the opposite direciton, as the s value should be in opposite direction as welll, hopefully..
+                            path_length = sum([G_map.graph.nodes[path[i]]['length'] for i in range(len(path) - 1) if G_map.graph[path[i]][path[i + 1]][0]['edge_type'] != 'opposite'])  + G_map.graph.nodes[path[-1]]['length'] - self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t]
+                            if path_length <  max_distance_opposite_m:
+                                G_t.add_edge(track_id_B, track_id_A, edge_type='opposite_vehicle', path_length = path_length)
+                                G_t.add_edge(track_id_A, track_id_B, edge_type='opposite_vehicle', path_length = path_length)
+
                         # still need to add opposite direction.
 
-            timestep_graphs.append(G_t)
+            timestep_graphs[t] = G_t
 
         return timestep_graphs
 
 
-    def visualize_actor_graph(self,timestep, use_map_pos = True, node_size = 1600, save_path=None):
-        G = self.actor_graphs[timestep]
+    def visualize_actor_graph(self, t_idx, comp_idx, use_map_pos = True, node_size = 1600, save_path=None, graph_or_componentes = 'graph'):
+
+        if graph_or_componentes == 'graph':
+            G = self.actor_graphs[t_idx]
+        elif graph_or_componentes == 'component':
+            G = self.actor_components[t_idx][comp_idx]
+
         # not sure, if G is anyhow needed? Why not always use self.actor_graphs[timestep]?
         if use_map_pos:
-            pos = {node: self.actor_graphs[timestep].nodes[node]['xyz'][:2] for node in self.actor_graphs[0].nodes}
+            pos = {node: G.nodes[node]['xyz'][:2] for node in G.nodes}
         else:
             pos = nx.spring_layout(G, scale=1.0, k=0.1)
         #node_size = 1600
         # Why remove lonely actors?
-        labels = {node: node for node in self.actor_graphs[timestep].nodes() if G.degree(node) > 0}
+        labels = {node: node for node in G.nodes() if G.degree(node) > 0}
         nodes_with_edges = [node for node in G.nodes() if G.degree(node) > 0]
 
         plt.figure(figsize=(6, 6))
