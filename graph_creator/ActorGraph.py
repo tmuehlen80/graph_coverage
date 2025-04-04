@@ -8,7 +8,7 @@ import numpy as np
 
 
 class TrackData(BaseModel):
-    track_lane_dict: Dict[str, List[Optional[int]]] = Field(
+    track_lane_dict: Dict[str, List[Optional[str]]] = Field(
         description="Dictionary mapping track IDs to lists of lane IDs (can be None)"
     )
     track_s_value_dict: Dict[str, List[float]] = Field(description="Dictionary mapping track IDs to lists of s-values")
@@ -319,7 +319,7 @@ class ActorGraph:
             actor_id = str(actor)  # Convert to string
             mask = scenario.actor_id == actor
             # Convert lane IDs to integers
-            track_lane_dict[actor_id] = [int(lane_id) for lane_id in scenario[mask].road_lane_id.tolist()]
+            track_lane_dict[actor_id] = [lane_id for lane_id in scenario[mask].road_lane_id.tolist()]
             track_s_value_dict[actor_id] = scenario[mask].distance_from_lane_start.tolist()
             # Convert xyz coordinates to Shapely Points
             xyz_coords = scenario[mask].actor_location_xyz.tolist()
@@ -345,8 +345,8 @@ class ActorGraph:
         number_graphs = 10  # TODO: replace by delta_time .. Make sure time def in carla and argo is the same!
         timestep_delta = int(len(self.track_lane_dict) / number_graphs)
 
-        timestep_graphs = []
-
+        timestep_graphs = {}
+        print(len(self.track_lane_dict))
         for t in tqdm(range(0, len(self.track_lane_dict), timestep_delta)):
             G_t = nx.MultiDiGraph()
 
@@ -480,15 +480,15 @@ class ActorGraph:
                                 G_t.add_edge(track_id_A, track_id_B, edge_type='opposite_vehicle', path_length = path_length)
  
 
-            timestep_graphs.append(G_t)
+            timestep_graphs[t] = G_t
 
         return timestep_graphs
 
-    def visualize_actor_graph(self, t_idx, comp_idx, use_map_pos = True, node_size = 1600, save_path=None, graph_or_componentes = 'graph'):
+    def visualize_actor_graph(self, t_idx, comp_idx, use_map_pos = True, node_size = 1600, save_path=None, graph_or_component = 'graph'):
 
-        if graph_or_componentes == 'graph':
+        if graph_or_component == 'graph':
             G = self.actor_graphs[t_idx]
-        elif graph_or_componentes == 'component':
+        elif graph_or_component == 'component':
             G = self.actor_components[t_idx][comp_idx]
 
         #G = self.actor_graphs[timestep]
