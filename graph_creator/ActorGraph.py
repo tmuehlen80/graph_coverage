@@ -334,7 +334,6 @@ class ActorGraph:
             track_xyz_pos_dict[actor_id] = [Point(x, y, z) for x, y, z in xyz_coords]
             track_speed_lon_dict[actor_id] = scenario[mask].actor_speed_lon.tolist()
             track_actor_type_dict[actor_id] = scenario[mask].actor_type.tolist()
-        print(track_actor_type_dict)
         # Create and return the Pydantic model
         return TrackData(
             track_lane_dict=track_lane_dict,
