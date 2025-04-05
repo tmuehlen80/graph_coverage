@@ -16,13 +16,16 @@ class TrackData(BaseModel):
     track_speed_lon_dict: Dict[str, List[float]] = Field(
         description="Dictionary mapping track IDs to lists of longitudinal speeds"
     )
+    track_actor_type_dict: Dict[str, List[str]] = Field(description="Dictionary mapping track IDs to actor types.")
 
     @field_validator(
         "track_lane_dict",
         "track_s_value_dict",
         "track_xyz_pos_dict",
         "track_speed_lon_dict",
+        "track_actor_type_dict",
     )
+
     @classmethod
     def validate_list_lengths(cls, v: Dict[str, List]) -> Dict[str, List]:
         if not v:  # Skip validation if dictionary is empty
@@ -50,13 +53,13 @@ class TrackData(BaseModel):
         s_value_dict = self.track_s_value_dict
         xyz_dict = self.track_xyz_pos_dict
         speed_dict = self.track_speed_lon_dict
-
+        actor_dict = self.track_actor_type_dict
         # Get all unique actors across all dictionaries
-        all_actors = set(lane_dict.keys()) | set(s_value_dict.keys()) | set(xyz_dict.keys()) | set(speed_dict.keys())
+        all_actors = set(lane_dict.keys()) | set(s_value_dict.keys()) | set(xyz_dict.keys()) | set(speed_dict.keys() | set(actor_dict.keys()))
 
         # Check that all dictionaries have the same actors
         for actor in all_actors:
-            if not all(actor in d for d in [lane_dict, s_value_dict, xyz_dict, speed_dict]):
+            if not all(actor in d for d in [lane_dict, s_value_dict, xyz_dict, speed_dict, actor_dict]):
                 raise ValueError(f"Actor {actor} is missing in one or more dictionaries")
 
         # Check that all lists have the same length for each actor
@@ -66,6 +69,8 @@ class TrackData(BaseModel):
                 len(s_value_dict[actor]),
                 len(xyz_dict[actor]),
                 len(speed_dict[actor]),
+                len(actor_dict[actor]),
+                # As actor_dict isnot time indexed, it does not need to be checked here.,
             ]
             if not all(l == lengths[0] for l in lengths):
                 raise ValueError(f"Inconsistent list lengths for actor {actor}. Expected {lengths[0]}, got {lengths}")
@@ -240,6 +245,7 @@ class ActorGraph:
         instance.track_s_value_dict = track_data.track_s_value_dict
         instance.track_xyz_pos_dict = track_data.track_xyz_pos_dict
         instance.track_speed_lon_dict = track_data.track_speed_lon_dict
+        instance.track_actor_type_dict = track_data.track_actor_type_dict
 
         instance.actor_graphs = instance.create_actor_graphs(
             G_Map,
@@ -289,6 +295,7 @@ class ActorGraph:
         instance.track_s_value_dict = track_data.track_s_value_dict
         instance.track_xyz_pos_dict = track_data.track_xyz_pos_dict
         instance.track_speed_lon_dict = track_data.track_speed_lon_dict
+        instance.track_actor_type_dict = track_data.track_actor_type_dict
 
         instance.actor_graphs = instance.create_actor_graphs(
             G_Map,
@@ -312,6 +319,7 @@ class ActorGraph:
         track_s_value_dict = {}
         track_xyz_pos_dict = {}
         track_speed_lon_dict = {}
+        track_actor_type_dict = {}
         actors = scenario.actor_id.unique().tolist()
 
         # First pass: collect all data
@@ -325,13 +333,14 @@ class ActorGraph:
             xyz_coords = scenario[mask].actor_location_xyz.tolist()
             track_xyz_pos_dict[actor_id] = [Point(x, y, z) for x, y, z in xyz_coords]
             track_speed_lon_dict[actor_id] = scenario[mask].actor_speed_lon.tolist()
-
+            track_actor_type_dict[actor_id] = scenario[mask].actor_type.tolist()
         # Create and return the Pydantic model
         return TrackData(
             track_lane_dict=track_lane_dict,
             track_s_value_dict=track_s_value_dict,
             track_xyz_pos_dict=track_xyz_pos_dict,
             track_speed_lon_dict=track_speed_lon_dict,
+            track_actor_type_dict=track_actor_type_dict,
         )
 
     def create_actor_graphs(
@@ -359,8 +368,8 @@ class ActorGraph:
                         s=self.track_s_value_dict[track_id][t],
                         xyz=self.track_xyz_pos_dict[track_id][t],
                         lon_speed=self.track_speed_lon_dict[track_id][t],
+                        actor_type=self.track_actor_type_dict[track_id],  
                     )
-                    # Do we need to add for information about the track here?
 
             # Add edges based on the conditions
             keys = list(self.track_lane_dict.keys())

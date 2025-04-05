@@ -43,7 +43,7 @@ def get_t_coordinate(actor, world_map):
     return t
 
 
-for j in range(20):
+for j in range(7, 20):
     print("scene: ", j)
     clean_carla(world)
     _ = world.tick()
@@ -177,3 +177,4 @@ for j in range(20):
     tracks_df["map"] = world.get_map().name
     tracks_df["scene_id"] = j
     tracks_df.to_parquet(f"carla/data/scene_{j}_{str(datetime.now().date())}_tracks.parquet")
+
