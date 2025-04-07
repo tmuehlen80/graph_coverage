@@ -16,14 +16,13 @@ class TrackData(BaseModel):
     track_speed_lon_dict: Dict[str, List[float]] = Field(
         description="Dictionary mapping track IDs to lists of longitudinal speeds"
     )
-    track_actor_type_dict: Dict[str, List[str]] = Field(description="Dictionary mapping track IDs to actor types.")
+    track_actor_type_dict: Dict[str, str] = Field(description="Dictionary mapping track IDs to actor types.")
 
     @field_validator(
         "track_lane_dict",
         "track_s_value_dict",
         "track_xyz_pos_dict",
         "track_speed_lon_dict",
-        "track_actor_type_dict",
     )
 
     @classmethod
@@ -55,7 +54,7 @@ class TrackData(BaseModel):
         speed_dict = self.track_speed_lon_dict
         actor_dict = self.track_actor_type_dict
         # Get all unique actors across all dictionaries
-        all_actors = set(lane_dict.keys()) | set(s_value_dict.keys()) | set(xyz_dict.keys()) | set(speed_dict.keys() | set(actor_dict.keys()))
+        all_actors = set(lane_dict.keys()) | set(s_value_dict.keys()) | set(xyz_dict.keys()) | set(speed_dict.keys()) | set(actor_dict.keys())
 
         # Check that all dictionaries have the same actors
         for actor in all_actors:
@@ -69,8 +68,6 @@ class TrackData(BaseModel):
                 len(s_value_dict[actor]),
                 len(xyz_dict[actor]),
                 len(speed_dict[actor]),
-                len(actor_dict[actor]),
-                # As actor_dict isnot time indexed, it does not need to be checked here.,
             ]
             if not all(l == lengths[0] for l in lengths):
                 raise ValueError(f"Inconsistent list lengths for actor {actor}. Expected {lengths[0]}, got {lengths}")
@@ -113,7 +110,7 @@ class ActorGraph:
             if ii in timestep_list:
                 position = track.object_states[timestep_list.index(ii)].position
                 lane_id = self.find_lane_id_from_pos(position)
-                lane_ids.append(int(lane_id) if lane_id is not None else None)
+                lane_ids.append(str(lane_id) if lane_id is not None else None)
             else:
                 lane_ids.append(None)
         if not len(lane_ids) == self.num_timesteps:
@@ -121,13 +118,14 @@ class ActorGraph:
 
         return lane_ids
 
-    def _calculate_s_t_coordinates(self, position: Point, lane_id: int) -> Tuple[float, float]:
+    def _calculate_s_t_coordinates(self, position: Point, lane_id_str: str) -> Tuple[float, float]:
         """
         Calculate s and t coordinates for a point on a lane.
         s: distance along the lane from start
         t: lateral distance from center line (positive to the left)
         """
         # Get lane boundaries from graph
+        lane_id = int(lane_id_str)
         left_boundary = self.G_map.graph.nodes[lane_id]["left_boundary"]
         right_boundary = self.G_map.graph.nodes[lane_id]["right_boundary"]
 
@@ -165,6 +163,7 @@ class ActorGraph:
         track_s_value_dict = {}
         track_xyz_pos_dict = {}
         track_speed_lon_dict = {}
+        track_actor_type_dict = {}
 
         for track in scenario.tracks:
             track_id = str(track.track_id)  # Convert to string
@@ -199,12 +198,15 @@ class ActorGraph:
             track_s_value_dict[track_id] = s_values
             track_xyz_pos_dict[track_id] = xyz_positions
             track_speed_lon_dict[track_id] = speeds
+            # Add actor type information
+            track_actor_type_dict[track_id] = track.object_type.value
         # Create and return the Pydantic model
         return TrackData(
             track_lane_dict=track_lane_dict,
             track_s_value_dict=track_s_value_dict,
             track_xyz_pos_dict=track_xyz_pos_dict,
             track_speed_lon_dict=track_speed_lon_dict,
+            track_actor_type_dict=track_actor_type_dict,
         )
 
     @classmethod
@@ -333,7 +335,9 @@ class ActorGraph:
             xyz_coords = scenario[mask].actor_location_xyz.tolist()
             track_xyz_pos_dict[actor_id] = [Point(x, y, z) for x, y, z in xyz_coords]
             track_speed_lon_dict[actor_id] = scenario[mask].actor_speed_lon.tolist()
-            track_actor_type_dict[actor_id] = scenario[mask].actor_type.tolist()
+            # Take the first entry from the actor_type list
+            actor_types = scenario[mask].actor_type.tolist()
+            track_actor_type_dict[actor_id] = actor_types[0] if actor_types else ""
         # Create and return the Pydantic model
         return TrackData(
             track_lane_dict=track_lane_dict,
