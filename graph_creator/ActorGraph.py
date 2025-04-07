@@ -79,16 +79,12 @@ class TrackData(BaseModel):
 
 
 class ActorGraph:
-    # add opposite direction
-    # use segmeent length for cut off
-    # go over alle scenarios
-    # add relation for actors on same ID
     def __init__(self):
         self.G_map = None
         self.num_timesteps = None
         self.follow_vehicle_steps = None
         self.track_lane_dict = None
-        self.actor_graphs = []
+        self.actor_graphs = {}
 
     def find_lane_id_from_pos(self, position):
         point = Point(position[0], position[1])
@@ -359,7 +355,6 @@ class ActorGraph:
         timestep_delta = int(len(self.track_lane_dict) / number_graphs)
 
         timestep_graphs = {}
-        print(len(self.track_lane_dict))
         for t in tqdm(range(0, len(self.track_lane_dict), timestep_delta)):
             G_t = nx.MultiDiGraph()
 
@@ -379,25 +374,17 @@ class ActorGraph:
             keys = list(self.track_lane_dict.keys())
             for i in range(len(keys) - 1):
                 track_id_A = keys[i]
-                lane_ids_A = self.track_lane_dict[keys[i]]
-                #for track_id_A, lane_ids_A in self.track_lane_dict.items():
+                lane_ids_A = [ None if lane_id is None else int(lane_id) for lane_id in self.track_lane_dict[keys[i]]]
             
                 if lane_ids_A[t] is None:
                     continue
 
-                #for track_id_B, lane_ids_B in self.track_lane_dict.items():
                 for j in range(i + 1, len(keys)):
                     track_id_B = keys[j]
-                    lane_ids_B = self.track_lane_dict[keys[j]]
+                    lane_ids_B = [ None if lane_id is None else int(lane_id) for lane_id in self.track_lane_dict[keys[j]]]
 
                     if lane_ids_B[t] is None:
                         continue
-                    # Skip if we've already processed this pair.
-                    # Should not happen with the above nested loops, but keep it to be on the safe side.
-                    # if str(track_id_A) == str(track_id_B):
-                    #    continue
-                    #if (track_id_B, track_id_A) in G_t.edges():
-                    #    continue
 
                     # Check for "following_lead" and "leading_vehicle"
                     if nx.has_path(G_map.graph, lane_ids_A[t], lane_ids_B[t]):
@@ -493,7 +480,9 @@ class ActorGraph:
                                 G_t.add_edge(track_id_A, track_id_B, edge_type='opposite_vehicle', path_length = path_length)
  
 
-            timestep_graphs[t] = G_t
+            timestep_graphs[self.timestamps[t]] = G_t
+
+        self.actor_graphs = timestep_graphs
 
         return timestep_graphs
 
