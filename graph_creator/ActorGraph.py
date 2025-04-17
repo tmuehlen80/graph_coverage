@@ -10,6 +10,7 @@ from models import TrackData, ActorType
 class ActorGraph:
     def __init__(self):
         self.G_map = None
+        self.timestamps_graphs = []
         self.num_timesteps = None
         self.follow_vehicle_steps = None
         self.track_lane_dict = None
@@ -166,8 +167,8 @@ class ActorGraph:
         """
         instance = cls()
         instance.G_map = G_Map
+        instance.timestamps = list((scenario.timestamps_ns  - min(scenario.timestamps_ns) ) * 10**-9)
         instance.num_timesteps = len(scenario.timestamps_ns)
-        instance.timestamps = scenario.timestamps_ns
         instance.max_distance_lead_veh_m = max_distance_lead_veh_m
         instance.max_distance_opposite_veh_m = max_distance_opposite_veh_m
         instance.max_distance_neighbor_forward_m = max_distance_neighbor_forward_m
@@ -299,12 +300,30 @@ class ActorGraph:
         max_distance_neighbor_forward_m,
         max_distance_neighbor_backward_m,
         max_distance_opposite_m,
+        delta_timestep_s=1.0,
     ):
-        number_graphs = 10  # TODO: replace by delta_time .. Make sure time def in carla and argo is the same!
-        timestep_delta = int(len(self.track_lane_dict) / number_graphs)
+        graph_timesteps = []
+        graph_timesteps_idx = []
+        current_timestep = 0.0
+        while True:
+            # Find closest timestep in self.timesteps
+            closest_idx = min(range(len(self.timestamps)), 
+                            key=lambda i: abs(self.timestamps[i] - current_timestep))
+            closest_timestep = self.timestamps[closest_idx]
+            
+            # Stop if we would add same timestep again
+            if graph_timesteps and closest_timestep == graph_timesteps[-1]:
+                break
+                
+            # Add timestep and index to lists
+            graph_timesteps.append(closest_timestep)
+            graph_timesteps_idx.append(closest_idx)
+            
+            # Increment timestep
+            current_timestep += delta_timestep_s
 
         timestep_graphs = {}
-        for t in tqdm(range(0, len(self.track_lane_dict), timestep_delta)):
+        for t in graph_timesteps_idx:
             G_t = nx.MultiDiGraph()
 
             # Add nodes with attributes
@@ -456,7 +475,7 @@ class ActorGraph:
 
         self.actor_graphs = timestep_graphs
 
-        return timestep_graphs
+        return self.actor_graphs
 
     def visualize_actor_graph(
         self, t_idx, comp_idx, use_map_pos=True, node_size=1600, save_path=None, graph_or_component="graph"
@@ -468,7 +487,7 @@ class ActorGraph:
             G = self.actor_components[t_idx][comp_idx]
 
         if use_map_pos:
-            pos = {node: (G.nodes[node]["node_info"].lane_polygon.centroid.x, G.nodes[node]["node_info"].lane_polygon.centroid.y) for node in G.nodes}
+            pos = {node: (G.nodes[node]['xyz'].x, G.nodes[node]['xyz'].y) for node in G.nodes}
         else:
             pos = nx.spring_layout(G, scale=1.0, k=0.1)
         # node_size = 1600
