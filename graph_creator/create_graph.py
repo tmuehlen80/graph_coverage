@@ -2,7 +2,7 @@ from pathlib import Path
 from argparse import Namespace
 import matplotlib.pyplot as plt
 import av2.rendering.vector as vector_plotting_utils
-from shapely.geometry import Polygon, Point, LineString
+from shapely.geometry import Polygon
 
 from MapGraph import MapGraph
 from ActorGraph import ActorGraph
@@ -113,6 +113,6 @@ if __name__ == "__main__":
     # plot_argoverse_map(map, save_path=(repo_root / "map.png"))
 
     actor_graph = ActorGraph.from_argoverse_scenario(scenario, G_map)
-    show_timestep = 1
+    show_timestep = 1.0
     plot_scene_at_timestep(scenario, map, timestep=show_timestep, save_path=(repo_root / "map.png"))
-    actor_graph.visualize_actor_graph(timestep=show_timestep, save_path=(repo_root / "actor_graph.png"))
+    actor_graph.visualize_actor_graph(t_idx=show_timestep, comp_idx=0,  save_path=(repo_root / "actor_graph.png"))
