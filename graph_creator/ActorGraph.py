@@ -102,7 +102,7 @@ class ActorGraph:
     def find_lane_id_from_pos(self, position):
         point = Point(position[0], position[1])
         for lane_id, data in self.G_map.graph.nodes(data=True):
-            lane_polygon = data.get("lane_polygon")
+            lane_polygon = data["node_info"].lane_polygon
             if lane_polygon.contains(point):
                 return lane_id
         return None
@@ -135,21 +135,24 @@ class ActorGraph:
         """
         # Get lane boundaries from graph
         lane_id = int(lane_id_str)
-        left_boundary = self.G_map.graph.nodes[lane_id]["left_boundary"]
-        right_boundary = self.G_map.graph.nodes[lane_id]["right_boundary"]
+        left_boundary = self.G_map.graph.nodes[lane_id]["node_info"].left_boundary
+        right_boundary = self.G_map.graph.nodes[lane_id]["node_info"].right_boundary
 
-        # Get first and last points of each boundary
-        left_start = left_boundary.waypoints[0]
-        left_end = left_boundary.waypoints[-1]
-        right_start = right_boundary.waypoints[0]
-        right_end = right_boundary.waypoints[-1]
+        # Get first and last points of each boundary using .coords
+        left_coords = list(left_boundary.coords)
+        right_coords = list(right_boundary.coords)
+        left_start_coords = left_coords[0]
+        left_end_coords = left_coords[-1]
+        right_start_coords = right_coords[0]
+        right_end_coords = right_coords[-1]
+
 
         # Calculate center line start and end points
-        center_start = Point((left_start.x + right_start.x) / 2, (left_start.y + right_start.y) / 2)
-        center_end = Point((left_end.x + right_end.x) / 2, (left_end.y + right_end.y) / 2)
+        center_start = Point((left_start_coords[0] + right_start_coords[0]) / 2, (left_start_coords[1] + right_start_coords[1]) / 2)
+        center_end = Point((left_end_coords[0] + right_end_coords[0]) / 2, (left_end_coords[1] + right_end_coords[1]) / 2)
 
         # Create center line from start to end point
-        center_line = LineString([(center_start.x, center_start.y), (center_end.x, center_end.y)])
+        center_line = LineString([center_start, center_end]) # Use Point objects directly
 
         # Project actor position onto center line
         actor_pos_2d = Point(position.x, position.y)
@@ -448,7 +451,7 @@ class ActorGraph:
                             G_map.graph[u][v][0]["edge_type"] == "following" for u, v in zip(path[:-1], path[1:])
                         ):
                             path_length = (
-                                sum([G_map.graph.nodes[node]["length"] for node in path[:-1]])
+                                sum([G_map.graph.nodes[node]["node_info"].length for node in path[:-1]])
                                 + self.track_s_value_dict[track_id_B][t]
                                 - self.track_s_value_dict[track_id_A][t]
                             )
@@ -480,7 +483,7 @@ class ActorGraph:
                             path_length = (
                                 sum(
                                     [
-                                        G_map.graph.nodes[path[i]]["length"]
+                                        G_map.graph.nodes[path[i]]["node_info"].length
                                         for i in range(len(path) - 1)
                                         if G_map.graph[path[i]][path[i + 1]][0]["edge_type"] != "neighbor"
                                     ]
@@ -516,12 +519,12 @@ class ActorGraph:
                             path_length = (
                                 sum(
                                     [
-                                        G_map.graph.nodes[path[i]]["length"]
+                                        G_map.graph.nodes[path[i]]["node_info"].length
                                         for i in range(len(path) - 1)
                                         if G_map.graph[path[i]][path[i + 1]][0]["edge_type"] != "opposite"
                                     ]
                                 )
-                                + G_map.graph.nodes[path[-1]]["length"]
+                                + G_map.graph.nodes[path[-1]]["node_info"].length
                                 - self.track_s_value_dict[track_id_B][t]
                                 - self.track_s_value_dict[track_id_A][t]
                             )
@@ -548,10 +551,8 @@ class ActorGraph:
         elif graph_or_component == "component":
             G = self.actor_components[t_idx][comp_idx]
 
-        # G = self.actor_graphs[timestep]
-        # not sure, if G is anyhow needed? Why not always use self.actor_graphs[timestep]?
         if use_map_pos:
-            pos = {node: (G.nodes[node]["xyz"].x, G.nodes[node]["xyz"].y) for node in G.nodes}
+            pos = {node: (G.nodes[node]["node_info"].lane_polygon.centroid.x, G.nodes[node]["node_info"].lane_polygon.centroid.y) for node in G.nodes}
         else:
             pos = nx.spring_layout(G, scale=1.0, k=0.1)
         # node_size = 1600
@@ -633,21 +634,23 @@ class ActorGraph:
             save_path: Optional path to save the plot
         """
         # Get lane boundaries from graph
-        left_boundary = self.G_map.graph.nodes[int(lane_id)]["left_boundary"]
-        right_boundary = self.G_map.graph.nodes[int(lane_id)]["right_boundary"]
+        left_boundary = self.G_map.graph.nodes[int(lane_id)]["node_info"].left_boundary
+        right_boundary = self.G_map.graph.nodes[int(lane_id)]["node_info"].right_boundary
 
-        # Get first and last points of each boundary
-        left_start = left_boundary.waypoints[0]
-        left_end = left_boundary.waypoints[-1]
-        right_start = right_boundary.waypoints[0]
-        right_end = right_boundary.waypoints[-1]
+        # Get first and last points of each boundary using .coords
+        left_coords = list(left_boundary.coords)
+        right_coords = list(right_boundary.coords)
+        left_start_coords = left_coords[0]
+        left_end_coords = left_coords[-1]
+        right_start_coords = right_coords[0]
+        right_end_coords = right_coords[-1]
 
         # Calculate center line start and end points
-        center_start = Point((left_start.x + right_start.x) / 2, (left_start.y + right_start.y) / 2)
-        center_end = Point((left_end.x + right_end.x) / 2, (left_end.y + right_end.y) / 2)
+        center_start = Point((left_start_coords[0] + right_start_coords[0]) / 2, (left_start_coords[1] + right_start_coords[1]) / 2)
+        center_end = Point((left_end_coords[0] + right_end_coords[0]) / 2, (left_end_coords[1] + right_end_coords[1]) / 2)
 
         # Create center line from start to end point
-        center_line = LineString([(center_start.x, center_start.y), (center_end.x, center_end.y)])
+        center_line = LineString([center_start, center_end]) # Use Point objects directly
 
         # Project actor position onto center line
         actor_pos_2d = Point(position.x, position.y)
@@ -656,9 +659,9 @@ class ActorGraph:
         # Create the plot
         plt.figure(figsize=(10, 10))
 
-        # Plot left boundary with arrows
-        left_x = [p.x for p in left_boundary.waypoints]
-        left_y = [p.y for p in left_boundary.waypoints]
+        # Plot left boundary with arrows using .coords
+        left_x = [coord[0] for coord in left_coords]
+        left_y = [coord[1] for coord in left_coords]
         plt.plot(left_x, left_y, "b-", label="Left Boundary")
         # Add arrows to left boundary
         for i in range(len(left_x) - 1):
@@ -674,9 +677,9 @@ class ActorGraph:
                 alpha=0.5,
             )
 
-        # Plot right boundary with arrows
-        right_x = [p.x for p in right_boundary.waypoints]
-        right_y = [p.y for p in right_boundary.waypoints]
+        # Plot right boundary with arrows using .coords
+        right_x = [coord[0] for coord in right_coords]
+        right_y = [coord[1] for coord in right_coords]
         plt.plot(right_x, right_y, "r-", label="Right Boundary")
         # Add arrows to right boundary
         for i in range(len(right_x) - 1):

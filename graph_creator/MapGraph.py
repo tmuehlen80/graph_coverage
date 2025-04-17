@@ -1,34 +1,15 @@
 import networkx as nx
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, LineString
 import matplotlib.pyplot as plt
 import numpy as np
 import carla
 import pickle
+from graph_creator.models import NodeInfo
 
-
-
-### TODO: We should create a pydantic model for the map graph.
-# We have to agree on the types beforehand, especially, lane_type, left_mark_type, right_mark_type, etc.
 
 class MapGraph:
     def __init__(self):
         self.graph = nx.MultiDiGraph()
-
-    # Function to create a polygon from lane boundaries
-    def _create_lane_polygon(self, left_boundary, right_boundary):
-        left_points = [(point.x, point.y) for point in left_boundary.waypoints]
-        right_points = [(point.x, point.y) for point in right_boundary.waypoints]
-        polygon_points = left_points + right_points[::-1]
-        return Polygon(polygon_points)
-
-    def _calculate_boundary_length(self, boundary):
-        """Calculate the length of a boundary by summing the distances between consecutive waypoints."""
-        length = 0.0
-        for i in range(len(boundary.waypoints) - 1):
-            p1 = boundary.waypoints[i]
-            p2 = boundary.waypoints[i + 1]
-            length += np.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
-        return length
 
     @classmethod
     def create_from_argoverse_map(cls, map):
@@ -37,22 +18,11 @@ class MapGraph:
 
         # Add nodes with attributes
         for lane_id, lane in map.vector_lane_segments.items():
-            lane_polygon = instance._create_lane_polygon(lane.left_lane_boundary, lane.right_lane_boundary)
-            left_length = instance._calculate_boundary_length(lane.left_lane_boundary)
-            right_length = instance._calculate_boundary_length(lane.right_lane_boundary)
-            avg_length = (left_length + right_length) / 2.0
-
-            G.add_node(
-                lane_id,
-                is_intersection=lane.is_intersection,
-                lane_type=lane.lane_type,
-                left_mark_type=lane.left_mark_type,
-                right_mark_type=lane.right_mark_type,
-                left_boundary=lane.left_lane_boundary,
-                right_boundary=lane.right_lane_boundary,
-                lane_polygon=lane_polygon,
-                length=avg_length,
-            )
+            # Create NodeInfo instance from the lane
+            node_info = NodeInfo.from_argoverse_lane(lane)
+            
+            # Add node with NodeInfo as attribute
+            G.add_node(lane_id, node_info=node_info)
 
         # Add edges for successors and predecessors (type 1)
         for lane_id, lane in map.vector_lane_segments.items():
@@ -170,7 +140,7 @@ class MapGraph:
 
     def visualize_graph(self, save_path=None):
         pos = {
-            node: (data["lane_polygon"].centroid.x, data["lane_polygon"].centroid.y)
+            node: (data["node_info"].lane_polygon.centroid.x, data["node_info"].lane_polygon.centroid.y)
             for node, data in self.graph.nodes(data=True)
         }
         labels = {node: node for node in self.graph.nodes()}
@@ -224,8 +194,6 @@ class MapGraph:
             plt.show()
 
     def store_graph_to_file(self, save_path=str):
-        # nx.write_graphml(self.graph, save_path)
-        # nx.write_gml(self.graph, save_path)
         with open(save_path, "wb") as file:
             pickle.dump(self.graph, file)
 
