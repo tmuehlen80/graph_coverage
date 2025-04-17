@@ -5,6 +5,14 @@ from tqdm import tqdm
 from typing import Dict, List, Tuple, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 import numpy as np
+from enum import Enum
+
+
+# define ENUM for actor types
+class ActorType(Enum):
+    VEHICLE = "VEHICLE"  # default
+    PEDESTRIAN = "PEDESTRIAN"
+    CYCLIST = "CYCLIST"  # maybe delete this
 
 
 class TrackData(BaseModel):
@@ -16,7 +24,7 @@ class TrackData(BaseModel):
     track_speed_lon_dict: Dict[str, List[float]] = Field(
         description="Dictionary mapping track IDs to lists of longitudinal speeds"
     )
-    track_actor_type_dict: Dict[str, str] = Field(description="Dictionary mapping track IDs to actor types.")
+    track_actor_type_dict: Dict[str, ActorType] = Field(description="Dictionary mapping track IDs to actor types.")
 
     @field_validator(
         "track_lane_dict",
@@ -24,7 +32,6 @@ class TrackData(BaseModel):
         "track_xyz_pos_dict",
         "track_speed_lon_dict",
     )
-
     @classmethod
     def validate_list_lengths(cls, v: Dict[str, List]) -> Dict[str, List]:
         if not v:  # Skip validation if dictionary is empty
@@ -54,7 +61,13 @@ class TrackData(BaseModel):
         speed_dict = self.track_speed_lon_dict
         actor_dict = self.track_actor_type_dict
         # Get all unique actors across all dictionaries
-        all_actors = set(lane_dict.keys()) | set(s_value_dict.keys()) | set(xyz_dict.keys()) | set(speed_dict.keys()) | set(actor_dict.keys())
+        all_actors = (
+            set(lane_dict.keys())
+            | set(s_value_dict.keys())
+            | set(xyz_dict.keys())
+            | set(speed_dict.keys())
+            | set(actor_dict.keys())
+        )
 
         # Check that all dictionaries have the same actors
         for actor in all_actors:
@@ -194,8 +207,14 @@ class ActorGraph:
             track_s_value_dict[track_id] = s_values
             track_xyz_pos_dict[track_id] = xyz_positions
             track_speed_lon_dict[track_id] = speeds
-            # Add actor type information
-            track_actor_type_dict[track_id] = track.object_type.value
+            # Add actor type information using ActorType enum and mapping
+            actor_type_str = track.object_type.value
+            if actor_type_str == "PEDESTRIAN":
+                track_actor_type_dict[track_id] = ActorType.PEDESTRIAN
+            elif actor_type_str == "CYCLIST": # If you want separate CYCLIST type later
+                 track_actor_type_dict[track_id] = ActorType.CYCLIST
+            else: # Default to VEHICLE for all other types
+                track_actor_type_dict[track_id] = ActorType.VEHICLE
         # Create and return the Pydantic model
         return TrackData(
             track_lane_dict=track_lane_dict,
@@ -331,9 +350,20 @@ class ActorGraph:
             xyz_coords = scenario[mask].actor_location_xyz.tolist()
             track_xyz_pos_dict[actor_id] = [Point(x, y, z) for x, y, z in xyz_coords]
             track_speed_lon_dict[actor_id] = scenario[mask].actor_speed_lon.tolist()
-            # Take the first entry from the actor_type list
-            actor_types = scenario[mask].actor_type.tolist()
-            track_actor_type_dict[actor_id] = actor_types[0] if actor_types else ""
+            # Take the first entry from the actor_type list and map to ActorType
+            actor_types_str_list = scenario[mask].actor_type.tolist()
+            if actor_types_str_list:
+                actor_type_str = actor_types_str_list[0].upper() # Convert to upper for consistency
+                if actor_type_str == "PEDESTRIAN": # Assuming Carla uses "PEDESTRIAN" string
+                    track_actor_type_dict[actor_id] = ActorType.PEDESTRIAN
+                # Add elif for CYCLIST if needed
+                # elif actor_type_str == "CYCLIST":
+                #     track_actor_type_dict[actor_id] = ActorType.CYCLIST
+                else: # Default to VEHICLE
+                    track_actor_type_dict[actor_id] = ActorType.VEHICLE
+            else:
+                 # Handle cases where actor type might be missing, default to VEHICLE or raise error
+                 track_actor_type_dict[actor_id] = ActorType.VEHICLE
         # Create and return the Pydantic model
         return TrackData(
             track_lane_dict=track_lane_dict,
@@ -367,21 +397,23 @@ class ActorGraph:
                         s=self.track_s_value_dict[track_id][t],
                         xyz=self.track_xyz_pos_dict[track_id][t],
                         lon_speed=self.track_speed_lon_dict[track_id][t],
-                        actor_type=self.track_actor_type_dict[track_id],  
+                        actor_type=self.track_actor_type_dict[track_id],
                     )
 
             # Add edges based on the conditions
             keys = list(self.track_lane_dict.keys())
             for i in range(len(keys) - 1):
                 track_id_A = keys[i]
-                lane_ids_A = [ None if lane_id is None else int(lane_id) for lane_id in self.track_lane_dict[keys[i]]]
-            
+                lane_ids_A = [None if lane_id is None else int(lane_id) for lane_id in self.track_lane_dict[keys[i]]]
+
                 if lane_ids_A[t] is None:
                     continue
 
                 for j in range(i + 1, len(keys)):
                     track_id_B = keys[j]
-                    lane_ids_B = [ None if lane_id is None else int(lane_id) for lane_id in self.track_lane_dict[keys[j]]]
+                    lane_ids_B = [
+                        None if lane_id is None else int(lane_id) for lane_id in self.track_lane_dict[keys[j]]
+                    ]
 
                     if lane_ids_B[t] is None:
                         continue
@@ -396,7 +428,6 @@ class ActorGraph:
                                 (self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t])
                                 < max_distance_lead_veh_m
                             ):
-                                # isn't this the wrong way around?
                                 G_t.add_edge(
                                     track_id_B,
                                     track_id_A,
@@ -412,7 +443,7 @@ class ActorGraph:
                                     - self.track_s_value_dict[track_id_A][t],
                                 )
 
-                        # second case: both on different, but following lanes:
+                        # second case: both in different, but following lanes:
                         if len(path) > 1 and all(
                             G_map.graph[u][v][0]["edge_type"] == "following" for u, v in zip(path[:-1], path[1:])
                         ):
@@ -434,6 +465,8 @@ class ActorGraph:
                                     edge_type="following_lead",
                                     path_length=path_length,
                                 )
+
+                        # TODO: PROBLEM: we are not checking i in relationt j,but not j to 1. We might miss a case here
 
                         # third case: on neighboring lanes, forward
                         if (
@@ -469,16 +502,36 @@ class ActorGraph:
                                     path_length=path_length,
                                 )
 
-
                         # fourth case: on opposite, directly next lane:
-                        if (sum([G_map.graph[u][v][0]['edge_type']  == 'opposite' for u, v in zip(path[:-1], path[1:])]) == 1) and (sum([G_map.graph[u][v][0]['edge_type']  == 'following' for u, v in zip(path[:-1], path[1:])] )  == len(path) - 2):
+                        # TODO: Marius has to double check this logic.
+                        if (
+                            sum([G_map.graph[u][v][0]["edge_type"] == "opposite" for u, v in zip(path[:-1], path[1:])])
+                            == 1
+                        ) and (
+                            sum([G_map.graph[u][v][0]["edge_type"] == "following" for u, v in zip(path[:-1], path[1:])])
+                            == len(path) - 2
+                        ):
                             # remove the opposite node, otherwise that stretch is counted twice. if there is something to check, than if this logic is correct.
                             # Taking -s from the other actor on the opposite direciton, as the s value should be in opposite direction as welll, hopefully..
-                            path_length = sum([G_map.graph.nodes[path[i]]['length'] for i in range(len(path) - 1) if G_map.graph[path[i]][path[i + 1]][0]['edge_type'] != 'opposite'])  + G_map.graph.nodes[path[-1]]['length'] - self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t]
-                            if path_length <  max_distance_opposite_m:
-                                G_t.add_edge(track_id_B, track_id_A, edge_type='opposite_vehicle', path_length = path_length)
-                                G_t.add_edge(track_id_A, track_id_B, edge_type='opposite_vehicle', path_length = path_length)
- 
+                            path_length = (
+                                sum(
+                                    [
+                                        G_map.graph.nodes[path[i]]["length"]
+                                        for i in range(len(path) - 1)
+                                        if G_map.graph[path[i]][path[i + 1]][0]["edge_type"] != "opposite"
+                                    ]
+                                )
+                                + G_map.graph.nodes[path[-1]]["length"]
+                                - self.track_s_value_dict[track_id_B][t]
+                                - self.track_s_value_dict[track_id_A][t]
+                            )
+                            if path_length < max_distance_opposite_m:
+                                G_t.add_edge(
+                                    track_id_B, track_id_A, edge_type="opposite_vehicle", path_length=path_length
+                                )
+                                G_t.add_edge(
+                                    track_id_A, track_id_B, edge_type="opposite_vehicle", path_length=path_length
+                                )
 
             timestep_graphs[self.timestamps[t]] = G_t
 
@@ -486,14 +539,16 @@ class ActorGraph:
 
         return timestep_graphs
 
-    def visualize_actor_graph(self, t_idx, comp_idx, use_map_pos = True, node_size = 1600, save_path=None, graph_or_component = 'graph'):
+    def visualize_actor_graph(
+        self, t_idx, comp_idx, use_map_pos=True, node_size=1600, save_path=None, graph_or_component="graph"
+    ):
 
-        if graph_or_component == 'graph':
+        if graph_or_component == "graph":
             G = self.actor_graphs[t_idx]
-        elif graph_or_component == 'component':
+        elif graph_or_component == "component":
             G = self.actor_components[t_idx][comp_idx]
 
-        #G = self.actor_graphs[timestep]
+        # G = self.actor_graphs[timestep]
         # not sure, if G is anyhow needed? Why not always use self.actor_graphs[timestep]?
         if use_map_pos:
             pos = {node: (G.nodes[node]["xyz"].x, G.nodes[node]["xyz"].y) for node in G.nodes}
@@ -567,7 +622,6 @@ class ActorGraph:
             plt.savefig(save_path)
         else:
             plt.show()
-
 
     def visualize_s_t_calculation(self, position: Point, lane_id: str, save_path: str = None):
         """
