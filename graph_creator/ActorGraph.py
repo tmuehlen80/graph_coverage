@@ -153,6 +153,7 @@ class ActorGraph:
         max_distance_opposite_veh_m=100,
         max_distance_neighbor_forward_m=50,
         max_distance_neighbor_backward_m=50,
+        delta_timestep_s=1.0,
     ):
         """
         Create an ActorGraph instance from an Argoverse scenario.
@@ -190,6 +191,7 @@ class ActorGraph:
             max_distance_neighbor_forward_m=max_distance_neighbor_forward_m,
             max_distance_neighbor_backward_m=max_distance_neighbor_backward_m,
             max_distance_opposite_m=max_distance_opposite_veh_m,
+            delta_timestep_s=delta_timestep_s,
         )
 
         return instance
