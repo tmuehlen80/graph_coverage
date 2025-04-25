@@ -305,13 +305,14 @@ class SubgraphExtractor:
                             # Remove isolated nodes
                             graph_copy.remove_nodes_from(list(nx.isolates(graph_copy)))
     
-    def visualize_subgraphs(self, output_dir: str = None, figsize: tuple = (10, 8)):
+    def visualize_subgraphs(self, output_dir: str = None, figsize: tuple = (10, 8), max_complete_graphs: int = 50):
         """
-        Visualize all subgraphs in the library.
+        Visualize all subgraphs in the library and complete graphs.
         
         Args:
             output_dir: Directory to save visualizations (None for display only)
             figsize: Figure size for each subplot
+            max_complete_graphs: Maximum number of complete graphs to plot
         """
         if not self.subgraph_library:
             print("No subgraphs to visualize. Run extract_subgraphs first.")
@@ -326,8 +327,8 @@ class SubgraphExtractor:
         grid_size = math.ceil(math.sqrt(n_subgraphs))
         
         # Create figure with subplots
-        fig, axes = plt.subplots(grid_size, grid_size, figsize=figsize)
-        fig.suptitle(f"Subgraph Library ({self.selection_strategy} strategy)", fontsize=16)
+        fig, axes = plt.subplots(grid_size, grid_size, figsize=(30, 30))
+        fig.suptitle(f"Subgraph Library ({self.selection_strategy} strategy)", fontsize=24)
         
         # Flatten axes for easier indexing
         if n_subgraphs > 1:
@@ -342,7 +343,7 @@ class SubgraphExtractor:
                 
                 # Draw the graph
                 pos = nx.spring_layout(sg)
-                nx.draw_networkx_nodes(sg, pos, ax=ax, node_size=300, node_color='lightblue')
+                nx.draw_networkx_nodes(sg, pos, ax=ax, node_size=800, node_color='lightblue')
                 
                 # Draw edges with colors based on edge_type
                 edge_colors = {}
@@ -351,30 +352,36 @@ class SubgraphExtractor:
                     if edge_type not in edge_colors:
                         edge_colors[edge_type] = len(edge_colors)
                 
-                # Create a colormap
-                color_list = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+                # Define specific colors for edge types
+                edge_type_colors = {
+                    'following_lead': 'blue',
+                    'neighbor_vehicle': 'forestgreen',
+                    'opposite_vehicle': 'orange',
+                    'lead_vehicle': 'red',
+                }
                 
                 # Draw edges by type
                 for edge_type, color_idx in edge_colors.items():
                     edges_of_type = [(u, v) for u, v, data in sg.edges(data=True) 
                                     if data.get('edge_type', 'default') == edge_type]
                     
+                    # Use specific color if defined, otherwise use red
+                    color = edge_type_colors.get(edge_type, 'gray')
                     nx.draw_networkx_edges(sg, pos, ax=ax, edgelist=edges_of_type, 
-                                          edge_color=color_list[color_idx % len(color_list)], 
+                                          edge_color=color, 
                                           width=2, arrowsize=15)
                 
-                nx.draw_networkx_labels(sg, pos, ax=ax)
+                nx.draw_networkx_labels(sg, pos, ax=ax, font_size=12)
                 
                 # Add legend for edge types if there are multiple types
                 if len(edge_colors) > 1:
-                    ax.legend([plt.Line2D([0], [0], color=color_list[idx % len(color_list)], lw=2) 
-                              for idx in range(len(edge_colors))],
-                             list(edge_colors.keys()),
+                    ax.legend([plt.Line2D([0], [0], color=color, lw=2) for color in edge_type_colors.values()],
+                             list(edge_type_colors.keys()),
                              loc='upper right')
                 
                 # Set title with frequency information
                 freq = self.subgraph_frequency.get(sg_id, 0)
-                ax.set_title(f"ID: {sg_id}, Freq: {freq}", fontsize=10)
+                ax.set_title(f"ID: {sg_id}, Freq: {freq}", fontsize=16)
                 ax.axis('off')
         
         # Hide unused subplots
@@ -385,7 +392,7 @@ class SubgraphExtractor:
         
         # Save or show
         if output_dir is not None:
-            plt.savefig(os.path.join(output_dir, 'subgraph_library.png'), dpi=300, bbox_inches='tight')
+            plt.savefig(os.path.join(output_dir, f'subgraph_library_{self.selection_strategy}.png'), dpi=300, bbox_inches='tight')
             
             # Also save individual subgraphs
             for sg_id, sg in self.subgraph_library.items():
@@ -401,32 +408,121 @@ class SubgraphExtractor:
                     if edge_type not in edge_colors:
                         edge_colors[edge_type] = len(edge_colors)
                 
+                # Define specific colors for edge types
+                edge_type_colors = {
+                    'following_lead': 'blue',
+                    'neighbor_vehicle': 'forestgreen',
+                    'opposite_vehicle': 'orange',
+                    'leading_vehicle': 'red',
+                }
+                
                 # Draw edges by type
                 for edge_type, color_idx in edge_colors.items():
                     edges_of_type = [(u, v) for u, v, data in sg.edges(data=True) 
                                     if data.get('edge_type', 'default') == edge_type]
                     
+                    # Use specific color if defined, otherwise use red
+                    color = edge_type_colors.get(edge_type, 'gray')
                     nx.draw_networkx_edges(sg, pos, edgelist=edges_of_type, 
-                                          edge_color=color_list[color_idx % len(color_list)], 
+                                          edge_color=color, 
                                           width=2, arrowsize=20)
                 
                 nx.draw_networkx_labels(sg, pos, font_size=12)
                 
                 # Add legend for edge types
                 if len(edge_colors) > 1:
-                    plt.legend([plt.Line2D([0], [0], color=color_list[idx % len(color_list)], lw=2) 
-                                for idx in range(len(edge_colors))],
-                               list(edge_colors.keys()),
+                    plt.legend([plt.Line2D([0], [0], color=color, lw=2) for color in edge_type_colors.values()],
+                               list(edge_type_colors.keys()),
                                loc='upper right')
                 
                 freq = self.subgraph_frequency.get(sg_id, 0)
                 plt.title(f"Subgraph ID: {sg_id}, Frequency: {freq}", fontsize=14)
                 plt.axis('off')
                 plt.tight_layout()
-                plt.savefig(os.path.join(output_dir, f'subgraph_{sg_id}.png'), dpi=300, bbox_inches='tight')
+                plt.savefig(os.path.join(output_dir, f'subgraph_{sg_id}_{self.selection_strategy}.png'), dpi=300, bbox_inches='tight')
                 plt.close()
         else:
             plt.show()
+        
+        plt.close()
+    
+    def _plot_complete_graphs(self, output_dir: str, max_graphs: int):
+        """
+        Plot complete graphs from the library.
+        
+        Args:
+            output_dir: Directory to save visualizations
+            max_graphs: Maximum number of graphs to plot
+        """
+        # Get all unique graphs from the library
+        unique_graphs = set()
+        for sg_id, sg in self.subgraph_library.items():
+            # Convert graph to a canonical form for comparison
+            graph_str = nx.to_edgelist(sg)
+            unique_graphs.add((sg_id, sg, graph_str))
+        
+        # Sort by frequency
+        sorted_graphs = sorted(unique_graphs, 
+                             key=lambda x: self.subgraph_frequency.get(x[0], 0), 
+                             reverse=True)
+        
+        # Take only the top max_graphs
+        top_graphs = sorted_graphs[:max_graphs]
+        
+        # Define specific colors for edge types
+        edge_type_colors = {
+            'following_lead': 'blue',
+            'neighbor_vehicle': 'forestgreen',
+            'opposite_vehicle': 'orange',
+            'leading_vehicle': 'red'
+        }
+        
+        # Plot each graph individually
+        for sg_id, sg, _ in top_graphs:
+            plt.figure(figsize=(20, 20))
+            
+            # Draw the graph
+            pos = nx.spring_layout(sg)
+            nx.draw_networkx_nodes(sg, pos, node_size=1000, node_color='lightblue')
+            
+            # Draw edges with specific colors
+            for edge_type in edge_type_colors:
+                edges_of_type = [(u, v) for u, v, data in sg.edges(data=True) 
+                                if data.get('edge_type', 'default') == edge_type]
+                if edges_of_type:
+                    nx.draw_networkx_edges(sg, pos, edgelist=edges_of_type,
+                                          edge_color=edge_type_colors[edge_type],
+                                          width=3, arrowsize=20)
+            
+            # Draw remaining edges in gray
+            remaining_edges = [(u, v) for u, v, data in sg.edges(data=True)
+                             if data.get('edge_type', 'default') not in edge_type_colors]
+            if remaining_edges:
+                nx.draw_networkx_edges(sg, pos, edgelist=remaining_edges,
+                                      edge_color='gray', width=3, arrowsize=20)
+            
+            nx.draw_networkx_labels(sg, pos, font_size=16)
+            
+            # Add legend
+            legend_elements = []
+            for edge_type, color in edge_type_colors.items():
+                legend_elements.append(plt.Line2D([0], [0], color=color, lw=2, label=edge_type))
+            legend_elements.append(plt.Line2D([0], [0], color='gray', lw=2, label='other'))
+            plt.legend(handles=legend_elements, loc='upper right', fontsize=16)
+            
+            # Set title with frequency information
+            freq = self.subgraph_frequency.get(sg_id, 0)
+            plt.title(f"Complete Graph ID: {sg_id}, Frequency: {freq}", fontsize=24)
+            plt.axis('off')
+            
+            # Save the figure
+            if output_dir is not None:
+                plt.savefig(os.path.join(output_dir, f'complete_graph_{sg_id}.png'), 
+                          dpi=300, bbox_inches='tight')
+            else:
+                plt.show()
+            
+            plt.close()
     
     def print_subgraph_properties(self):
         """Print properties of each subgraph in the library"""

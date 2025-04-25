@@ -480,84 +480,103 @@ class ActorGraph:
         return self.actor_graphs
 
     def visualize_actor_graph(
-        self, t_idx, comp_idx, use_map_pos=True, node_size=1600, save_path=None, graph_or_component="graph"
+        self, t_idx, comp_idx, use_map_pos=True, node_size=1600, save_path=None, 
+        graph_or_component="graph", scenario_id=None
     ):
-
         if graph_or_component == "graph":
             G = self.actor_graphs[t_idx]
         elif graph_or_component == "component":
             G = self.actor_components[t_idx][comp_idx]
 
+        # Calculate number of actors and scale figure size accordingly
+        num_actors = len(G.nodes())
+        base_size = 6  # Base size for small graphs
+        scale_factor = max(1, num_actors / 5)  # Scale up for more than 5 actors
+        fig_size = base_size * scale_factor
+        
         if use_map_pos:
             pos = {node: (G.nodes[node]['xyz'].x, G.nodes[node]['xyz'].y) for node in G.nodes}
         else:
             pos = nx.spring_layout(G, scale=1.0, k=0.1)
-        # node_size = 1600
-        # Why remove lonely actors?
-        # -> There are many of them on argopverse data.
+        
+        # Scale node size with figure size
+        scaled_node_size = node_size * scale_factor
+        
         labels = {node: node for node in G.nodes() if G.degree(node) > 0}
         nodes_with_edges = [node for node in G.nodes() if G.degree(node) > 0]
 
-        plt.figure(figsize=(6, 6))
-        nx.draw_networkx_nodes(G, pos, nodelist=nodes_with_edges, node_size=node_size)
-        nx.draw_networkx_labels(G, pos, labels=labels, font_size=10, font_color="black")
+        plt.figure(figsize=(fig_size, fig_size))
+        nx.draw_networkx_nodes(G, pos, nodelist=nodes_with_edges, node_size=scaled_node_size)
+        nx.draw_networkx_labels(G, pos, labels=labels, font_size=10 * scale_factor, font_color="black")
 
         # Draw edges with different styles based on edge type
         edge_type_following_lead = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "following_lead"]
-        # edge_type_leading_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d['edge_type'] == 'leading_vehicle']
-        # I think with the distance based approach, we don't need to distinguish between direct and general neighbor?
-        # TODO; yes
         edge_type_direct_neighbor_vehicle = [
             (u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "direct_neighbor_vehicle"
         ]
         edge_type_neighbor_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "neighbor_vehicle"]
         edge_type_opposite_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "opposite_vehicle"]
 
+        # Scale edge width with figure size
+        edge_width = 2 * scale_factor
+        
         nx.draw_networkx_edges(
             G,
             pos,
             edgelist=edge_type_following_lead,
-            width=2,
+            width=edge_width,
             edge_color="blue",
             arrows=True,
-            node_size=node_size,
+            node_size=scaled_node_size,
             label="following_lead",
         )
-        # nx.draw_networkx_edges(G, pos, edgelist=edge_type_leading_vehicle, width=2, edge_color='cyan', label='leading_vehicle')
         nx.draw_networkx_edges(
             G,
             pos,
             edgelist=edge_type_direct_neighbor_vehicle,
-            width=2,
-            edge_color="springgreen",
+            width=edge_width,
+            edge_color="red",
             arrows=True,
-            node_size=node_size,
-            label="direct_neighbor_vehicle",
+            node_size=scaled_node_size,
+            label="leading_vehicle",
         )
         nx.draw_networkx_edges(
             G,
             pos,
             edgelist=edge_type_neighbor_vehicle,
-            width=2,
+            width=edge_width,
             edge_color="forestgreen",
             arrows=True,
-            node_size=node_size,
+            node_size=scaled_node_size,
             label="neighbor_vehicle",
         )
         nx.draw_networkx_edges(
             G,
             pos,
             edgelist=edge_type_opposite_vehicle,
-            width=2,
+            width=edge_width,
             edge_color="orange",
             arrows=True,
-            node_size=node_size,
+            node_size=scaled_node_size,
             label="opposite_vehicle",
         )
+        # Add legend with custom colors and labels
+        legend_elements = [
+            plt.Line2D([0], [0], color='blue', label='following_lead'), 
+            plt.Line2D([0], [0], color='red', label='leading_vehicle'),
+            plt.Line2D([0], [0], color='forestgreen', label='neighbor_vehicle'), 
+            plt.Line2D([0], [0], color='orange', label='opposite_vehicle')
+        ]
+        plt.legend(handles=legend_elements, loc='upper right', fontsize=10 * scale_factor)
 
-        plt.legend()
+        # Add title with scenario_id and timestamp information
+        title = f"Timestamp: {t_idx:.2f}s"
+        if scenario_id is not None:
+            title = f"Scenario: {scenario_id}, {title}"
+        plt.title(title, fontsize=12 * scale_factor)
+
         if save_path:
-            plt.savefig(save_path)
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
         else:
             plt.show()
 
