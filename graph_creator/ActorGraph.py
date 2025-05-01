@@ -358,7 +358,7 @@ class ActorGraph:
                     if lane_ids_B[t] is None:
                         continue
 
-                    # Check for "following_lead" and "leading_vehicle"
+                    # Check for "following_lead" and "leading_vehicle" in same lane
                     if nx.has_path(G_map.graph, lane_ids_A[t], lane_ids_B[t]):
 
                         path = nx.shortest_path(G_map.graph, lane_ids_A[t], lane_ids_B[t], weight=None)
@@ -408,6 +408,8 @@ class ActorGraph:
 
                         # TODO: PROBLEM: we are not checking i in relationt j,but not j to 1. We might miss a case here
 
+                        if track_id_A == "188747" and track_id_B == "188849":
+                            print(f"path: {path}")
                         # third case: on neighboring lanes, forward
                         if (
                             sum([G_map.graph[u][v][0]["edge_type"] == "neighbor" for u, v in zip(path[:-1], path[1:])])

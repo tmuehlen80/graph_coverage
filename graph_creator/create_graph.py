@@ -48,13 +48,13 @@ def plot_argoverse_map(map, save_path=None):
         fig.show()
 
 
-def plot_scene_at_timestep(scenario, map, timestep, save_path=None, lane_label=False):
-    fig = plt.figure(figsize=(10, 10))
+def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=None, lane_label=False):
+    fig = plt.figure(figsize=(20, 20))
     ax = fig.add_subplot()
 
     for _, ls in map.vector_lane_segments.items():
-        vector_plotting_utils.draw_polygon_mpl(ax, ls.polygon_boundary, color="g", linewidth=0.5)
-        vector_plotting_utils.plot_polygon_patch_mpl(ls.polygon_boundary, ax, color="g", alpha=0.2)
+        vector_plotting_utils.draw_polygon_mpl(ax, ls.polygon_boundary, color="grey", linewidth=0.5)
+        vector_plotting_utils.plot_polygon_patch_mpl(ls.polygon_boundary, ax, color="grey", alpha=0.2)
 
         if lane_label:
             # Write the label ID in the middle of each polygon
@@ -64,7 +64,7 @@ def plot_scene_at_timestep(scenario, map, timestep, save_path=None, lane_label=F
                 centroid.x,
                 centroid.y,
                 str(ls.id),
-                fontsize=8,
+                fontsize=5,
                 ha="center",
                 va="center",
                 color="black",
@@ -72,8 +72,8 @@ def plot_scene_at_timestep(scenario, map, timestep, save_path=None, lane_label=F
 
     # Plot all pedestrian crossings
     for _, pc in map.vector_pedestrian_crossings.items():
-        vector_plotting_utils.draw_polygon_mpl(ax, pc.polygon, color="r", linewidth=0.5)
-        vector_plotting_utils.plot_polygon_patch_mpl(pc.polygon, ax, color="r", alpha=0.2)
+        vector_plotting_utils.draw_polygon_mpl(ax, pc.polygon, color="brown", linewidth=0.5)
+        vector_plotting_utils.plot_polygon_patch_mpl(pc.polygon, ax, color="brown", alpha=0.2)
 
     # Plot the position of each actor at the given timestep
     for track in scenario.tracks:
@@ -92,6 +92,52 @@ def plot_scene_at_timestep(scenario, map, timestep, save_path=None, lane_label=F
                 color="blue",
             )
 
+    # If actor_graph is provided, draw the edges
+    if actor_graph is not None:
+        # Find the closest timestep in the actor graph
+        closest_timestep = min(actor_graph.actor_graphs.keys(), key=lambda x: abs(x - timestep))
+        G = actor_graph.actor_graphs[closest_timestep]
+
+        # Draw edges with different styles based on edge type
+        edge_type_following_lead = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "following_lead"]
+        edge_type_leading_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "leading_vehicle"]
+        edge_type_neighbor_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "neighbor_vehicle"]
+        edge_type_opposite_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "opposite_vehicle"]
+
+        # Draw edges with arrows
+        for u, v in edge_type_following_lead:
+            pos_u = (G.nodes[u]['xyz'].x, G.nodes[u]['xyz'].y)
+            pos_v = (G.nodes[v]['xyz'].x, G.nodes[v]['xyz'].y)
+            ax.annotate("", xy=pos_v, xytext=pos_u,
+                       arrowprops=dict(arrowstyle="->", color='blue', linewidth=1.5, alpha=0.7))
+
+        for u, v in edge_type_leading_vehicle:
+            pos_u = (G.nodes[u]['xyz'].x, G.nodes[u]['xyz'].y)
+            pos_v = (G.nodes[v]['xyz'].x, G.nodes[v]['xyz'].y)
+            ax.annotate("", xy=pos_v, xytext=pos_u,
+                       arrowprops=dict(arrowstyle="->", color='red', linewidth=1.5, alpha=0.7))
+
+        for u, v in edge_type_neighbor_vehicle:
+            pos_u = (G.nodes[u]['xyz'].x, G.nodes[u]['xyz'].y)
+            pos_v = (G.nodes[v]['xyz'].x, G.nodes[v]['xyz'].y)
+            ax.annotate("", xy=pos_v, xytext=pos_u,
+                       arrowprops=dict(arrowstyle="->", color='forestgreen', linewidth=1.5, alpha=0.7))
+
+        for u, v in edge_type_opposite_vehicle:
+            pos_u = (G.nodes[u]['xyz'].x, G.nodes[u]['xyz'].y)
+            pos_v = (G.nodes[v]['xyz'].x, G.nodes[v]['xyz'].y)
+            ax.annotate("", xy=pos_v, xytext=pos_u,
+                       arrowprops=dict(arrowstyle="->", color='orange', linewidth=1.5, alpha=0.7))
+
+        # Add legend
+        legend_elements = [
+            plt.Line2D([0], [0], color='blue', label='following_lead'),
+            plt.Line2D([0], [0], color='red', label='leading_vehicle'),
+            plt.Line2D([0], [0], color='forestgreen', label='neighbor_vehicle'),
+            plt.Line2D([0], [0], color='orange', label='opposite_vehicle')
+        ]
+        ax.legend(handles=legend_elements, loc='upper right')
+
     if save_path:
         fig.savefig(save_path)
     else:
@@ -101,10 +147,10 @@ def plot_scene_at_timestep(scenario, map, timestep, save_path=None, lane_label=F
 if __name__ == "__main__":
     # path to where the logs live
     repo_root = Path(__file__).parents[1]
-    dataroot = repo_root / "argoverse_data" / "motion-forecasting" / "train"
+    dataroot = repo_root / "argoverse_data" / "train"
 
     # unique log identifier
-    log_id = "54a79237-9df8-46bd-aa87-6aa5b02cbb66"
+    log_id = "2c9bc3ec-979e-4873-bd19-13ff38c22cdb"
 
     scenario, map = get_scenario_data(dataroot, log_id)
     G_map = MapGraph.create_from_argoverse_map(map)
