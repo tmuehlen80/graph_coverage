@@ -71,6 +71,51 @@ class MapGraph:
         """map has to be something like
         world = client.get_world()
         map = world.get_map()
+        using a similar strategy as the global route planer:
+        https://github.com/carla-simulator/carla/blob/master/PythonAPI/carla/agents/navigation/global_route_planner.py#L118
+        """
+        instance = cls()
+        G = instance.graph
+        topo = map.get_topology()
+
+        for item in topo:
+            G.add_edge(
+                f"{item[0].road_id}_{item[0].lane_id}",
+                f"{item[1].road_id}_{item[1].lane_id}",
+                edge_type="following",
+            )
+            if item[0].get_right_lane():
+                if item[0].get_right_lane().lane_type == carla.libcarla.LaneType.Driving:
+                    G.add_edge(
+                        f"{item[0].road_id}_{item[0].lane_id}",
+                        f"{item[0].get_right_lane().road_id}_{item[0].get_right_lane().lane_id}",
+                        edge_type="neighbor",
+                    )
+            if item[0].get_left_lane():
+                if item[0].get_left_lane().lane_type == carla.libcarla.LaneType.Driving:
+                    if np.sign(item[0].lane_id) == np.sign(item[0].get_left_lane().lane_id):
+                        G.add_edge(
+                            f"{item[0].road_id}_{item[0].lane_id}",
+                            f"{item[0].get_left_lane().road_id}_{item[0].get_left_lane().lane_id}",
+                            edge_type="neighbor",
+                        )
+                    else:
+                        G.add_edge(
+                            f"{item[0].road_id}_{item[0].lane_id}",
+                            f"{item[0].get_left_lane().road_id}_{item[0].get_left_lane().lane_id}",
+                            edge_type="opposite",
+                        )
+
+            node_info = NodeInfo.from_carla_lane(item)
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]["node_info"] = node_info
+
+        return instance
+
+    @classmethod
+    def create_from_carla_map_wo_nodeinfo(cls, map):
+        """map has to be something like
+        world = client.get_world()
+        map = world.get_map()
 
         using a similar strategy as the global route planer:
         https://github.com/carla-simulator/carla/blob/master/PythonAPI/carla/agents/navigation/global_route_planner.py#L118

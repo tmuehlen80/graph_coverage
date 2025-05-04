@@ -3,6 +3,10 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator, model_valida
 from shapely.geometry import Polygon, LineString, Point
 import numpy as np
 from enum import Enum
+import carla
+
+def _to_2d(location):
+    return (location.x, location.y)
 
 class NodeInfo(BaseModel):
     """Pydantic model for node information in the graph."""
@@ -12,8 +16,8 @@ class NodeInfo(BaseModel):
     is_intersection: bool = Field(..., description="Whether the node represents an intersection")
     length: float = Field(..., description="Length of the lane in meters")
     lane_polygon: Polygon = Field(..., description="Polygon representing the lane area")
-    left_boundary: LineString = Field(..., description="Left boundary of the lane as a polyline")
-    right_boundary: LineString = Field(..., description="Right boundary of the lane as a polyline")
+    left_boundary: LineString = Field(None, description="Left boundary of the lane as a polyline")
+    right_boundary: LineString = Field(None, description="Right boundary of the lane as a polyline")
 
     @staticmethod
     def _create_lane_polygon(left_boundary, right_boundary):
@@ -79,7 +83,34 @@ class NodeInfo(BaseModel):
             NodeInfo instance with the lane information
         """
         # TODO @Thomas
-        return None 
+        wps = lane[0].next_until_lane_end(0.25)
+        lane_length = sum(
+            [wps[i].transform.location.distance(wps[i + 1].transform.location) for i in range(len(wps) - 1)]
+        )
+        # Create lane polygon
+        forward_vector = lane[0].transform.get_forward_vector()
+        right_vector = carla.Vector3D(-forward_vector.y, forward_vector.x, 0)  # Perpendicular to forward
+        # Compute lane width
+        lane_width = lane[0].lane_width
+        # Compute boundary points
+        left_boundary_start = lane[0].transform.location + right_vector * (lane_width / 2.0)
+        right_boundary_start = lane[0].transform.location - right_vector * (lane_width / 2.0)
+        left_boundary_end = lane[1].transform.location + right_vector * (lane_width / 2.0)
+        right_boundary_end = lane[1].transform.location - right_vector * (lane_width / 2.0)
+        lane_polygon = Polygon(
+            [
+                _to_2d(left_boundary_start),
+                _to_2d(left_boundary_end),
+                _to_2d(right_boundary_end),
+                _to_2d(right_boundary_start),
+            ]
+        )
+
+        return cls(lane_id = F"{lane[0].road_id}_{lane[0].lane_id}",
+                   is_intersection = lane[0].is_intersection,
+                   length = lane_length,
+                   lane_polygon = lane_polygon
+                   )
 
 class ActorType(Enum):
     VEHICLE = "VEHICLE"  # default
