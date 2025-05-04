@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from typing import Dict, List, Tuple, Optional
 import numpy as np
-from models import TrackData, ActorType
+from graph_creator.models import TrackData, ActorType
 
 
 class ActorGraph:
@@ -275,12 +275,9 @@ class ActorGraph:
             actor_types_str_list = scenario[mask].actor_type.tolist()
             if actor_types_str_list:
                 actor_type_str = actor_types_str_list[0].upper() # Convert to upper for consistency
-                if actor_type_str == "PEDESTRIAN": # Assuming Carla uses "PEDESTRIAN" string
+                if actor_type_str.startswith("WALKER"): # Assuming Carla uses "PEDESTRIAN" string
                     track_actor_type_dict[actor_id] = ActorType.PEDESTRIAN
-                # Add elif for CYCLIST if needed
-                # elif actor_type_str == "CYCLIST":
-                #     track_actor_type_dict[actor_id] = ActorType.CYCLIST
-                else: # Default to VEHICLE
+                elif actor_type_str.startswith("VEHICLE"): # 
                     track_actor_type_dict[actor_id] = ActorType.VEHICLE
             else:
                  # Handle cases where actor type might be missing, default to VEHICLE or raise error
