@@ -12,6 +12,7 @@ AdditionalMaps_0.9.15/*
 *.fls
 *.out
 *.synctex.gz
+plots/* 
 
 argoverse_data
 

@@ -21,28 +21,28 @@ class MapGraph:
             # Create NodeInfo instance from the lane
             node_info = NodeInfo.from_argoverse_lane(lane)
             
-            # Add node with NodeInfo as attribute
-            G.add_node(lane_id, node_info=node_info)
+            # Add node with NodeInfo as attribute, ensuring lane_id is string
+            G.add_node(str(lane_id), node_info=node_info)
 
         # Add edges for successors and predecessors (type 1)
         for lane_id, lane in map.vector_lane_segments.items():
             for successor_id in lane.successors:
-                if successor_id in G:
-                    G.add_edge(lane_id, successor_id, edge_type="following")
+                if str(successor_id) in G:
+                    G.add_edge(str(lane_id), str(successor_id), edge_type="following")
             for predecessor_id in lane.predecessors:
-                if predecessor_id in G:
-                    G.add_edge(predecessor_id, lane_id, edge_type="following")
+                if str(predecessor_id) in G:
+                    G.add_edge(str(predecessor_id), str(lane_id), edge_type="following")
 
         # Add edges for neighboring lanes (type 2)
         for lane_id, lane in map.vector_lane_segments.items():
             if lane.left_neighbor_id is not None:
-                if lane.left_neighbor_id in G:
-                    G.add_edge(lane_id, lane.left_neighbor_id, edge_type="neighbor")
-                    G.add_edge(lane.left_neighbor_id, lane_id, edge_type="neighbor")
+                if str(lane.left_neighbor_id) in G:
+                    G.add_edge(str(lane_id), str(lane.left_neighbor_id), edge_type="neighbor")
+                    G.add_edge(str(lane.left_neighbor_id), str(lane_id), edge_type="neighbor")
             if lane.right_neighbor_id is not None:
-                if lane.right_neighbor_id in G:
-                    G.add_edge(lane_id, lane.right_neighbor_id, edge_type="neighbor")
-                    G.add_edge(lane.right_neighbor_id, lane_id, edge_type="neighbor")
+                if str(lane.right_neighbor_id) in G:
+                    G.add_edge(str(lane_id), str(lane.right_neighbor_id), edge_type="neighbor")
+                    G.add_edge(str(lane.right_neighbor_id), str(lane_id), edge_type="neighbor")
 
         # Rename neighboring lanes from lanes in opposite direction by looking for loops.
         edges_opposite = []
