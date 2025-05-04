@@ -67,6 +67,77 @@ class MapGraph:
         return (location.x, location.y)
 
     @classmethod
+    def create_from_carla_map_nodeinfo(cls, map):
+        """map has to be something like
+        world = client.get_world()
+        map = world.get_map()
+
+        using a similar strategy as the global route planer:
+        https://github.com/carla-simulator/carla/blob/master/PythonAPI/carla/agents/navigation/global_route_planner.py#L118
+
+        """
+        instance = cls()
+        G = instance.graph
+        topo = map.get_topology()
+
+        for item in topo:
+            G.add_edge(
+                f"{item[0].road_id}_{item[0].lane_id}",
+                f"{item[1].road_id}_{item[1].lane_id}",
+                edge_type="following",
+            )
+            if item[0].get_right_lane():
+                if item[0].get_right_lane().lane_type == carla.libcarla.LaneType.Driving:
+                    G.add_edge(
+                        f"{item[0].road_id}_{item[0].lane_id}",
+                        f"{item[0].get_right_lane().road_id}_{item[0].get_right_lane().lane_id}",
+                        edge_type="neighbor",
+                    )
+            if item[0].get_left_lane():
+                if item[0].get_left_lane().lane_type == carla.libcarla.LaneType.Driving:
+                    if np.sign(item[0].lane_id) == np.sign(item[0].get_left_lane().lane_id):
+                        G.add_edge(
+                            f"{item[0].road_id}_{item[0].lane_id}",
+                            f"{item[0].get_left_lane().road_id}_{item[0].get_left_lane().lane_id}",
+                            edge_type="neighbor",
+                        )
+                    else:
+                        G.add_edge(
+                            f"{item[0].road_id}_{item[0].lane_id}",
+                            f"{item[0].get_left_lane().road_id}_{item[0].get_left_lane().lane_id}",
+                            edge_type="opposite",
+                        )
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]["lane_type"] = str(item[0].lane_type)
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]["is_intersection"] = item[0].is_intersection
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]["left_mark_type"] = str(item[0].left_lane_marking.type)
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]["right_mark_type"] = str(item[0].right_lane_marking.type)
+            wps = item[0].next_until_lane_end(0.25)
+            lane_length = sum(
+                [wps[i].transform.location.distance(wps[i + 1].transform.location) for i in range(len(wps) - 1)]
+            )
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]["length"] = lane_length
+            # Create lane polygon
+            forward_vector = item[0].transform.get_forward_vector()
+            right_vector = carla.Vector3D(-forward_vector.y, forward_vector.x, 0)  # Perpendicular to forward
+            # Compute lane width
+            lane_width = item[0].lane_width
+            # Compute boundary points
+            left_boundary_start = item[0].transform.location + right_vector * (lane_width / 2.0)
+            right_boundary_start = item[0].transform.location - right_vector * (lane_width / 2.0)
+            left_boundary_end = item[1].transform.location + right_vector * (lane_width / 2.0)
+            right_boundary_end = item[1].transform.location - right_vector * (lane_width / 2.0)
+            lane_polygon = Polygon(
+                [
+                    instance._to_2d(left_boundary_start),
+                    instance._to_2d(left_boundary_end),
+                    instance._to_2d(right_boundary_end),
+                    instance._to_2d(right_boundary_start),
+                ]
+            )
+            G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]["lane_polygon"] = lane_polygon
+
+        return instance
+
     def create_from_carla_map(cls, map):
         """map has to be something like
         world = client.get_world()
@@ -137,6 +208,7 @@ class MapGraph:
             G.nodes[f"{item[0].road_id}_{item[0].lane_id}"]["lane_polygon"] = lane_polygon
 
         return instance
+
 
     def visualize_graph(self, save_path=None):
         pos = {

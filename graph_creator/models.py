@@ -8,7 +8,7 @@ class NodeInfo(BaseModel):
     """Pydantic model for node information in the graph."""
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
-    lane_id: int = Field(..., description="Unique identifier for the lane")
+    lane_id: str = Field(..., description="Unique identifier for the lane")
     is_intersection: bool = Field(..., description="Whether the node represents an intersection")
     length: float = Field(..., description="Length of the lane in meters")
     lane_polygon: Polygon = Field(..., description="Polygon representing the lane area")
