@@ -51,9 +51,8 @@ class ActorGraph:
         t: lateral distance from center line (positive to the left)
         """
         # Get lane boundaries from graph
-        lane_id = int(lane_id_str)
-        left_boundary = self.G_map.graph.nodes[lane_id]["node_info"].left_boundary
-        right_boundary = self.G_map.graph.nodes[lane_id]["node_info"].right_boundary
+        left_boundary = self.G_map.graph.nodes[lane_id_str]["node_info"].left_boundary
+        right_boundary = self.G_map.graph.nodes[lane_id_str]["node_info"].right_boundary
 
         # Get first and last points of each boundary using .coords
         left_coords = list(left_boundary.coords)
@@ -344,16 +343,14 @@ class ActorGraph:
             keys = list(self.track_lane_dict.keys())
             for i in range(len(keys) - 1):
                 track_id_A = keys[i]
-                lane_ids_A = [None if lane_id is None else int(lane_id) for lane_id in self.track_lane_dict[keys[i]]]
+                lane_ids_A = self.track_lane_dict[keys[i]]
 
                 if lane_ids_A[t] is None:
                     continue
 
                 for j in range(i + 1, len(keys)):
                     track_id_B = keys[j]
-                    lane_ids_B = [
-                        None if lane_id is None else int(lane_id) for lane_id in self.track_lane_dict[keys[j]]
-                    ]
+                    lane_ids_B = self.track_lane_dict[keys[j]]
 
                     if lane_ids_B[t] is None:
                         continue
@@ -592,8 +589,8 @@ class ActorGraph:
             save_path: Optional path to save the plot
         """
         # Get lane boundaries from graph
-        left_boundary = self.G_map.graph.nodes[int(lane_id)]["node_info"].left_boundary
-        right_boundary = self.G_map.graph.nodes[int(lane_id)]["node_info"].right_boundary
+        left_boundary = self.G_map.graph.nodes[lane_id]["node_info"].left_boundary
+        right_boundary = self.G_map.graph.nodes[lane_id]["node_info"].right_boundary
 
         # Get first and last points of each boundary using .coords
         left_coords = list(left_boundary.coords)
