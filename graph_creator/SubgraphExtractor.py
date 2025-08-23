@@ -4,8 +4,9 @@ import copy
 from collections import Counter
 from typing import Dict, List, Callable, Set, Tuple, Any
 import networkx.algorithms.isomorphism as iso
-import math
 import os
+import math
+from functools import lru_cache
 
 class SubgraphExtractor:
     """
@@ -49,7 +50,9 @@ class SubgraphExtractor:
         
         self.subgraph_library = {}  # Maps subgraph ID to subgraph
         self.subgraph_frequency = {}  # Maps subgraph ID to frequency
-        
+    
+
+    
     def set_selection_strategy(self, strategy: str):
         """
         Set the strategy for selecting subgraphs.
@@ -109,9 +112,32 @@ class SubgraphExtractor:
                       reverse=True)
     
     def _find_all_connected_subgraphs(self, graph: nx.DiGraph) -> List[nx.DiGraph]:
-        """Find all connected subgraphs of the given graph within size constraints"""
+        """
+        Find all connected subgraphs of the given graph within size constraints.
+        
+        This method uses a shrink algorithm that starts with the full connected component
+        and systematically removes edges while maintaining connectivity.
+        
+        The algorithm:
+        1. Start with each connected component
+        2. If component is within size limits, add it
+        3. If component is too large, shrink it by removing edges systematically
+        4. Use LRU cache to avoid processing the same subgraph multiple times
+        
+        This approach is much more efficient and avoids duplicate processing.
+        """
+        # Use cached version with local processed_hashes
+        local_processed_hashes = set()
+        return self._find_all_connected_subgraphs_cached(graph, local_processed_hashes)
+    
+    def _find_all_connected_subgraphs_cached(self, graph: nx.DiGraph, processed_hashes: set) -> List[nx.DiGraph]:
+        """
+        Cached version of finding all connected subgraphs.
+        Uses shared processed_hashes set for caching across multiple calls.
+        """
         subgraphs = []
         
+        # Process each connected component
         for component in nx.weakly_connected_components(graph):
             component_graph = graph.subgraph(component).copy()
             
@@ -122,28 +148,145 @@ class SubgraphExtractor:
             # If component is within size limits, add it
             if self.max_subgraph_size is None or len(component) <= self.max_subgraph_size:
                 subgraphs.append(component_graph)
-                
-            # Find all connected subgraphs of appropriate size
-            # This is a simplified approach - for very large graphs, this could be optimized
-            if self.max_subgraph_size is not None and len(component) > self.max_subgraph_size:
-                for k in range(self.min_subgraph_size, min(len(component), self.max_subgraph_size) + 1):
-                    for nodes in nx.generators.subset.combinations(component, k):
-                        subg = graph.subgraph(nodes).copy()
-                        if nx.is_weakly_connected(subg) and subg.number_of_edges() > 0:
-                            subgraphs.append(subg)
+            else:
+                # Component is too large, shrink it systematically
+                smaller_subgraphs = self._shrink_component(component_graph, processed_hashes)
+                subgraphs.extend(smaller_subgraphs)
         
         return subgraphs
+    
+
+    
+    def _shrink_component(self, component_graph: nx.DiGraph, processed_hashes: set) -> List[nx.DiGraph]:
+        """
+        Shrink a component by systematically removing edges while maintaining connectivity.
+        Uses LRU cache to avoid processing the same subgraph multiple times.
+        """
+        subgraphs = []
+        
+        # Start with the full component
+        self._shrink_recursive(component_graph, processed_hashes, subgraphs)
+        
+        return subgraphs
+    
+    def _shrink_recursive(self, graph: nx.DiGraph, processed_hashes: set, subgraphs: List[nx.DiGraph]):
+        """
+        Recursive shrinking algorithm with manual caching using processed_hashes.
+        """
+        # Create hash of current graph
+        graph_hash = self._graph_to_hashable(graph)
+        
+        # Check if we've already processed this graph (manual cache)
+        if graph_hash in processed_hashes:
+            return
+        
+        # Add to processed set
+        processed_hashes.add(graph_hash)
+        
+        # Check if current graph is valid
+        if (graph.number_of_nodes() >= self.min_subgraph_size and 
+            graph.number_of_nodes() <= self.max_subgraph_size and
+            nx.is_weakly_connected(graph) and graph.number_of_edges() > 0):
+            subgraphs.append(graph.copy())
+        
+        # If graph is still too large, try removing edges
+        if graph.number_of_nodes() > self.min_subgraph_size:
+            edges = list(graph.edges())
+            
+            for edge in edges:
+                # Create a copy and remove the edge
+                new_graph = graph.copy()
+                new_graph.remove_edge(*edge)
+                
+                # Check if still connected
+                if nx.is_weakly_connected(new_graph):
+                    # Recursively process the smaller graph
+                    self._shrink_recursive(new_graph, processed_hashes, subgraphs)
+    
+    def _save_graph_visualization(self, graph: nx.DiGraph, filename: str, output_dir: str = "graph_visualizations"):
+        """
+        Save a visualization of the given graph.
+        
+        Args:
+            graph: The graph to visualize
+            filename: Base filename for the saved image
+            output_dir: Directory to save the visualization
+        """
+        # Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Create figure
+        plt.figure(figsize=(12, 10))
+        
+        # Draw the graph
+        pos = nx.spring_layout(graph, k=1, iterations=50)
+        
+        # Draw nodes
+        nx.draw_networkx_nodes(graph, pos, node_size=800, node_color='lightblue', alpha=0.8)
+        
+        # Draw edges with colors based on edge_type
+        edge_colors = {}
+        for u, v, data in graph.edges(data=True):
+            edge_type = data.get('edge_type', 'default')
+            if edge_type not in edge_colors:
+                edge_colors[edge_type] = len(edge_colors)
+        
+        # Define specific colors for edge types
+        edge_type_colors = {
+            'following_lead': 'blue',
+            'neighbor_vehicle': 'forestgreen',
+            'opposite_vehicle': 'orange',
+            'lead_vehicle': 'red',
+            'default': 'gray'
+        }
+        
+        # Draw edges by type
+        for edge_type in edge_colors:
+            edges_of_type = [(u, v) for u, v, data in graph.edges(data=True) 
+                            if data.get('edge_type', 'default') == edge_type]
+            
+            if edges_of_type:
+                # Use specific color if defined, otherwise use gray
+                color = edge_type_colors.get(edge_type, 'gray')
+                nx.draw_networkx_edges(graph, pos, edgelist=edges_of_type, 
+                                      edge_color=color, width=2, arrowsize=20, alpha=0.7)
+        
+        # Draw node labels
+        nx.draw_networkx_labels(graph, pos, font_size=10, font_weight='bold')
+        
+        # Add legend for edge types if there are multiple types
+        if len(edge_colors) > 1:
+            legend_elements = []
+            for edge_type in edge_colors:
+                color = edge_type_colors.get(edge_type, 'gray')
+                legend_elements.append(plt.Line2D([0], [0], color=color, lw=2, label=edge_type))
+            plt.legend(handles=legend_elements, loc='upper right', fontsize=12)
+        
+        # Set title with graph information
+        plt.title(f"Graph: {filename}\nNodes: {graph.number_of_nodes()}, Edges: {graph.number_of_edges()}", 
+                 fontsize=14, fontweight='bold')
+        
+        # Remove axes
+        plt.axis('off')
+        
+        # Save the figure
+        filepath = os.path.join(output_dir, f"{filename}.png")
+        plt.savefig(filepath, dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+        
+        print(f"Saved graph visualization to: {filepath}")
     
     def _graph_to_hashable(self, graph: nx.DiGraph) -> frozenset:
         """Convert a graph to a hashable representation for frequency counting"""
         edges = []
         for u, v, data in graph.edges(data=True):
-            edge_type = data.get('edge_type', 'default')
+            edge_type = data.get('edge_type')
             edges.append((u, v, edge_type))
         
         nodes = []
         for n, data in graph.nodes(data=True):
-            # Include node attributes in the hash if needed
+            # TODO: Which node attributes do we need for hash? 
+            # for now ignored for comparison
             nodes.append(n)
             
         return frozenset(edges)
@@ -163,13 +306,24 @@ class SubgraphExtractor:
         Returns:
             Dict mapping subgraph IDs to subgraph objects
         """
-        # Extract all possible connected subgraphs
+        # Extract all possible connected subgraphs with global caching
         all_subgraphs = []
         all_hashable_subgraphs = {}  # Maps hash to actual subgraph
+        global_processed_hashes = set()  # Global cache across all actor graphs and timesteps
+        from tqdm import tqdm
         
         for actor_graph_obj in actor_graphs:
+            print("Processing actor graph", actor_graph_obj)
             for t, graph in actor_graph_obj.actor_graphs.items():
-                subgraphs = self._find_all_connected_subgraphs(graph)
+                print("Processing time", t, "of", len(actor_graph_obj.actor_graphs))
+                # Use global cache to avoid reprocessing same subgraphs across different graphs/timesteps
+                print("Processing graph with n_nodes", graph.number_of_nodes(), "and n_edges", graph.number_of_edges())
+                
+                # Save visualization of the graph being processed
+                self._save_graph_visualization(graph, f"/Users/marius/code/graph_coverage/plots/subgraph_analysis/graph_actor_{actor_graph_obj}_time_{t}")
+                
+                subgraphs = self._find_all_connected_subgraphs_cached(graph, global_processed_hashes)
+                
                 for sg in subgraphs:
                     sg_hash = self._graph_to_hashable(sg)
                     all_subgraphs.append(sg_hash)
@@ -178,28 +332,29 @@ class SubgraphExtractor:
         # Count frequency of each subgraph
         subgraph_counter = Counter(all_subgraphs)
         
-        # Create canonical subgraphs to avoid duplicates
-        canonical_subgraphs = {}  # ID -> subgraph
-        canonical_frequency = {}  # ID -> frequency
+        # Create subgraphs to avoid duplicates
+        subgraphs_dict = {}  # ID -> subgraph
+        subgraphs_frequency = {}  # ID -> frequency
         
         # Get unique subgraphs and assign IDs
         sg_id = 1
         for sg_hash, sg in all_hashable_subgraphs.items():
             # Check if this is isomorphic to an existing subgraph
             is_new = True
-            for existing_id, existing_sg in canonical_subgraphs.items():
+            for existing_id, existing_sg in subgraphs_dict.items():
                 if self._are_isomorphic(sg, existing_sg):
-                    canonical_frequency[existing_id] += subgraph_counter[sg_hash]
+                    subgraphs_frequency[existing_id] += subgraph_counter[sg_hash]
                     is_new = False
                     break
             
             if is_new:
-                canonical_subgraphs[sg_id] = sg.copy()
-                canonical_frequency[sg_id] = subgraph_counter[sg_hash]
+                subgraphs_dict[sg_id] = sg.copy()
+                subgraphs_frequency[sg_id] = subgraph_counter[sg_hash]
                 sg_id += 1
         
-        self.subgraph_library = canonical_subgraphs
-        self.subgraph_frequency = canonical_frequency
+        # Update the library with new subgraphs
+        self.subgraph_library.update(subgraphs_dict)
+        self.subgraph_frequency.update(subgraphs_frequency)
         
         # Now decompose each graph into these subgraphs
         self._decompose_graphs(actor_graphs)
@@ -225,7 +380,7 @@ class SubgraphExtractor:
                                     self.subgraph_library.items()}
                 ordered_sg_ids = self.rank_subgraphs(ordered_subgraphs)
                 
-                # Greedy algorithm: iteratively find and remove subgraphs
+                # iteratively find and remove subgraphs
                 while graph_copy.number_of_edges() > 0:
                     best_match = None
                     best_match_id = None
@@ -305,14 +460,13 @@ class SubgraphExtractor:
                             # Remove isolated nodes
                             graph_copy.remove_nodes_from(list(nx.isolates(graph_copy)))
     
-    def visualize_subgraphs(self, output_dir: str = None, figsize: tuple = (10, 8), max_complete_graphs: int = 50):
+    def visualize_subgraphs(self, output_dir: str = None, figsize: tuple = (10, 8)):
         """
-        Visualize all subgraphs in the library and complete graphs.
+        Visualize all subgraphs in the library and save them.
         
         Args:
             output_dir: Directory to save visualizations (None for display only)
             figsize: Figure size for each subplot
-            max_complete_graphs: Maximum number of complete graphs to plot
         """
         if not self.subgraph_library:
             print("No subgraphs to visualize. Run extract_subgraphs first.")
@@ -445,111 +599,3 @@ class SubgraphExtractor:
             plt.show()
         
         plt.close()
-    
-    def _plot_complete_graphs(self, output_dir: str, max_graphs: int):
-        """
-        Plot complete graphs from the library.
-        
-        Args:
-            output_dir: Directory to save visualizations
-            max_graphs: Maximum number of graphs to plot
-        """
-        # Get all unique graphs from the library
-        unique_graphs = set()
-        for sg_id, sg in self.subgraph_library.items():
-            # Convert graph to a canonical form for comparison
-            graph_str = nx.to_edgelist(sg)
-            unique_graphs.add((sg_id, sg, graph_str))
-        
-        # Sort by frequency
-        sorted_graphs = sorted(unique_graphs, 
-                             key=lambda x: self.subgraph_frequency.get(x[0], 0), 
-                             reverse=True)
-        
-        # Take only the top max_graphs
-        top_graphs = sorted_graphs[:max_graphs]
-        
-        # Define specific colors for edge types
-        edge_type_colors = {
-            'following_lead': 'blue',
-            'neighbor_vehicle': 'forestgreen',
-            'opposite_vehicle': 'orange',
-            'leading_vehicle': 'red'
-        }
-        
-        # Plot each graph individually
-        for sg_id, sg, _ in top_graphs:
-            plt.figure(figsize=(20, 20))
-            
-            # Draw the graph
-            pos = nx.spring_layout(sg)
-            nx.draw_networkx_nodes(sg, pos, node_size=1000, node_color='lightblue')
-            
-            # Draw edges with specific colors
-            for edge_type in edge_type_colors:
-                edges_of_type = [(u, v) for u, v, data in sg.edges(data=True) 
-                                if data.get('edge_type', 'default') == edge_type]
-                if edges_of_type:
-                    nx.draw_networkx_edges(sg, pos, edgelist=edges_of_type,
-                                          edge_color=edge_type_colors[edge_type],
-                                          width=3, arrowsize=20)
-            
-            # Draw remaining edges in gray
-            remaining_edges = [(u, v) for u, v, data in sg.edges(data=True)
-                             if data.get('edge_type', 'default') not in edge_type_colors]
-            if remaining_edges:
-                nx.draw_networkx_edges(sg, pos, edgelist=remaining_edges,
-                                      edge_color='gray', width=3, arrowsize=20)
-            
-            nx.draw_networkx_labels(sg, pos, font_size=16)
-            
-            # Add legend
-            legend_elements = []
-            for edge_type, color in edge_type_colors.items():
-                legend_elements.append(plt.Line2D([0], [0], color=color, lw=2, label=edge_type))
-            legend_elements.append(plt.Line2D([0], [0], color='gray', lw=2, label='other'))
-            plt.legend(handles=legend_elements, loc='upper right', fontsize=16)
-            
-            # Set title with frequency information
-            freq = self.subgraph_frequency.get(sg_id, 0)
-            plt.title(f"Complete Graph ID: {sg_id}, Frequency: {freq}", fontsize=24)
-            plt.axis('off')
-            
-            # Save the figure
-            if output_dir is not None:
-                plt.savefig(os.path.join(output_dir, f'complete_graph_{sg_id}.png'), 
-                          dpi=300, bbox_inches='tight')
-            else:
-                plt.show()
-            
-            plt.close()
-    
-    def print_subgraph_properties(self):
-        """Print properties of each subgraph in the library"""
-        if not self.subgraph_library:
-            print("No subgraphs in the library. Run extract_subgraphs first.")
-            return
-            
-        print("\nSubgraph Library:")
-        print("=================")
-        
-        # Sort by selection strategy
-        ordered_sg_ids = self.rank_subgraphs(self.subgraph_library)
-        
-        for sg_id in ordered_sg_ids:
-            sg = self.subgraph_library[sg_id]
-            print(f"Subgraph ID: {sg_id}")
-            print(f"  Frequency: {self.subgraph_frequency.get(sg_id, 0)}")
-            print(f"  Nodes: {sg.number_of_nodes()}")
-            print(f"  Edges: {sg.number_of_edges()}")
-            
-            # Edge type distribution
-            edge_types = {}
-            for _, _, data in sg.edges(data=True):
-                edge_type = data.get('edge_type', 'default')
-                edge_types[edge_type] = edge_types.get(edge_type, 0) + 1
-            
-            print("  Edge types:")
-            for edge_type, count in edge_types.items():
-                print(f"    - {edge_type}: {count}")
-            print()

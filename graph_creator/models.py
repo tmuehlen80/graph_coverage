@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator, model_valida
 from shapely.geometry import Polygon, LineString, Point
 import numpy as np
 from enum import Enum
-import carla
+
 
 def _to_2d(location):
     return (location.x, location.y)
@@ -82,6 +82,7 @@ class NodeInfo(BaseModel):
         Returns:
             NodeInfo instance with the lane information
         """
+        import carla
         # TODO @Thomas
         wps = lane[0].next_until_lane_end(0.25)
         lane_length = sum(

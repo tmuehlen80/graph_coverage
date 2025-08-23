@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from typing import Dict, List, Tuple, Optional
 import numpy as np
-from graph_creator.models import TrackData, ActorType
+from models import TrackData, ActorType
 
 
 class ActorGraph:
