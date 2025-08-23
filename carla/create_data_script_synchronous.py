@@ -77,7 +77,7 @@ blueprint_library = world.get_blueprint_library()
 spawn_points = world.get_map().get_spawn_points()
 random.shuffle(spawn_points)
 
-for i in range(35):
+for i in range(120):
     # vehicle_bp = blueprint_library.filter("vehicle.*")[0]
     spawn_point = spawn_points[i]
     vehicle = world.spawn_actor(random.choice(blueprint_library.filter("vehicle.*")), spawn_point)

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import pickle
-from models import NodeInfo
+from graph_creator.models import NodeInfo
 
 
 class MapGraph:
