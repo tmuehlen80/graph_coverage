@@ -2,9 +2,9 @@ import networkx as nx
 from shapely.geometry import Polygon, LineString
 import matplotlib.pyplot as plt
 import numpy as np
-import carla
+
 import pickle
-from graph_creator.models import NodeInfo
+from models import NodeInfo
 
 
 class MapGraph:
@@ -74,6 +74,7 @@ class MapGraph:
         using a similar strategy as the global route planer:
         https://github.com/carla-simulator/carla/blob/master/PythonAPI/carla/agents/navigation/global_route_planner.py#L118
         """
+        import carla
         instance = cls()
         G = instance.graph
         topo = map.get_topology()
@@ -121,6 +122,7 @@ class MapGraph:
         https://github.com/carla-simulator/carla/blob/master/PythonAPI/carla/agents/navigation/global_route_planner.py#L118
 
         """
+        import carla
         instance = cls()
         G = instance.graph
         topo = map.get_topology()

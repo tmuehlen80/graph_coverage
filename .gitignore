@@ -1,4 +1,5 @@
-
+.DS_Store
+graph_creator/graph_visualizations/
 
 # Custom
 CARLA_0.9.15/*
