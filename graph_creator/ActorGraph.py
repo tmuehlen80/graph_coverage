@@ -234,6 +234,11 @@ class ActorGraph:
         instance.track_xyz_pos_dict = track_data.track_xyz_pos_dict
         instance.track_speed_lon_dict = track_data.track_speed_lon_dict
         instance.track_actor_type_dict = track_data.track_actor_type_dict
+        print("instance.track_lane_dict: ", len(instance.track_lane_dict))
+        print("instance.track_s_value_dict: ", instance.track_s_value_dict)
+        print("instance.track_xyz_pos_dict: ", instance.track_xyz_pos_dict)
+        print("instance.track_speed_lon_dict: ", instance.track_speed_lon_dict)
+        print("instance.track_actor_type_dict: ", instance.track_actor_type_dict)
 
         instance.actor_graphs = instance.create_actor_graphs(
             G_Map,
@@ -242,8 +247,9 @@ class ActorGraph:
             max_distance_neighbor_backward_m=max_distance_neighbor_backward_m,
             max_distance_opposite_m=max_distance_opposite_veh_m,
         )
-
+        print("len(instance.actor_graphs): ", len(instance.actor_graphs))
         instance.actor_components = {}
+        print("instance.actor_graphs.keys(): ", instance.actor_graphs.keys())
         for key, value in instance.actor_graphs.items():
             components = list(nx.weakly_connected_components(value))
             subgraphs = [value.subgraph(c).copy() for c in components]
@@ -303,6 +309,7 @@ class ActorGraph:
         graph_timesteps = []
         graph_timesteps_idx = []
         current_timestep = 0.0
+        # hmm, why is the following necessary?
         while True:
             # Find closest timestep in self.timesteps
             closest_idx = min(range(len(self.timestamps)), 
@@ -321,6 +328,9 @@ class ActorGraph:
             current_timestep += delta_timestep_s
 
         timestep_graphs = {}
+        print("graph_timesteps_idx: ", graph_timesteps_idx)
+        print("graph_timesteps: ", graph_timesteps)
+
         for t in graph_timesteps_idx:
             G_t = nx.MultiDiGraph()
 

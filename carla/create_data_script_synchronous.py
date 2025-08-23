@@ -1,3 +1,7 @@
+# Before running this script, make sure to start the CARLA server via nomachine (needs a screen):
+# tmuehlen@tmuehlen-HP-Z8-G4-Workstation:~/repos/graph_coverage/CARLA_0.9.15$ ./CarlaUE4.sh 
+# use `poetry shell` to activate the environment
+
 import pandas as pd
 import os
 
@@ -44,20 +48,19 @@ def get_t_coordinate(actor, world_map):
 
 
 #for j in range(7, 20):
-j = 0
-print("scene: ", j)
 clean_carla(world)
 _ = world.tick()
+
 client.load_world(random.choice(client.get_available_maps()))
 # create the lane map graph and store it to file:
 world_map = world.get_map()
 
 map_g = MapGraph()
 map_g = map_g.create_from_carla_map(world_map)
-
-map_g.store_graph_to_file(f"carla/data/scene_{j}_{str(datetime.now().date())}_map_graph.pickle")
+dt_specifier = str(datetime.now())
+map_g.store_graph_to_file(f"carla/data/scene_{dt_specifier}_map_graph.pickle")
 xodr = world_map.to_opendrive()
-with open(f"carla/data/scene_{j}_{str(datetime.now().date())}_map.xodr", "w") as f:
+with open(f"carla/data/scene_{dt_specifier}_map.xodr", "w") as f:
     f.write(xodr)
 
 # Get the world and set synchronous mode
@@ -85,7 +88,7 @@ for i in range(35):
 _ = world.tick()
 
 tracks = []
-n_steps = 200
+n_steps = 2000
 print('number of vehicles: ', len(world.get_actors().filter("vehicle.*")))
 for i in tqdm(range(n_steps)):
     _ = world.tick()
@@ -183,6 +186,6 @@ for i in tqdm(range(n_steps)):
 
 tracks_df = pd.DataFrame(tracks)
 tracks_df["map"] = world.get_map().name
-tracks_df["scene_id"] = j
-tracks_df.to_parquet(f"carla/data/scene_{j}_{str(datetime.now().date())}_tracks.parquet")
+tracks_df["scene_id"] = dt_specifier
+tracks_df.to_parquet(f"carla/data/scene_{dt_specifier}_tracks.parquet")
 
