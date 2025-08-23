@@ -234,11 +234,6 @@ class ActorGraph:
         instance.track_xyz_pos_dict = track_data.track_xyz_pos_dict
         instance.track_speed_lon_dict = track_data.track_speed_lon_dict
         instance.track_actor_type_dict = track_data.track_actor_type_dict
-        print("instance.track_lane_dict: ", len(instance.track_lane_dict))
-        print("instance.track_s_value_dict: ", instance.track_s_value_dict)
-        print("instance.track_xyz_pos_dict: ", instance.track_xyz_pos_dict)
-        print("instance.track_speed_lon_dict: ", instance.track_speed_lon_dict)
-        print("instance.track_actor_type_dict: ", instance.track_actor_type_dict)
 
         instance.actor_graphs = instance.create_actor_graphs(
             G_Map,
@@ -247,9 +242,8 @@ class ActorGraph:
             max_distance_neighbor_backward_m=max_distance_neighbor_backward_m,
             max_distance_opposite_m=max_distance_opposite_veh_m,
         )
-        print("len(instance.actor_graphs): ", len(instance.actor_graphs))
         instance.actor_components = {}
-        print("instance.actor_graphs.keys(): ", instance.actor_graphs.keys())
+        # print("instance.actor_graphs.keys(): ", instance.actor_graphs.keys())
         for key, value in instance.actor_graphs.items():
             components = list(nx.weakly_connected_components(value))
             subgraphs = [value.subgraph(c).copy() for c in components]
@@ -308,7 +302,9 @@ class ActorGraph:
     ):
         graph_timesteps = []
         graph_timesteps_idx = []
-        current_timestep = 0.0
+        assert all(a <= b for a, b in zip(self.timestamps, self.timestamps[1:])), "graph timestamps are not sorted"
+
+        current_timestep = self.timestamps[0]
         # hmm, why is the following necessary?
         while True:
             # Find closest timestep in self.timesteps
@@ -328,8 +324,8 @@ class ActorGraph:
             current_timestep += delta_timestep_s
 
         timestep_graphs = {}
-        print("graph_timesteps_idx: ", graph_timesteps_idx)
-        print("graph_timesteps: ", graph_timesteps)
+        # print("graph_timesteps_idx: ", graph_timesteps_idx)
+        # print("graph_timesteps: ", graph_timesteps)
 
         for t in graph_timesteps_idx:
             G_t = nx.MultiDiGraph()
@@ -483,11 +479,43 @@ class ActorGraph:
 
         self.actor_graphs = timestep_graphs
 
+        # Add lane change attribute to nodes
+        ag_timestamps = list(self.actor_graphs.keys())
+        ag_timestamps = sorted(ag_timestamps)
+
+        for i in range(1, len(ag_timestamps)):
+            all_nodes = list(self.actor_graphs[ag_timestamps[i]].nodes)
+            # node = all_nodes
+            for node in all_nodes:
+                lane_id =  self.actor_graphs[ag_timestamps[i]].nodes(data=True)[node]["lane_id"]
+                start_points = [u for u, v, d in G_map.graph.in_edges(lane_id, data=True) if d.get('edge_type') == 'following']
+                start_points.append(lane_id)
+                # ToDo: Check if node exists in previous timestep
+                if self.actor_graphs[ag_timestamps[i - 1]].has_node(node):
+                    previous_lane_id =  self.actor_graphs[ag_timestamps[i - 1]].nodes(data=True)[node]["lane_id"]
+                    if previous_lane_id in start_points:
+                        lane_change = False
+                    else:
+                        lane_change = True
+                    if lane_change:
+                        print(node, previous_lane_id, lane_id, start_points, lane_change)
+                # In principle, here there could also be added a check for lane merge, i.e. counting if the start points had more then 1 element (before adding the current lane_id)
+                else:
+                    lane_change = False
+                self.actor_graphs[ag_timestamps[i]].nodes(data=True)[node]["lane_change"] = lane_change
+
         return self.actor_graphs
 
     def visualize_actor_graph(
-        self, t_idx, comp_idx, use_map_pos=True, node_size=1600, save_path=None, 
-        graph_or_component="graph", scenario_id=None
+        self, 
+        t_idx, 
+        comp_idx, 
+        use_map_pos=True, 
+        node_size=1600, 
+        save_path=None, 
+        graph_or_component="graph", 
+        scenario_id=None,
+        scale_plot=True
     ):
         if graph_or_component == "graph":
             G = self.actor_graphs[t_idx]
@@ -496,8 +524,11 @@ class ActorGraph:
 
         # Calculate number of actors and scale figure size accordingly
         num_actors = len(G.nodes())
-        base_size = 6  # Base size for small graphs
-        scale_factor = max(1, num_actors / 5)  # Scale up for more than 5 actors
+        base_size = 10  # Base size for small graphs
+        if scale_plot:
+            scale_factor = max(1, num_actors / 5)  # Scale up for more than 5 actors
+        else:
+            scale_factor = 1
         fig_size = base_size * scale_factor
         
         if use_map_pos:
