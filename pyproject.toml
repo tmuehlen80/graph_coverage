@@ -26,6 +26,8 @@ tqdm = "^4.67.1"
 pyarrow = "^19.0.1"
 carla = "^0.9.15"
 plotly = "^6.3.0"
+torch-geometric = "^2.6.1"
+torch = "^2.8.0"
 
 
 [tool.poetry.group.dev.dependencies]
