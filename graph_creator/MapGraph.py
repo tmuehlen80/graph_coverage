@@ -37,12 +37,18 @@ class MapGraph:
         for lane_id, lane in map.vector_lane_segments.items():
             if lane.left_neighbor_id is not None:
                 if str(lane.left_neighbor_id) in G:
-                    G.add_edge(str(lane_id), str(lane.left_neighbor_id), edge_type="neighbor")
-                    G.add_edge(str(lane.left_neighbor_id), str(lane_id), edge_type="neighbor")
+                    # Only add if the edge doesn't already exist
+                    if not G.has_edge(str(lane_id), str(lane.left_neighbor_id)):
+                        G.add_edge(str(lane_id), str(lane.left_neighbor_id), edge_type="neighbor")
+                    if not G.has_edge(str(lane.left_neighbor_id), str(lane_id)):
+                        G.add_edge(str(lane.left_neighbor_id), str(lane_id), edge_type="neighbor")
             if lane.right_neighbor_id is not None:
                 if str(lane.right_neighbor_id) in G:
-                    G.add_edge(str(lane_id), str(lane.right_neighbor_id), edge_type="neighbor")
-                    G.add_edge(str(lane.right_neighbor_id), str(lane_id), edge_type="neighbor")
+                    # Only add if the edge doesn't already exist
+                    if not G.has_edge(str(lane_id), str(lane.right_neighbor_id)):
+                        G.add_edge(str(lane_id), str(lane.right_neighbor_id), edge_type="neighbor")
+                    if not G.has_edge(str(lane.right_neighbor_id), str(lane_id)):
+                        G.add_edge(str(lane.right_neighbor_id), str(lane_id), edge_type="neighbor")
 
         # Rename neighboring lanes from lanes in opposite direction by looking for loops.
         edges_opposite = []
@@ -57,10 +63,12 @@ class MapGraph:
                                         edges_opposite.append((successor, neighbor))
                                         edges_opposite.append((next_node, node))
 
-        # Rename edges to 'opposite'
+        # Convert neighbor edges to opposite edges
         for u, v in edges_opposite:
+            # Just rename the edge type from 'neighbor' to 'opposite'
             G[u][v][0]["edge_type"] = "opposite"
-
+            G[v][u][0]["edge_type"] = "opposite"
+        
         return instance
 
     def _to_2d(self, location):
