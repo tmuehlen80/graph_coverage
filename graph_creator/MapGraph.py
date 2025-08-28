@@ -204,39 +204,79 @@ class MapGraph:
             verticalalignment="bottom",
         )
 
-        # move label away from nodes..
-        # Draw edges with different styles based on edge type
+        # Helper function to offset edges orthogonally to their direction
+        def offset_edge_positions(edges, offset_distance=0.5):
+            """Offset edge positions orthogonally to make overlapping edges visible"""
+            offset_pos = pos.copy()
+            
+            for u, v in edges:
+                if u in pos and v in pos:
+                    # Calculate edge direction vector
+                    dx = pos[v][0] - pos[u][0]
+                    dy = pos[v][1] - pos[u][1]
+                    edge_length = np.sqrt(dx**2 + dy**2)
+                    
+                    if edge_length > 0:
+                        # Normalize and rotate 90 degrees to get orthogonal direction
+                        orthogonal_dx = -dy / edge_length
+                        orthogonal_dy = dx / edge_length
+                        
+                        # Apply offset to both nodes
+                        offset_pos[u] = (pos[u][0] + orthogonal_dx * offset_distance, 
+                                       pos[u][1] + orthogonal_dy * offset_distance)
+                        offset_pos[v] = (pos[v][0] + orthogonal_dx * offset_distance, 
+                                       pos[v][1] + orthogonal_dy * offset_distance)
+            
+            return offset_pos
+
+        # Separate edges by type
         edge_type_fol = [(u, v) for u, v, d in self.graph.edges(data=True) if d["edge_type"] == "following"]
         edge_type_nei = [(u, v) for u, v, d in self.graph.edges(data=True) if d["edge_type"] == "neighbor"]
         edge_type_opp = [(u, v) for u, v, d in self.graph.edges(data=True) if d["edge_type"] == "opposite"]
 
+        # Draw edges with offsets to prevent overlap
+        fol_pos = offset_edge_positions(edge_type_fol, offset_distance=0.3)
+        nei_pos = offset_edge_positions(edge_type_nei, offset_distance=-0.3)
+        opp_pos = offset_edge_positions(edge_type_opp, offset_distance=0.6)
+
+        # Draw following edges (blue)
         nx.draw_networkx_edges(
             self.graph,
-            pos,
+            fol_pos,
             edgelist=edge_type_fol,
             width=2,
             edge_color="blue",
             node_size=node_size,
+            label="Following",
         )
+        
+        # Draw neighbor edges (green)
         nx.draw_networkx_edges(
             self.graph,
-            pos,
+            nei_pos,
             edgelist=edge_type_nei,
             width=1,
             edge_color="green",
             node_size=node_size,
+            label="Neighbor",
         )
+        
+        # Draw opposite edges (red)
         nx.draw_networkx_edges(
             self.graph,
-            pos,
+            opp_pos,
             edgelist=edge_type_opp,
             width=1,
             edge_color="red",
             node_size=node_size,
+            label="Opposite",
         )
 
+        # Add legend
+        plt.legend(loc='upper right', fontsize=10)
+
         if save_path:
-            plt.savefig(save_path)
+            plt.savefig(save_path, bbox_inches='tight', dpi=300)
         else:
             plt.show()
 
