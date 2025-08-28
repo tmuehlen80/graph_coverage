@@ -152,6 +152,10 @@ class ActorGraph:
         max_distance_opposite_veh_m=100,
         max_distance_neighbor_forward_m=50,
         max_distance_neighbor_backward_m=50,
+        max_number_lead_vehicle=3,
+        max_number_neighbor=3,
+        max_number_opposite=3,
+        max_node_distance=3,
         delta_timestep_s=1.0,
     ):
         """
@@ -190,6 +194,10 @@ class ActorGraph:
             max_distance_neighbor_forward_m=max_distance_neighbor_forward_m,
             max_distance_neighbor_backward_m=max_distance_neighbor_backward_m,
             max_distance_opposite_m=max_distance_opposite_veh_m,
+            max_number_lead_vehicle=max_number_lead_vehicle,
+            max_number_neighbor=max_number_neighbor,
+            max_number_opposite=max_number_opposite,
+            max_node_distance=max_node_distance,
             delta_timestep_s=delta_timestep_s,
         )
 
@@ -204,6 +212,10 @@ class ActorGraph:
         max_distance_opposite_veh_m=100,
         max_distance_neighbor_forward_m=50,
         max_distance_neighbor_backward_m=50,
+        max_number_lead_vehicle=3,
+        max_number_neighbor=3,
+        max_number_opposite=3,
+        max_node_distance=3,
     ):
         """
         Create an ActorGraph instance from a CARLA scenario.
@@ -241,6 +253,10 @@ class ActorGraph:
             max_distance_neighbor_forward_m=max_distance_neighbor_forward_m,
             max_distance_neighbor_backward_m=max_distance_neighbor_backward_m,
             max_distance_opposite_m=max_distance_opposite_veh_m,
+            max_number_lead_vehicle=max_number_lead_vehicle,
+            max_number_neighbor=max_number_neighbor,
+            max_number_opposite=max_number_opposite,
+            max_node_distance=max_node_distance,
         )
         instance.actor_components = {}
         # print("instance.actor_graphs.keys(): ", instance.actor_graphs.keys())
@@ -291,6 +307,77 @@ class ActorGraph:
             track_actor_type_dict=track_actor_type_dict,
         )
 
+    def _has_path_within_distance(self, G, source, target, max_distance):
+        """
+        Check if there's a path from source to target with at most max_distance nodes.
+        
+        Args:
+            G: NetworkX graph
+            source: Source node
+            target: Target node
+            max_distance: Maximum number of nodes in the path
+            
+        Returns:
+            True if there's a path with at most max_distance nodes, False otherwise
+        """
+        if source == target:
+            return True
+        
+        if max_distance <= 1:
+            return G.has_edge(source, target)
+        
+        # Use BFS to find shortest path
+        try:
+            path = nx.shortest_path(G, source, target)
+            return len(path) <= max_distance
+        except nx.NetworkXNoPath:
+            return False
+
+    def _manage_n_shortest_relations(self, relations_dict, actor_id, relation_type, new_relation, max_n):
+        """
+        Generic function to manage N shortest relations for each actor and relation type.
+        
+        Args:
+            relations_dict: Dictionary storing relations for each actor and type
+            actor_id: ID of the actor
+            relation_type: Type of relation (e.g., "leading_vehicle", "neighbor_vehicle")
+            new_relation: Tuple of (target_actor_id, path_length)
+            max_n: Maximum number of relations to keep
+        
+        Returns:
+            Updated relations_dict
+        """
+        if actor_id not in relations_dict:
+            relations_dict[actor_id] = {}
+        
+        if relation_type not in relations_dict[actor_id]:
+            relations_dict[actor_id][relation_type] = []
+        
+        relations = relations_dict[actor_id][relation_type]
+        
+        target_actor_id, path_length = new_relation
+        
+        # Check if this target actor already exists in relations
+        existing_targets = [rel[0] for rel in relations]
+        
+        if target_actor_id in existing_targets:
+            # Update existing relation if new path is shorter
+            for i, (existing_target, existing_length) in enumerate(relations):
+                if existing_target == target_actor_id and path_length < existing_length:
+                    relations[i] = new_relation
+                    break
+        else:
+            # Add new relation
+            relations.append(new_relation)
+        
+        # Sort by path_length (shortest first)
+        relations.sort(key=lambda x: x[1])
+        
+        # Keep all relations (no limiting)
+        relations_dict[actor_id][relation_type] = relations
+        
+        return relations_dict
+
     def create_actor_graphs(
         self,
         G_map,
@@ -298,6 +385,10 @@ class ActorGraph:
         max_distance_neighbor_forward_m,
         max_distance_neighbor_backward_m,
         max_distance_opposite_m,
+        max_number_lead_vehicle=3,
+        max_number_neighbor=3,
+        max_number_opposite=3,
+        max_node_distance=3,
         delta_timestep_s=1.0,
     ):
         graph_timesteps = []
@@ -342,6 +433,9 @@ class ActorGraph:
                         actor_type=self.track_actor_type_dict[track_id],
                     )
 
+            # Dictionary to store relations for each actor
+            relations_dict = {}
+
             # Add edges based on the conditions
             keys = list(self.track_lane_dict.keys())
             for i in range(len(keys) - 1):
@@ -368,19 +462,16 @@ class ActorGraph:
                                 (self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t])
                                 < max_distance_lead_veh_m
                             ):
-                                G_t.add_edge(
-                                    track_id_B,
-                                    track_id_A,
-                                    edge_type="leading_vehicle",
-                                    path_length=self.track_s_value_dict[track_id_B][t]
-                                    - self.track_s_value_dict[track_id_A][t],
+                                path_length = self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t]
+                                
+                                # Manage leading vehicle relations for both actors
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_B, "leading_vehicle", 
+                                    (track_id_A, path_length), max_number_lead_vehicle
                                 )
-                                G_t.add_edge(
-                                    track_id_A,
-                                    track_id_B,
-                                    edge_type="following_lead",
-                                    path_length=self.track_s_value_dict[track_id_B][t]
-                                    - self.track_s_value_dict[track_id_A][t],
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_A, "following_lead", 
+                                    (track_id_B, path_length), max_number_lead_vehicle
                                 )
 
                         # second case: both in different, but following lanes:
@@ -393,17 +484,14 @@ class ActorGraph:
                                 - self.track_s_value_dict[track_id_A][t]
                             )
                             if path_length < max_distance_lead_veh_m:
-                                G_t.add_edge(
-                                    track_id_B,
-                                    track_id_A,
-                                    edge_type="leading_vehicle",
-                                    path_length=path_length,
+                                # Manage leading vehicle relations for both actors
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_B, "leading_vehicle", 
+                                    (track_id_A, path_length), max_number_lead_vehicle
                                 )
-                                G_t.add_edge(
-                                    track_id_A,
-                                    track_id_B,
-                                    edge_type="following_lead",
-                                    path_length=path_length,
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_A, "following_lead", 
+                                    (track_id_B, path_length), max_number_lead_vehicle
                                 )
 
                         # TODO: PROBLEM: we are not checking i in relationt j,but not j to 1. We might miss a case here
@@ -431,17 +519,14 @@ class ActorGraph:
                                 - self.track_s_value_dict[track_id_A][t]
                             )
                             if path_length < max_distance_neighbor_forward_m:
-                                G_t.add_edge(
-                                    track_id_B,
-                                    track_id_A,
-                                    edge_type="neighbor_vehicle",
-                                    path_length=path_length,
+                                # Manage neighbor relations for both actors
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_B, "neighbor_vehicle", 
+                                    (track_id_A, path_length), max_number_neighbor
                                 )
-                                G_t.add_edge(
-                                    track_id_A,
-                                    track_id_B,
-                                    edge_type="neighbor_vehicle",
-                                    path_length=path_length,
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_A, "neighbor_vehicle", 
+                                    (track_id_B, path_length), max_number_neighbor
                                 )
 
                         # fourth case: on opposite, directly next lane:
@@ -468,16 +553,87 @@ class ActorGraph:
                                 - self.track_s_value_dict[track_id_A][t]
                             )
                             if path_length < max_distance_opposite_m:
-                                G_t.add_edge(
-                                    track_id_B, track_id_A, edge_type="opposite_vehicle", path_length=path_length
+                                # Manage opposite relations for both actors
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_B, "opposite_vehicle", 
+                                    (track_id_A, path_length), max_number_opposite
                                 )
-                                G_t.add_edge(
-                                    track_id_A, track_id_B, edge_type="opposite_vehicle", path_length=path_length
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_A, "opposite_vehicle", 
+                                    (track_id_B, path_length), max_number_opposite
                                 )
+
+            # Hierarchical graph construction: add edges step by step
+            # Step 1: Add leading/following relations (shortest first)
+            leading_following_relations = []
+            for actor_id, relation_types in relations_dict.items():
+                for relation_type in ["leading_vehicle", "following_lead"]:
+                    if relation_type in relation_types:
+                        for target_actor_id, path_length in relation_types[relation_type]:
+                            leading_following_relations.append((actor_id, target_actor_id, relation_type, path_length))
+            
+            # Sort by path_length (shortest first)
+            leading_following_relations.sort(key=lambda x: x[3])
+            
+            # Add leading/following edges, checking for existing paths
+            for actor_id, target_actor_id, relation_type, path_length in leading_following_relations:
+                # Check if there's already a path between these actors within max_node_distance
+                if not self._has_path_within_distance(G_t, actor_id, target_actor_id, max_node_distance):
+                    G_t.add_edge(
+                        actor_id,
+                        target_actor_id,
+                        edge_type=relation_type,
+                        path_length=path_length,
+                    )
+
+            
+            # Step 2: Add neighbor relations (shortest first)
+            neighbor_relations = []
+            for actor_id, relation_types in relations_dict.items():
+                if "neighbor_vehicle" in relation_types:
+                    for target_actor_id, path_length in relation_types["neighbor_vehicle"]:
+                        neighbor_relations.append((actor_id, target_actor_id, path_length))
+            
+            # Sort by path_length (shortest first)
+            neighbor_relations.sort(key=lambda x: x[2])
+            
+            # Add neighbor edges, checking for existing paths
+            for actor_id, target_actor_id, path_length in neighbor_relations:
+                # Check if there's already a path between these actors within max_node_distance
+                if not self._has_path_within_distance(G_t, actor_id, target_actor_id, max_node_distance):
+                    G_t.add_edge(
+                        actor_id,
+                        target_actor_id,
+                        edge_type="neighbor_vehicle",
+                        path_length=path_length,
+                    )
+            
+            # Step 3: Add opposite relations (shortest first)
+            opposite_relations = []
+            for actor_id, relation_types in relations_dict.items():
+                if "opposite_vehicle" in relation_types:
+                    for target_actor_id, path_length in relation_types["opposite_vehicle"]:
+                        opposite_relations.append((actor_id, target_actor_id, path_length))
+            
+            # Sort by path_length (shortest first)
+            opposite_relations.sort(key=lambda x: x[2])
+            
+            # Add opposite edges, checking for existing paths
+            for actor_id, target_actor_id, path_length in opposite_relations:
+                # Check if there's already a path between these actors within max_node_distance
+                if not self._has_path_within_distance(G_t, actor_id, target_actor_id, max_node_distance):
+                    G_t.add_edge(
+                        actor_id,
+                        target_actor_id,
+                        edge_type="opposite_vehicle",
+                        path_length=path_length,
+                    )
 
             timestep_graphs[self.timestamps[t]] = G_t
 
         self.actor_graphs = timestep_graphs
+
+
 
         # Add lane change attribute to nodes
         ag_timestamps = list(self.actor_graphs.keys())

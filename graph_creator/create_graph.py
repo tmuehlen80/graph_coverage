@@ -150,7 +150,7 @@ if __name__ == "__main__":
     dataroot = repo_root / "argoverse_data" / "train"
 
     # unique log identifier
-    log_id = "2c9bc3ec-979e-4873-bd19-13ff38c22cdb"
+    log_id = "d25d1aaa-8bb2-4c6b-98a5-fa5aa2ddd2eb"
 
     scenario, map = get_scenario_data(dataroot, log_id)
     G_map = MapGraph.create_from_argoverse_map(map)
@@ -158,7 +158,14 @@ if __name__ == "__main__":
     # visualize_scenario(scenario, map, save_path=(repo_root / "scenario_plot.mp4") )
     # plot_argoverse_map(map, save_path=(repo_root / "map.png"))
 
-    actor_graph = ActorGraph.from_argoverse_scenario(scenario, G_map)
+    actor_graph = ActorGraph.from_argoverse_scenario(
+        scenario, 
+        G_map,
+        max_number_lead_vehicle=1,
+        max_number_neighbor=1,
+        max_number_opposite=1,
+        max_node_distance=3
+    )
     show_timestep = 1.0
     plot_scene_at_timestep(scenario, map, timestep=show_timestep, save_path=(repo_root / "map.png"))
     actor_graph.visualize_actor_graph(t_idx=show_timestep, comp_idx=0,  save_path=(repo_root / "actor_graph.png"))
