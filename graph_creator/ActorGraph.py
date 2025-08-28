@@ -16,29 +16,38 @@ class ActorGraph:
         self.track_lane_dict = None
         self.actor_graphs = {}
 
-    def find_lane_id_from_pos(self, position):
+    def find_lane_ids_from_pos(self, position):
+        """
+        Find all lane IDs that contain the given position.
+        An actor can be on multiple map elements, so we return a list of lane IDs.
+        Most of the time, there will be just a single element.
+        """
         point = Point(position[0], position[1])
+        lane_ids = []
         for lane_id, data in self.G_map.graph.nodes(data=True):
             lane_polygon = data["node_info"].lane_polygon
             if lane_polygon.contains(point):
-                return lane_id
-        return None
+                lane_ids.append(lane_id)
+        return lane_ids if lane_ids else [None]
 
     def find_lane_ids_for_track(self, track):
         """
-        create a list of length of number of timesteps, where each element holds the lane_id of an object at that timestep.
+        create a list of length of number of timesteps, where each element holds a list of lane_ids of an object at that timestep.
+        An actor can be on multiple map elements, so each element is a list of lane IDs.
+        Most of the time, there will be just a single element in each list.
 
-        Missing information is represented by None.
+        Missing information is represented by [None].
         """
         lane_ids = []
         timestep_list = [step.timestep for step in track.object_states]
         for ii in range(self.num_timesteps):
             if ii in timestep_list:
                 position = track.object_states[timestep_list.index(ii)].position
-                lane_id = self.find_lane_id_from_pos(position)
-                lane_ids.append(str(lane_id) if lane_id is not None else None)
+                lane_id_list = self.find_lane_ids_from_pos(position)
+                # Convert lane IDs to strings, handling the case where lane_id_list might contain None
+                lane_ids.append([str(lane_id) if lane_id is not None else None for lane_id in lane_id_list])
             else:
-                lane_ids.append(None)
+                lane_ids.append([None])
         if not len(lane_ids) == self.num_timesteps:
             raise ValueError(f"There are too many lane IDs for track {track.track_id}")
 
@@ -108,11 +117,17 @@ class ActorGraph:
                     state = track.object_states[timestep_list.index(ii)]
                     position = Point(state.position[0], state.position[1], 0.0)
                     xyz_positions.append(position)
+                    lane_id_list = track_lane_dict[track_id][ii]
                     if (
-                        track_lane_dict[track_id][ii] is not None
+                        lane_id_list is not None and lane_id_list != [None]
                     ):  # there are cases where the lane is None, i.e. the actor is not on a lane.
-                        s_coord, t_coord = self._calculate_s_t_coordinates(position, track_lane_dict[track_id][ii])
-                        s_values.append(s_coord)
+                        # For now, use the first lane ID in the list. In the future, we might want to handle multiple lanes differently.
+                        primary_lane_id = lane_id_list[0] if lane_id_list[0] is not None else None
+                        if primary_lane_id is not None:
+                            s_coord, t_coord = self._calculate_s_t_coordinates(position, primary_lane_id)
+                            s_values.append(s_coord)
+                        else:
+                            s_values.append(np.nan)
                     else:
                         s_values.append(np.nan)
                     # Calculate longitudinal speed from velocity
@@ -280,8 +295,10 @@ class ActorGraph:
         for actor in actors:
             actor_id = str(actor)  # Convert to string
             mask = scenario.actor_id == actor
-            # Convert lane IDs to integers
-            track_lane_dict[actor_id] = [lane_id for lane_id in scenario[mask].road_lane_id.tolist()]
+            # Convert lane IDs to list of lists format, because we can be placed on two lanes at the same time (@ Thomas Stimmt das für Carla?)
+            # Each lane_id becomes a single-element list [lane_id] to match the new format
+            lane_ids = scenario[mask].road_lane_id.tolist()
+            track_lane_dict[actor_id] = [[lane_id] if lane_id is not None else [None] for lane_id in lane_ids]
             track_s_value_dict[actor_id] = scenario[mask].distance_from_lane_start.tolist()
             # Convert xyz coordinates to Shapely Points
             xyz_coords = scenario[mask].actor_location_xyz.tolist()
@@ -423,15 +440,20 @@ class ActorGraph:
 
             # Add nodes with attributes
             for track_id, lane_ids in self.track_lane_dict.items():
-                if lane_ids[t] is not None:
-                    G_t.add_node(
-                        track_id,
-                        lane_id=lane_ids[t],
-                        s=self.track_s_value_dict[track_id][t],
-                        xyz=self.track_xyz_pos_dict[track_id][t],
-                        lon_speed=self.track_speed_lon_dict[track_id][t],
-                        actor_type=self.track_actor_type_dict[track_id],
-                    )
+                lane_id_list = lane_ids[t]
+                if lane_id_list is not None and lane_id_list != [None]:
+                    #TODO: For now, use the first lane ID in the list as the primary lane
+                    primary_lane_id = lane_id_list[0] if lane_id_list[0] is not None else None
+                    if primary_lane_id is not None:
+                        G_t.add_node(
+                            track_id,
+                            lane_id=primary_lane_id,
+                            lane_ids=lane_id_list,  # Store all lane IDs for future use
+                            s=self.track_s_value_dict[track_id][t],
+                            xyz=self.track_xyz_pos_dict[track_id][t],
+                            lon_speed=self.track_speed_lon_dict[track_id][t],
+                            actor_type=self.track_actor_type_dict[track_id],
+                        )
 
             # Dictionary to store relations for each actor
             relations_dict = {}
@@ -441,21 +463,31 @@ class ActorGraph:
             for i in range(len(keys) - 1):
                 track_id_A = keys[i]
                 lane_ids_A = self.track_lane_dict[keys[i]]
+                lane_id_list_A = lane_ids_A[t]
 
-                if lane_ids_A[t] is None:
+                if lane_id_list_A is None or lane_id_list_A == [None]:
                     continue
 
                 for j in range(i + 1, len(keys)):
                     track_id_B = keys[j]
                     lane_ids_B = self.track_lane_dict[keys[j]]
+                    lane_id_list_B = lane_ids_B[t]
 
-                    if lane_ids_B[t] is None:
+                    if lane_id_list_B is None or lane_id_list_B == [None]:
+                        continue
+                    # TODO:
+                    # For now, use the first lane ID from each list for path finding
+                    # In the future, we might want to check all combinations
+                    primary_lane_A = lane_id_list_A[0] if lane_id_list_A[0] is not None else None
+                    primary_lane_B = lane_id_list_B[0] if lane_id_list_B[0] is not None else None
+                    
+                    if primary_lane_A is None or primary_lane_B is None:
                         continue
 
                     # Check for "following_lead" and "leading_vehicle" in same lane
-                    if nx.has_path(G_map.graph, lane_ids_A[t], lane_ids_B[t]):
+                    if nx.has_path(G_map.graph, primary_lane_A, primary_lane_B):
 
-                        path = nx.shortest_path(G_map.graph, lane_ids_A[t], lane_ids_B[t], weight=None)
+                        path = nx.shortest_path(G_map.graph, primary_lane_A, primary_lane_B, weight=None)
 
                         if len(path) == 1:  # i.e. both on same lane
                             if (self.track_s_value_dict[track_id_B][t] > self.track_s_value_dict[track_id_A][t]) and (

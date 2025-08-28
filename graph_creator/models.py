@@ -119,8 +119,8 @@ class ActorType(Enum):
     CYCLIST = "CYCLIST"  # maybe delete this
 
 class TrackData(BaseModel):
-    track_lane_dict: Dict[str, List[Optional[str]]] = Field(
-        description="Dictionary mapping track IDs to lists of lane IDs (can be None)"
+    track_lane_dict: Dict[str, List[List[Optional[str]]]] = Field(
+        description="Dictionary mapping track IDs to lists of lists of lane IDs. Each inner list represents lane IDs for a timestep (can contain None)"
     )
     track_s_value_dict: Dict[str, List[float]] = Field(description="Dictionary mapping track IDs to lists of s-values")
     track_xyz_pos_dict: Dict[str, List[Point]] = Field(description="Dictionary mapping track IDs to lists of 3D points")
