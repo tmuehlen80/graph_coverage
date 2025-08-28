@@ -47,14 +47,13 @@ def get_t_coordinate(actor, world_map):
     return t
 
 
-#for j in range(7, 20):
+#for sim_run in range(10):
+
 clean_carla(world)
 _ = world.tick()
-
 client.load_world(random.choice(client.get_available_maps()))
 # create the lane map graph and store it to file:
 world_map = world.get_map()
-
 map_g = MapGraph()
 map_g = map_g.create_from_carla_map(world_map)
 dt_specifier = str(datetime.now())
@@ -68,30 +67,212 @@ settings = world.get_settings()
 settings.synchronous_mode = True  # Enable sync mode
 settings.fixed_delta_seconds = 0.05  # Set fixed time step
 world.apply_settings(settings)
+# BEHAVIOR CONTROL OPTIONS
+# These parameters control actor behavior variability to create more diverse traffic scenarios
+# All boolean flags can be set to False to disable specific behavior variations
+# Speed variation parameters
+SPEED_VARIATION_ENABLED = True
+MIN_SPEED_FACTOR = 0.6  # 60% of speed limit
+MAX_SPEED_FACTOR = 1.4  # 140% of speed limit
+# Distance variation parameters 
+DISTANCE_VARIATION_ENABLED = True
+MIN_DISTANCE_FACTOR = 0.5  # Closer following distance
+MAX_DISTANCE_FACTOR = 3.0  # Larger following distance
+# Aggressive/Conservative driving parameters
+AGGRESSIVE_DRIVING_ENABLED = True
+AGGRESSIVE_PROBABILITY = 0.3  # 30% of vehicles drive aggressively
+# Lane change behavior parameters
+LANE_CHANGE_VARIATION_ENABLED = True
+MIN_LANE_CHANGE_DISTANCE = 10.0  # Meters
+MAX_LANE_CHANGE_DISTANCE = 50.0  # Meters
+# Braking behavior parameters
+BRAKING_VARIATION_ENABLED = True
+MIN_BRAKING_DISTANCE = 5.0  # Meters
+MAX_BRAKING_DISTANCE = 15.0  # Meters
+# Random behavior parameters
+RANDOM_SLOW_DOWNS_ENABLED = True
+SLOW_DOWN_PROBABILITY = 0.1  # 10% chance per step for random slowdown
+SLOW_DOWN_DURATION_RANGE = (50, 200)  # Steps to maintain slow speed
+# Vehicle type variation (affects behavior)
+VEHICLE_TYPE_VARIATION_ENABLED = True
+TRUCK_PROBABILITY = 0.2  # 20% trucks (slower, different following distance)
+MOTORCYCLE_PROBABILITY = 0.1  # 10% motorcycles (faster, more aggressive)
+# Traffic light behavior variation
+TRAFFIC_LIGHT_VARIATION_ENABLED = True
+EARLY_BRAKE_PROBABILITY = 0.3  # 30% brake early at yellow lights
+LATE_BRAKE_PROBABILITY = 0.2   # 20% brake late at yellow lights
+# Lane changing behavior variation
+FREQUENT_LANE_CHANGES_ENABLED = True
+FREQUENT_CHANGER_PROBABILITY = 0.15  # 15% of vehicles change lanes frequently
+# Weather/visibility response (can be used with weather variations)
+WEATHER_RESPONSE_ENABLED = True
+CAUTIOUS_IN_WEATHER_PROBABILITY = 0.6  # 60% drive more cautiously in bad weather
 # Get the traffic manager
 tm = client.get_trafficmanager(8000)  # Port 8000
 tm.set_synchronous_mode(True)  # Make TM sync with simulation
+# Configure global traffic manager behavior for variation
+# if SPEED_VARIATION_ENABLED: # throws error
+#     # tm.set_global_percentage_speed_difference(-20.0)  # Base speed reduction
+#     tm.vehicle_percentage_speed_difference(-20.0)  # Base speed reduction
+if DISTANCE_VARIATION_ENABLED:
+    tm.set_global_distance_to_leading_vehicle(2.0)  # Base following distance
+
 # Get blueprint library
 blueprint_library = world.get_blueprint_library()
 # Spawn vehicles
 spawn_points = world.get_map().get_spawn_points()
 random.shuffle(spawn_points)
+# Track vehicle behavior states
+vehicle_behaviors = {}
+vehicle_slowdown_timers = {}
+n_vehicles = random.randint(30, 300)
 
-for i in range(35):
-    # vehicle_bp = blueprint_library.filter("vehicle.*")[0]
+
+for i in range(n_vehicles):
     spawn_point = spawn_points[i]
-    vehicle = world.spawn_actor(random.choice(blueprint_library.filter("vehicle.*")), spawn_point)
+    # Select vehicle type based on probabilities
+    if VEHICLE_TYPE_VARIATION_ENABLED:
+        rand_val = random.random()
+        if rand_val < TRUCK_PROBABILITY:
+            # Spawn truck/larger vehicle
+            truck_bps = [bp for bp in blueprint_library.filter("vehicle.*") if 
+                        any(truck_type in bp.id.lower() for truck_type in ['truck', 'van', 'caravan'])]
+            if truck_bps:
+                vehicle_bp = random.choice(truck_bps)
+                vehicle_type = 'truck'
+            else:
+                vehicle_bp = random.choice(blueprint_library.filter("vehicle.*"))
+                vehicle_type = 'normal'
+        elif rand_val < TRUCK_PROBABILITY + MOTORCYCLE_PROBABILITY:
+            # Spawn motorcycle/bike
+            bike_bps = [bp for bp in blueprint_library.filter("vehicle.*") if 
+                    any(bike_type in bp.id.lower() for bike_type in ['bike', 'motorcycle', 'yamaha', 'kawasaki'])]
+            if bike_bps:
+                vehicle_bp = random.choice(bike_bps)
+                vehicle_type = 'motorcycle'
+            else:
+                vehicle_bp = random.choice(blueprint_library.filter("vehicle.*"))
+                vehicle_type = 'normal'
+        else:
+            # Spawn regular car
+            vehicle_bp = random.choice(blueprint_library.filter("vehicle.*"))
+            vehicle_type = 'normal'
+    else:
+        vehicle_bp = random.choice(blueprint_library.filter("vehicle.*"))
+        vehicle_type = 'normal'
+    
+    vehicle = world.spawn_actor(vehicle_bp, spawn_point)
+    
+    # Store vehicle reference for behavior control
+    vehicle_id = vehicle.id
+    
     # Enable autopilot
     vehicle.set_autopilot(True, tm.get_port())  # TM handles driving
+    
+    # Apply vehicle type-specific behaviors
+    if vehicle_type == 'truck':
+        # Trucks: slower, larger following distance, more conservative
+        tm.vehicle_percentage_speed_difference(vehicle, random.uniform(-30.0, -10.0))  # Slower
+        tm.distance_to_leading_vehicle(vehicle, random.uniform(3.0, 5.0))  # Larger following distance
+        vehicle_behaviors[vehicle_id] = 'truck_conservative'
+    elif vehicle_type == 'motorcycle':
+        # Motorcycles: faster, smaller following distance, more aggressive
+        tm.vehicle_percentage_speed_difference(vehicle, random.uniform(10.0, 40.0))  # Faster
+        tm.distance_to_leading_vehicle(vehicle, random.uniform(0.5, 1.5))  # Smaller following distance
+        vehicle_behaviors[vehicle_id] = 'motorcycle_aggressive'
+    else:
+        # Apply normal individual vehicle behavior variations
+        if SPEED_VARIATION_ENABLED:
+            # Random speed factor for each vehicle
+            speed_factor = random.uniform(MIN_SPEED_FACTOR, MAX_SPEED_FACTOR)
+            speed_percentage = (speed_factor - 1.0) * 100.0
+            tm.vehicle_percentage_speed_difference(vehicle, speed_percentage)
+        
+        if DISTANCE_VARIATION_ENABLED:
+            # Random following distance for each vehicle
+            distance_factor = random.uniform(MIN_DISTANCE_FACTOR, MAX_DISTANCE_FACTOR)
+            tm.distance_to_leading_vehicle(vehicle, distance_factor)
+        
+        if AGGRESSIVE_DRIVING_ENABLED:
+            # Some vehicles drive more aggressively
+            if random.random() < AGGRESSIVE_PROBABILITY:
+                tm.vehicle_percentage_speed_difference(vehicle, random.uniform(20.0, 50.0))  # Faster
+                tm.distance_to_leading_vehicle(vehicle, random.uniform(0.5, 1.0))  # Closer following
+                vehicle_behaviors[vehicle_id] = 'aggressive'
+            else:
+                vehicle_behaviors[vehicle_id] = 'conservative'
+    
+    if LANE_CHANGE_VARIATION_ENABLED:
+        # Vary lane change distances
+        lane_change_distance = random.uniform(MIN_LANE_CHANGE_DISTANCE, MAX_LANE_CHANGE_DISTANCE)
+        tm.set_desired_speed(vehicle, random.uniform(20, 50))  # km/h variation
+    
+    if FREQUENT_LANE_CHANGES_ENABLED:
+        # Some vehicles change lanes more frequently
+        if random.random() < FREQUENT_CHANGER_PROBABILITY:
+            tm.auto_lane_change(vehicle, True)  # Enable automatic lane changes
+            # Make them more likely to change lanes by reducing lane change distance
+            tm.distance_to_leading_vehicle(vehicle, 1.0)  # Smaller following distance encourages lane changes
+            if vehicle_behaviors.get(vehicle_id) not in ['truck_conservative', 'motorcycle_aggressive']:
+                vehicle_behaviors[vehicle_id] = 'frequent_changer'
+    
+    # if BRAKING_VARIATION_ENABLED:
+    #     # Set random collision detection distances (affects braking behavior)
+    #     collision_distance = random.uniform(MIN_BRAKING_DISTANCE, MAX_BRAKING_DISTANCE)
+    #     tm.collision_detection(vehicle, vehicle, vehicle, collision_distance)
+    
+    # Initialize random slowdown timer
+    if RANDOM_SLOW_DOWNS_ENABLED:
+        vehicle_slowdown_timers[vehicle_id] = 0
+    
     # vehicles.append(vehicle)
 
+# dir(tm)
 _ = world.tick()
-
 tracks = []
-n_steps = 2000
+n_steps = 300
 print('number of vehicles: ', len(world.get_actors().filter("vehicle.*")))
 for i in tqdm(range(n_steps)):
     _ = world.tick()
+    # Apply dynamic behavior changes during simulation
+    if RANDOM_SLOW_DOWNS_ENABLED:
+        for act in world.get_actors().filter("vehicle.*"):
+            vehicle_id = act.id
+            # Check if vehicle should start slowing down
+            if vehicle_slowdown_timers.get(vehicle_id, 0) == 0:
+                if random.random() < SLOW_DOWN_PROBABILITY:
+                    # Start random slowdown
+                    slowdown_duration = random.randint(*SLOW_DOWN_DURATION_RANGE)
+                    vehicle_slowdown_timers[vehicle_id] = slowdown_duration
+                    # Apply temporary speed reduction
+                    tm.vehicle_percentage_speed_difference(act, -50.0)  # 50% speed reduction
+            # Update slowdown timer
+            elif vehicle_slowdown_timers[vehicle_id] > 0:
+                vehicle_slowdown_timers[vehicle_id] -= 1
+                # If timer reaches zero, restore normal speed
+                if vehicle_slowdown_timers[vehicle_id] == 0:
+                    # Restore original speed behavior
+                    if vehicle_behaviors.get(vehicle_id) == 'aggressive':
+                        tm.vehicle_percentage_speed_difference(act, random.uniform(20.0, 50.0))
+                    else:
+                        speed_factor = random.uniform(MIN_SPEED_FACTOR, MAX_SPEED_FACTOR)
+                        speed_percentage = (speed_factor - 1.0) * 100.0
+                        tm.vehicle_percentage_speed_difference(act, speed_percentage)        
+    # Apply periodic behavior variations every 500 steps
+    if i % 500 == 0 and i > 0:
+        for act in world.get_actors().filter("vehicle.*"):
+            # Randomly change some vehicle behaviors
+            if random.random() < 0.2:  # 20% chance to change behavior
+                if DISTANCE_VARIATION_ENABLED:
+                    new_distance = random.uniform(MIN_DISTANCE_FACTOR, MAX_DISTANCE_FACTOR)
+                    tm.distance_to_leading_vehicle(act, new_distance)
+                
+                if SPEED_VARIATION_ENABLED and vehicle_slowdown_timers.get(act.id, 0) == 0:
+                    # Only change speed if not in slowdown mode
+                    speed_factor = random.uniform(MIN_SPEED_FACTOR, MAX_SPEED_FACTOR)
+                    speed_percentage = (speed_factor - 1.0) * 100.0
+                    tm.vehicle_percentage_speed_difference(act, speed_percentage)
+    
     for act in world.get_actors().filter("vehicle.*"):
         # act = world.get_actors().filter("vehicle.*")[0]
         row = {}
@@ -182,10 +363,25 @@ for i in tqdm(range(n_steps)):
         row["actor_acceleration_lat"] = acceleration_lat
         row["lane_width"] = world_map.get_waypoint(act.get_location()).lane_width
         row["lane_type"] = world_map.get_waypoint(act.get_location()).lane_type
+        
+        # Add behavior tracking data
+        row["behavior_type"] = vehicle_behaviors.get(act.id, 'normal')
+        row["is_slowing_down"] = vehicle_slowdown_timers.get(act.id, 0) > 0
+        row["slowdown_remaining_steps"] = vehicle_slowdown_timers.get(act.id, 0)
+        
+        # Determine vehicle category from type_id
+        vehicle_type_id = act.type_id.lower()
+        if any(truck_type in vehicle_type_id for truck_type in ['truck', 'van', 'caravan']):
+            row["vehicle_category"] = 'truck'
+        elif any(bike_type in vehicle_type_id for bike_type in ['bike', 'motorcycle', 'yamaha', 'kawasaki']):
+            row["vehicle_category"] = 'motorcycle'
+        else:
+            row["vehicle_category"] = 'normal'            
         tracks.append(row)
 
 tracks_df = pd.DataFrame(tracks)
 tracks_df["map"] = world.get_map().name
 tracks_df["scene_id"] = dt_specifier
 tracks_df.to_parquet(f"carla/data/scene_{dt_specifier}_tracks.parquet")
+print(f"scene {dt_specifier} saved")
 
