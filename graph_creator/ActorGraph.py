@@ -496,8 +496,8 @@ class ActorGraph:
 
                         # TODO: PROBLEM: we are not checking i in relationt j,but not j to 1. We might miss a case here
 
-                        if track_id_A == "188747" and track_id_B == "188849":
-                            print(f"path: {path}")
+                        # if track_id_A == "188747" and track_id_B == "188849":
+                        #     print(f"path: {path}")
                         # third case: on neighboring lanes, forward
                         if (
                             sum([G_map.graph[u][v][0]["edge_type"] == "neighbor" for u, v in zip(path[:-1], path[1:])])
@@ -653,8 +653,8 @@ class ActorGraph:
                         lane_change = False
                     else:
                         lane_change = True
-                    if lane_change:
-                        print(node, previous_lane_id, lane_id, start_points, lane_change)
+                    #if lane_change:
+                    #     # print(node, previous_lane_id, lane_id, start_points, lane_change)
                 # In principle, here there could also be added a check for lane merge, i.e. counting if the start points had more then 1 element (before adding the current lane_id)
                 else:
                     lane_change = False
