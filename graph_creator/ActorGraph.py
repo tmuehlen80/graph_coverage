@@ -395,6 +395,135 @@ class ActorGraph:
         
         return relations_dict
 
+    def _find_relation_between_actors(self, track_id_A, track_id_B, t, G_map, max_distance_lead_veh_m, 
+                                     max_distance_neighbor_forward_m, max_distance_opposite_m):
+        """
+        Find the best relation from actor A to actor B.
+        
+        Returns:
+            Tuple of (relation_type, path_length) or None if no relation found
+        """
+        primary_lane_A = self.track_lane_dict[track_id_A][t][0] if self.track_lane_dict[track_id_A][t] else None
+        primary_lane_B = self.track_lane_dict[track_id_B][t][0] if self.track_lane_dict[track_id_B][t] else None
+        
+        if primary_lane_A is None or primary_lane_B is None:
+            return None
+
+        # Check for "following_lead" and "leading_vehicle" in same lane
+        if nx.has_path(G_map.graph, primary_lane_A, primary_lane_B):
+            path = nx.shortest_path(G_map.graph, primary_lane_A, primary_lane_B, weight=None)
+
+            if len(path) == 1:  # i.e. both on same lane
+                if (self.track_s_value_dict[track_id_B][t] > self.track_s_value_dict[track_id_A][t]) and (
+                    (self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t])
+                    < max_distance_lead_veh_m
+                ):
+                    path_length = self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t]
+                    return ("following_lead", path_length)
+
+            # second case: both in different, but following lanes:
+            if len(path) > 1 and all(
+                G_map.graph[u][v][0]["edge_type"] == "following" for u, v in zip(path[:-1], path[1:])
+            ):
+                path_length = (
+                    sum([G_map.graph.nodes[node]["node_info"].length for node in path[:-1]])
+                    + self.track_s_value_dict[track_id_B][t]
+                    - self.track_s_value_dict[track_id_A][t]
+                )
+                if path_length < max_distance_lead_veh_m:
+                    return ("following_lead", path_length)
+
+            # third case: on neighboring lanes, forward
+            if (
+                sum([G_map.graph[u][v][0]["edge_type"] == "neighbor" for u, v in zip(path[:-1], path[1:])])
+                == 1
+            ) and (
+                sum([G_map.graph[u][v][0]["edge_type"] == "following" for u, v in zip(path[:-1], path[1:])])
+                == len(path) - 2
+            ):
+                path_length = (
+                    sum(
+                        [
+                            G_map.graph.nodes[path[i]]["node_info"].length
+                            for i in range(len(path) - 1)
+                            if G_map.graph[path[i]][path[i + 1]][0]["edge_type"] != "neighbor"
+                        ]
+                    )
+                    + self.track_s_value_dict[track_id_B][t]
+                    - self.track_s_value_dict[track_id_A][t]
+                )
+                if path_length < max_distance_neighbor_forward_m:
+                    return ("neighbor_vehicle", path_length)
+
+            # fourth case: on opposite, directly next lane:
+            if (
+                sum([G_map.graph[u][v][0]["edge_type"] == "opposite" for u, v in zip(path[:-1], path[1:])])
+                == 1
+            ) and (
+                sum([G_map.graph[u][v][0]["edge_type"] == "following" for u, v in zip(path[:-1], path[1:])])
+                == len(path) - 2
+            ):
+                path_length = (
+                    sum(
+                        [
+                            G_map.graph.nodes[path[i]]["node_info"].length
+                            for i in range(len(path) - 1)
+                            if G_map.graph[path[i]][path[i + 1]][0]["edge_type"] != "opposite"
+                        ]
+                    )
+                    + G_map.graph.nodes[path[-1]]["node_info"].length
+                    - self.track_s_value_dict[track_id_B][t]
+                    - self.track_s_value_dict[track_id_A][t]
+                )
+                if path_length < max_distance_opposite_m:
+                    return ("opposite_vehicle", path_length)
+
+        return None
+
+    def _choose_better_relation(self, relation_A_to_B, relation_B_to_A):
+        """
+        Choose the better relation between two actors based on path length and hierarchy.
+        
+        Hierarchy: following > neighbor > opposite
+        """
+        if relation_A_to_B is None and relation_B_to_A is None:
+            return None, None
+        
+        if relation_A_to_B is None:
+            return relation_B_to_A, "B_to_A"
+        if relation_B_to_A is None:
+            return relation_A_to_B, "A_to_B"
+        
+        # Get hierarchy scores
+        hierarchy_A = self._get_relation_hierarchy_score(relation_A_to_B[0])
+        hierarchy_B = self._get_relation_hierarchy_score(relation_B_to_A[0])
+        
+        # If same hierarchy, choose shorter path
+        if hierarchy_A == hierarchy_B:
+            if relation_A_to_B[1] <= relation_B_to_A[1]:
+                return relation_A_to_B, "A_to_B"
+            else:
+                return relation_B_to_A, "B_to_A"
+        
+        # If different hierarchy, choose higher hierarchy
+        if hierarchy_A > hierarchy_B:
+            return relation_A_to_B, "A_to_B"
+        else:
+            return relation_B_to_A, "B_to_A"
+
+    def _get_relation_hierarchy_score(self, relation_type):
+        """
+        Get hierarchy score for relation types.
+        Higher score = higher priority.
+        """
+        hierarchy = {
+            "leading_vehicle": 3,      # Highest priority
+            "following_lead": 3,       # Same as leading_vehicle
+            "neighbor_vehicle": 2,     # Medium priority
+            "opposite_vehicle": 1      # Lowest priority
+        }
+        return hierarchy.get(relation_type, 0)
+
     def create_actor_graphs(
         self,
         G_map,
@@ -475,126 +604,62 @@ class ActorGraph:
 
                     if lane_id_list_B is None or lane_id_list_B == [None]:
                         continue
-                    # TODO:
-                    # For now, use the first lane ID from each list for path finding
-                    # In the future, we might want to check all combinations
-                    primary_lane_A = lane_id_list_A[0] if lane_id_list_A[0] is not None else None
-                    primary_lane_B = lane_id_list_B[0] if lane_id_list_B[0] is not None else None
+
+                    # Find relations in both directions
+                    relation_A_to_B = self._find_relation_between_actors(
+                        track_id_A, track_id_B, t, G_map, 
+                        max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_opposite_m
+                    )
                     
-                    if primary_lane_A is None or primary_lane_B is None:
-                        continue
+                    relation_B_to_A = self._find_relation_between_actors(
+                        track_id_B, track_id_A, t, G_map, 
+                        max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_opposite_m
+                    )
 
-                    # Check for "following_lead" and "leading_vehicle" in same lane
-                    if nx.has_path(G_map.graph, primary_lane_A, primary_lane_B):
-
-                        path = nx.shortest_path(G_map.graph, primary_lane_A, primary_lane_B, weight=None)
-
-                        if len(path) == 1:  # i.e. both on same lane
-                            if (self.track_s_value_dict[track_id_B][t] > self.track_s_value_dict[track_id_A][t]) and (
-                                (self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t])
-                                < max_distance_lead_veh_m
-                            ):
-                                path_length = self.track_s_value_dict[track_id_B][t] - self.track_s_value_dict[track_id_A][t]
-                                
-                                # Manage leading vehicle relations for both actors
-                                relations_dict = self._manage_n_shortest_relations(
-                                    relations_dict, track_id_B, "leading_vehicle", 
-                                    (track_id_A, path_length), max_number_lead_vehicle
-                                )
+                    # Choose the better relation based on path length and hierarchy
+                    best_relation, direction = self._choose_better_relation(relation_A_to_B, relation_B_to_A)
+                    
+                    if best_relation is not None:
+                        relation_type, path_length = best_relation
+                        
+                        # Add the relation to the appropriate actor based on direction
+                        if direction == "A_to_B":
+                            # A has the relation to B
+                            if relation_type == "following_lead":
                                 relations_dict = self._manage_n_shortest_relations(
                                     relations_dict, track_id_A, "following_lead", 
                                     (track_id_B, path_length), max_number_lead_vehicle
                                 )
-
-                        # second case: both in different, but following lanes:
-                        if len(path) > 1 and all(
-                            G_map.graph[u][v][0]["edge_type"] == "following" for u, v in zip(path[:-1], path[1:])
-                        ):
-                            path_length = (
-                                sum([G_map.graph.nodes[node]["node_info"].length for node in path[:-1]])
-                                + self.track_s_value_dict[track_id_B][t]
-                                - self.track_s_value_dict[track_id_A][t]
-                            )
-                            if path_length < max_distance_lead_veh_m:
-                                # Manage leading vehicle relations for both actors
-                                relations_dict = self._manage_n_shortest_relations(
-                                    relations_dict, track_id_B, "leading_vehicle", 
-                                    (track_id_A, path_length), max_number_lead_vehicle
-                                )
-                                relations_dict = self._manage_n_shortest_relations(
-                                    relations_dict, track_id_A, "following_lead", 
-                                    (track_id_B, path_length), max_number_lead_vehicle
-                                )
-
-                        # TODO: PROBLEM: we are not checking i in relationt j,but not j to 1. We might miss a case here
-
-                        # if track_id_A == "188747" and track_id_B == "188849":
-                        #     print(f"path: {path}")
-                        # third case: on neighboring lanes, forward
-                        if (
-                            sum([G_map.graph[u][v][0]["edge_type"] == "neighbor" for u, v in zip(path[:-1], path[1:])])
-                            == 1
-                        ) and (
-                            sum([G_map.graph[u][v][0]["edge_type"] == "following" for u, v in zip(path[:-1], path[1:])])
-                            == len(path) - 2
-                        ):
-                            # remove the neighbor node, otherwise that stretch is counted twice.
-                            path_length = (
-                                sum(
-                                    [
-                                        G_map.graph.nodes[path[i]]["node_info"].length
-                                        for i in range(len(path) - 1)
-                                        if G_map.graph[path[i]][path[i + 1]][0]["edge_type"] != "neighbor"
-                                    ]
-                                )
-                                + self.track_s_value_dict[track_id_B][t]
-                                - self.track_s_value_dict[track_id_A][t]
-                            )
-                            if path_length < max_distance_neighbor_forward_m:
-                                # Manage neighbor relations for both actors
-                                relations_dict = self._manage_n_shortest_relations(
-                                    relations_dict, track_id_B, "neighbor_vehicle", 
-                                    (track_id_A, path_length), max_number_neighbor
-                                )
+                            elif relation_type == "neighbor_vehicle":
                                 relations_dict = self._manage_n_shortest_relations(
                                     relations_dict, track_id_A, "neighbor_vehicle", 
                                     (track_id_B, path_length), max_number_neighbor
                                 )
-
-                        # fourth case: on opposite, directly next lane:
-                        # TODO: Marius has to double check this logic.
-                        if (
-                            sum([G_map.graph[u][v][0]["edge_type"] == "opposite" for u, v in zip(path[:-1], path[1:])])
-                            == 1
-                        ) and (
-                            sum([G_map.graph[u][v][0]["edge_type"] == "following" for u, v in zip(path[:-1], path[1:])])
-                            == len(path) - 2
-                        ):
-                            # remove the opposite node, otherwise that stretch is counted twice. if there is something to check, than if this logic is correct.
-                            # Taking -s from the other actor on the opposite direciton, as the s value should be in opposite direction as welll, hopefully..
-                            path_length = (
-                                sum(
-                                    [
-                                        G_map.graph.nodes[path[i]]["node_info"].length
-                                        for i in range(len(path) - 1)
-                                        if G_map.graph[path[i]][path[i + 1]][0]["edge_type"] != "opposite"
-                                    ]
-                                )
-                                + G_map.graph.nodes[path[-1]]["node_info"].length
-                                - self.track_s_value_dict[track_id_B][t]
-                                - self.track_s_value_dict[track_id_A][t]
-                            )
-                            if path_length < max_distance_opposite_m:
-                                # Manage opposite relations for both actors
-                                relations_dict = self._manage_n_shortest_relations(
-                                    relations_dict, track_id_B, "opposite_vehicle", 
-                                    (track_id_A, path_length), max_number_opposite
-                                )
+                            elif relation_type == "opposite_vehicle":
                                 relations_dict = self._manage_n_shortest_relations(
                                     relations_dict, track_id_A, "opposite_vehicle", 
                                     (track_id_B, path_length), max_number_opposite
                                 )
+                        else:  # direction == "B_to_A"
+                            # B has the relation to A
+                            if relation_type == "following_lead":
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_B, "following_lead", 
+                                    (track_id_A, path_length), max_number_lead_vehicle
+                                )
+                            elif relation_type == "neighbor_vehicle":
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_B, "neighbor_vehicle", 
+                                    (track_id_A, path_length), max_number_neighbor
+                                )
+                            elif relation_type == "opposite_vehicle":
+                                relations_dict = self._manage_n_shortest_relations(
+                                    relations_dict, track_id_B, "opposite_vehicle", 
+                                    (track_id_A, path_length), max_number_opposite
+                                )
 
+            # No need to call optimization here - we'll handle it in the main loop
+            
             # Hierarchical graph construction: add edges step by step
             # Step 1: Add leading/following relations (shortest first)
             leading_following_relations = []
