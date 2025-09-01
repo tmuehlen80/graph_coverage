@@ -51,7 +51,47 @@ def get_t_coordinate(actor, world_map):
 
 clean_carla(world)
 _ = world.tick()
-client.load_world(random.choice(client.get_available_maps()))
+client.get_available_maps()
+# ['/Game/Carla/Maps/Town01', 
+# '/Game/Carla/Maps/Town10HD_Opt', 
+# '/Game/Carla/Maps/Town01_Opt', 
+# '/Game/Carla/Maps/Town02_Opt', 
+# '/Game/Carla/Maps/Town04', 
+# '/Game/Carla/Maps/Town03_Opt', 
+# '/Game/Carla/Maps/Town02', 
+# '/Game/Carla/Maps/Town04_Opt', 
+# '/Game/Carla/Maps/Town10HD', 
+# '/Game/Carla/Maps/Town05', 
+# '/Game/Carla/Maps/Town03', 
+# '/Game/Carla/Maps/Town05_Opt']
+
+maps = [
+    '/Game/Carla/Maps/Town01', 
+    '/Game/Carla/Maps/Town01_Opt', 
+    '/Game/Carla/Maps/Town02_Opt', 
+    '/Game/Carla/Maps/Town02', 
+    '/Game/Carla/Maps/Town03', 
+    '/Game/Carla/Maps/Town04', 
+    '/Game/Carla/Maps/Town04_Opt', 
+    '/Game/Carla/Maps/Town05_Opt', 
+    '/Game/Carla/Maps/Town05', 
+    '/Game/Carla/Maps/Town07', 
+    '/Game/Carla/Maps/Town10HD', 
+    '/Game/Carla/Maps/Town10HD_Opt', 
+    '/Game/Carla/Maps/Town11/Town11' 
+# '/Game/Carla/Maps/Town06', 
+# '/Game/Carla/Maps/Town03_Opt', 
+# '/Game/Carla/Maps/Town13/Town13', 
+# '/Game/Carla/Maps/Town15/Town15', 
+#'/Game/Carla/Maps/Town12/Town12'
+]
+
+# Town15 does not work, Town11 as well
+# map = random.choice(client.get_available_maps())
+
+map = random.choice(maps)
+print(map)
+client.load_world(map)
 # create the lane map graph and store it to file:
 world_map = world.get_map()
 map_g = MapGraph()
@@ -125,7 +165,7 @@ random.shuffle(spawn_points)
 # Track vehicle behavior states
 vehicle_behaviors = {}
 vehicle_slowdown_timers = {}
-n_vehicles = random.randint(30, 300)
+n_vehicles = random.randint(30, 50)
 
 
 for i in range(n_vehicles):
