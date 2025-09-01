@@ -198,18 +198,26 @@ class MapGraph:
             node: (data["node_info"].lane_polygon.centroid.x, data["node_info"].lane_polygon.centroid.y)
             for node, data in self.graph.nodes(data=True)
         }
-        labels = {node: node for node in self.graph.nodes()}
-
+        
+        # Create truncated labels by removing common leading characters
+        labels = self._create_truncated_labels(list(self.graph.nodes()))
+        
         plt.figure(figsize=(12, 12))
         node_size = 50
+        
+        # Calculate label positions below nodes with collision detection
+        label_pos = self._calculate_label_positions(pos, labels, node_size)
+        
         nx.draw_networkx_nodes(self.graph, pos, node_size=node_size)
+        
+        # Draw labels at calculated positions (not on nodes)
         nx.draw_networkx_labels(
             self.graph,
-            pos,
+            label_pos,
             labels=labels,
-            font_size=8,
-            font_color="black",
-            verticalalignment="bottom",
+            font_size=6,  # Smaller font size
+            font_color="darkred",  # Changed to darkred for better visibility against blue arrows
+            font_weight="bold",  # Make text more readable
         )
 
         # Helper function to offset edges orthogonally to their direction
@@ -287,6 +295,125 @@ class MapGraph:
             plt.savefig(save_path, bbox_inches='tight', dpi=300)
         else:
             plt.show()
+
+    def _create_truncated_labels(self, node_ids):
+        """
+        Create truncated labels by removing common leading characters.
+        
+        Args:
+            node_ids: List of node IDs (strings)
+            
+        Returns:
+            Dictionary mapping original node IDs to truncated labels
+        """
+        if not node_ids:
+            return {}
+        
+        # Convert to strings and find common leading characters
+        str_ids = [str(node_id) for node_id in node_ids]
+        
+        # Find the longest common prefix
+        if len(str_ids) == 1:
+            common_prefix = ""
+        else:
+            # Find common prefix by comparing characters
+            common_prefix = ""
+            min_length = min(len(s) for s in str_ids)
+            
+            for i in range(min_length):
+                char = str_ids[0][i]
+                if all(s[i] == char for s in str_ids):
+                    common_prefix += char
+                else:
+                    break
+        
+        # Create truncated labels
+        labels = {}
+        for node_id in node_ids:
+            str_id = str(node_id)
+            if str_id.startswith(common_prefix):
+                # Remove common prefix and keep the rest
+                truncated = str_id[len(common_prefix):]
+                # If truncated is empty, keep at least one character
+                if not truncated:
+                    truncated = str_id[-1] if len(str_id) > 0 else str_id
+                labels[node_id] = truncated
+            else:
+                # Fallback: keep original if no common prefix
+                labels[node_id] = str_id
+        
+        return labels
+
+    def _calculate_label_positions(self, pos, labels, node_size, label_offset=0.8):
+        """
+        Calculate label positions below nodes with collision detection to prevent overlapping.
+        
+        Args:
+            pos: Dictionary of node positions
+            labels: Dictionary of node labels
+            node_size: Size of nodes (used for spacing calculations)
+            label_offset: Vertical offset below nodes
+            
+        Returns:
+            Dictionary of label positions
+        """
+        label_pos = {}
+        used_positions = []
+        
+        # Convert node_size to coordinate units (approximate)
+        # node_size is in points, we need to estimate coordinate units
+        # This is a rough approximation - you may need to adjust based on your data
+        spacing = node_size * 0.01  # Adjust this multiplier based on your coordinate system
+        
+        for node, label in labels.items():
+            if node not in pos:
+                continue
+                
+            x, y = pos[node]
+            # Start with position below the node
+            label_x, label_y = x, y - label_offset
+            
+            # Check for collisions and adjust position
+            attempts = 0
+            max_attempts = 20
+            
+            while attempts < max_attempts:
+                collision = False
+                
+                # Check collision with existing labels
+                for used_x, used_y in used_positions:
+                    if abs(label_x - used_x) < spacing and abs(label_y - used_y) < spacing:
+                        collision = True
+                        break
+                
+                if not collision:
+                    break
+                
+                # Try different positions: left, right, above, diagonal
+                if attempts % 4 == 0:
+                    label_x, label_y = x - label_offset, y - label_offset  # Left below
+                elif attempts % 4 == 1:
+                    label_x, label_y = x + label_offset, y - label_offset  # Right below
+                elif attempts % 4 == 2:
+                    label_x, label_y = x, y + label_offset  # Above
+                else:
+                    # Diagonal positions
+                    angle = (attempts // 4) * np.pi / 4
+                    label_x = x + label_offset * np.cos(angle)
+                    label_y = y + label_offset * np.sin(angle)
+                
+                attempts += 1
+            
+            # If we still have collision, just place it with some random offset
+            if attempts >= max_attempts:
+                import random
+                label_x = x + random.uniform(-label_offset, label_offset)
+                label_y = y + random.uniform(-label_offset, label_offset)
+            
+            label_pos[node] = (label_x, label_y)
+            used_positions.append((label_x, label_y))
+        
+        return label_pos
 
     def store_graph_to_file(self, save_path=str):
         with open(save_path, "wb") as file:
