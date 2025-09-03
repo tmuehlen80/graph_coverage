@@ -1,0 +1,169 @@
+# ActorGraph Algorithm Rules and Guidelines
+
+## Overview
+The ActorGraph system creates temporal graphs representing vehicle relationships in traffic scenarios. It uses a two-phase approach: exploration followed by hierarchical graph construction.
+
+## Core Algorithm Architecture
+
+### Phase 1: Exploration Phase
+- **Purpose**: Discover all potential relations between actors within distance limits
+- **No Graph Construction**: Only collects potential edges, no NetworkX graph exists yet
+- **Output**: `relations_dict` mapping actor_id → relation_types → [(target_actor_id, path_length)]
+- **Directionality**: Only ONE relation per actor pair is stored (chosen by `_choose_better_relation()`)
+- **Node Minimization**: This approach minimizes the number of relations while ensuring optimal selection
+
+### Phase 2: Graph Construction Phase
+- **Purpose**: Build the actual NetworkX graph using discovered relations
+- **Hierarchical Order**: Leading → Neighbor → Opposite (each processed shortest-first)
+- **Path Checking**: Before adding each edge, verify no shorter path exists within `max_node_distance`
+
+## Key Methods and Their Responsibilities
+
+### `_explore_relations()`
+- Iterates through all actor pairs
+- Calls `_find_relation_between_actors()` for both directions
+- Uses `_choose_better_relation()` to select optimal relation
+- **Stores only ONE relation per actor pair** (minimizes nodes)
+- Returns `relations_dict` with unique relations per actor
+
+### `_construct_graph()`
+- Orchestrates the three-step construction process
+- Ensures proper order: leading → neighbor → opposite
+- Passes appropriate `max_node_distance` values to each step
+
+### `_add_leading_following_edges()`
+- Processes leading_vehicle and following_lead relations
+- **Distance Logic**: Path lengths are ALWAYS POSITIVE (map is one-directional)
+- **Direction**: Following → Leading represents forward movement along the lane
+- **Sorting**: By path_length (shortest first) - no abs() needed
+- **Bidirectional**: Adds both A→B and B→A edges for complete connectivity
+- **Why Bidirectional**: Graph construction needs both directions for path finding, even though exploration only discovered one
+
+### `_add_neighbor_edges()`
+- Processes neighbor_vehicle relations
+- Sorts by absolute path_length (shortest first) - handles negative distances
+- Adds edges bidirectionally with path checking
+
+### `_add_opposite_edges()`
+- Processes opposite_vehicle relations
+- Applies separate forward/backward distance limits
+- Checks both directions together to prevent redundant edges
+- **Redundancy Prevention**: If either direction has a path, neither gets added
+
+## Critical Implementation Details
+
+### Path Checking Logic
+```python
+# Before adding any edge, check if a shorter path already exists
+if not self._has_path_within_distance(G_t, actor_id, target_actor_id, max_node_distance):
+    G_t.add_edge(...)
+```
+
+### Graph Updates
+- **CRITICAL**: Graph must be updated after EVERY edge addition
+- This ensures subsequent path checks use the current graph state
+- Prevents timing issues where old graph state is used for decisions
+
+### Bidirectional Edge Addition
+- Each relation type adds edges in both directions (A→B and B→A)
+- **Why Both Directions**: Even though exploration only found one relation, graph needs both for complete path finding
+- Path checking is done for each direction independently
+- This ensures complete connectivity for path finding
+
+### Distance Sorting
+- **Leading/Following**: Sort by `path_length` (shortest first) - **ALWAYS POSITIVE** since map is one-directional
+- **Neighbor/Opposite**: Sort by `abs(path_length)` (absolute value, handles negatives)
+
+## Parameter Configuration
+
+### Distance Limits (Exploration Phase)
+- `max_distance_lead_veh_m`: Maximum distance for leading vehicle relations
+- `max_distance_opposite_forward_m`: Maximum distance for forward opposite vehicle relations
+- `max_distance_opposite_backward_m`: Maximum distance for backward opposite vehicle relations
+- `max_distance_neighbor_forward_m`: Maximum distance for forward neighbor vehicle relations
+- `max_distance_neighbor_backward_m`: Maximum distance for backward neighbor vehicle relations
+
+### Node Distance Limits (Construction Phase)
+- `max_node_distance_leading`: Maximum nodes for leading/following path checking
+- `max_node_distance_neighbor`: Maximum nodes for neighbor path checking
+- `max_node_distance_opposite`: Maximum nodes for opposite path checking
+
+## Common Pitfalls and Solutions
+
+### 1. Redundant Opposite Relations
+- **Problem**: Multiple opposite edges between same actor pair
+- **Solution**: Check both directions together, if either has a path, don't add either
+- **Code**: `should_add_A_to_B` and `should_add_B_to_A` logic
+- **Status**: This should NOT happen with current implementation
+
+### 2. Path Checking Timing
+- **Problem**: Using stale graph state for path decisions
+- **Solution**: Update graph after every single edge addition
+- **Code**: Path checking happens immediately after each edge addition
+
+### 3. Distance Sorting
+- **Problem**: Negative distances in neighbor/opposite relations
+- **Solution**: Use `abs(path_length)` for sorting
+- **Code**: `neighbor_relations.sort(key=lambda x: abs(x[2]))`
+
+### 4. Leading/Following Distance Confusion
+- **Problem**: Thinking leading/following can have negative distances
+- **Reality**: Leading/following distances are ALWAYS POSITIVE (map is one-directional)
+- **Solution**: Use `path_length` directly, no `abs()` needed
+
+## Usage Examples
+
+### Basic Usage
+```python
+actor_graph = ActorGraph.from_argoverse_scenario(
+    scenario, 
+    G_map,
+    max_node_distance_leading=6,      # Allow longer following chains
+    max_node_distance_neighbor=3,     # Standard neighbor connectivity
+    max_node_distance_opposite=2      # Strict opposite relations
+)
+```
+
+### Custom Distance Limits
+```python
+actor_graph.create_actor_graphs(
+    G_map,
+    max_distance_lead_veh_m=150,           # Longer leading distances
+    max_distance_neighbor_forward_m=75,    # Extended neighbor range
+    max_distance_opposite_forward_m=120,   # Wider opposite detection
+    max_node_distance_leading=8,           # Very permissive following
+    max_node_distance_neighbor=4,          # Extended neighbor paths
+    max_node_distance_opposite=2           # Keep opposites direct
+)
+```
+
+## Testing and Debugging
+
+### When Adding New Features
+1. **Maintain Two-Phase Separation**: Keep exploration and construction phases distinct
+2. **Update Graph Immediately**: After any edge addition, ensure graph state is current
+3. **Test Path Checking**: Verify `_has_path_within_distance` works with updated graph
+4. **Check Bidirectionality**: Ensure both A→B and B→A edges are handled correctly
+
+### Debugging Common Issues
+1. **Too Many Edges**: Check `max_node_distance` values and path checking logic
+2. **Missing Relations**: Verify exploration phase distance limits
+3. **Redundant Edges**: Check bidirectional edge addition and path checking
+4. **Performance Issues**: Ensure graph updates happen incrementally, not in batches
+
+## Code Style Guidelines
+
+### Method Naming
+- Use descriptive names: `_add_leading_following_edges()`
+- Prefix private methods with underscore: `_explore_relations()`
+- Use consistent naming: `max_node_distance_*` for all relation types
+
+### Documentation
+- Include comprehensive docstrings for all public methods
+- Document critical implementation details in comments
+- Explain why certain approaches are used (e.g., bidirectional edges)
+
+### Error Handling
+- Validate input parameters in factory methods
+- Use assertions for critical invariants (e.g., sorted timestamps)
+- Provide clear error messages for debugging
