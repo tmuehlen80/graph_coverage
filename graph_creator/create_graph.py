@@ -90,7 +90,7 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
                 fontsize=8,
                 ha="center",
                 va="center",
-                color="blue",
+                color="red",
             )
 
     # If actor_graph is provided, draw the edges
@@ -105,113 +105,7 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
         edge_type_neighbor_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "neighbor_vehicle"]
         edge_type_opposite_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "opposite_vehicle"]
 
-        # Function to calculate offset positions for multiple arrows between same nodes
-        def calculate_arrow_offset(pos_u, pos_v, edge_count, edge_index, offset_distance=0.5):
-            """
-            Calculate offset positions for arrows to avoid overlap.
-            
-            Args:
-                pos_u: Start position (x, y)
-                pos_v: End position (x, y)
-                edge_count: Total number of edges between these nodes
-                edge_index: Index of this edge (0, 1, 2, ...)
-                offset_distance: Distance to offset perpendicular to arrow direction
-            
-            Returns:
-                Tuple of (offset_start, offset_end) positions
-            """
-            if edge_count <= 1:
-                return pos_u, pos_v
-            
-            # Calculate arrow direction vector
-            dx = pos_v[0] - pos_u[0]
-            dy = pos_v[1] - pos_u[1]
-            arrow_length = np.sqrt(dx**2 + dy**2)
-            
-            if arrow_length == 0:
-                return pos_u, pos_v
-            
-            # Normalize direction vector
-            dx_norm = dx / arrow_length
-            dy_norm = dy / arrow_length
-            
-            # Calculate perpendicular vector (90 degree rotation)
-            perp_dx = -dy_norm
-            perp_dy = dx_norm
-            
-            # Calculate offset based on edge index
-            # Center the offsets around the original line
-            offset_multiplier = (edge_index - (edge_count - 1) / 2) * offset_distance
-            
-            # Apply offset to create a parallel line, but keep endpoints at nodes
-            # We'll offset the control points for the arrow, not the start/end
-            offset_start = (
-                pos_u[0] + perp_dx * offset_multiplier,
-                pos_u[1] + perp_dy * offset_multiplier
-            )
-            offset_end = (
-                pos_v[0] + perp_dx * offset_multiplier,
-                pos_v[1] + perp_dy * offset_multiplier
-            )
-            
-            # Debug: print offset information
-            if edge_count > 1:
-                print(f"Edge {edge_index + 1}/{edge_count} between nodes: offset_multiplier={offset_multiplier:.2f}, "
-                      f"offset_distance={offset_distance}, perp_vector=({perp_dx:.3f}, {perp_dy:.3f})")
-                print(f"  Original: ({pos_u[0]:.1f}, {pos_u[1]:.1f}) -> ({pos_v[0]:.1f}, {pos_v[1]:.1f})")
-                print(f"  Offset:   ({offset_start[0]:.1f}, {offset_start[1]:.1f}) -> ({offset_end[0]:.1f}, {offset_end[1]:.1f})")
-            
-            return offset_start, offset_end
-
-        # Group edges by node pairs to count multiple edges
-        def group_edges_by_nodes(edges):
-            edge_groups = {}
-            for u, v in edges:
-                pair = tuple(sorted([u, v]))
-                if pair not in edge_groups:
-                    edge_groups[pair] = []
-                edge_groups[pair].append((u, v))
-            return edge_groups
-
-        # Group ALL edges by node pairs to handle overlapping edges of different types
-        def group_all_edges_by_nodes():
-            all_edges = []
-            all_edges.extend([(u, v, 'following_lead') for u, v in edge_type_following_lead])
-            all_edges.extend([(u, v, 'leading_vehicle') for u, v in edge_type_leading_vehicle])
-            all_edges.extend([(u, v, 'neighbor_vehicle') for u, v in edge_type_neighbor_vehicle])
-            all_edges.extend([(u, v, 'opposite_vehicle') for u, v in edge_type_opposite_vehicle])
-            
-            edge_groups = {}
-            for u, v, edge_type in all_edges:
-                pair = tuple(sorted([u, v]))
-                if pair not in edge_groups:
-                    edge_groups[pair] = []
-                edge_groups[pair].append((u, v, edge_type))
-            return edge_groups
-
-        # Group edges by shared nodes to handle overlapping arrows
-        def group_edges_by_shared_nodes():
-            all_edges = []
-            all_edges.extend([(u, v, 'following_lead') for u, v in edge_type_following_lead])
-            all_edges.extend([(u, v, 'leading_vehicle') for u, v in edge_type_leading_vehicle])
-            all_edges.extend([(u, v, 'neighbor_vehicle') for u, v in edge_type_neighbor_vehicle])
-            all_edges.extend([(u, v, 'opposite_vehicle') for u, v in edge_type_opposite_vehicle])
-            
-            # Group edges by shared nodes (either start or end)
-            node_groups = {}
-            for u, v, edge_type in all_edges:
-                # Add to groups for both start and end nodes
-                if u not in node_groups:
-                    node_groups[u] = []
-                if v not in node_groups:
-                    node_groups[v] = []
-                
-                node_groups[u].append((u, v, edge_type))
-                node_groups[v].append((u, v, edge_type))
-            
-            return node_groups
-
-        # Collect all edges and their positions for overlap detection
+       # Collect all edges and their positions for overlap detection
         all_edge_positions = []
         
         # Draw edges with arrows and offset handling
@@ -291,9 +185,6 @@ if __name__ == "__main__":
     actor_graph = ActorGraph.from_argoverse_scenario(
         scenario, 
         G_map,
-        max_number_lead_vehicle=1,
-        max_number_neighbor=1,
-        max_number_opposite=1,
         max_node_distance=3
     )
     show_timestep = 1.0
