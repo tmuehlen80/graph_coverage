@@ -81,11 +81,13 @@ def plot_lane_map(graph, figsize=(15, 10), intersection_color='red', lane_color=
 
 # Advanced version with more customization
 def plot_lane_map_advanced(graph, figsize=(15, 10), show_labels=True, 
-                         color_by_length=False, cmap='viridis'):
+                         color_by_length=False, cmap='viridis', fig = None, ax = None):
    """
    Advanced lane map plotting with additional features.
    """
-   fig, ax = plt.subplots(figsize=figsize)
+
+   if fig is None or ax is None:
+       fig, ax = plt.subplots(figsize=figsize)
    
    all_x_coords = []
    all_y_coords = []
