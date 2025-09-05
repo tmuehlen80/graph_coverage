@@ -3,6 +3,7 @@ from argparse import Namespace
 import matplotlib.pyplot as plt
 import av2.rendering.vector as vector_plotting_utils
 from shapely.geometry import Polygon
+import numpy as np
 
 from MapGraph import MapGraph
 from ActorGraph import ActorGraph
@@ -84,12 +85,12 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
             ax.plot(position[0], position[1], "bo", markersize=5)
             ax.text(
                 position[0],
-                position[1] - 2.5,
+                position[1] - 0.5,  # Reduced from 2.5 to 0.5 for closer positioning
                 track.track_id,
                 fontsize=8,
                 ha="center",
                 va="center",
-                color="blue",
+                color="red",
             )
 
     # If actor_graph is provided, draw the edges
@@ -104,30 +105,53 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
         edge_type_neighbor_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "neighbor_vehicle"]
         edge_type_opposite_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "opposite_vehicle"]
 
-        # Draw edges with arrows
-        for u, v in edge_type_following_lead:
-            pos_u = (G.nodes[u]['xyz'].x, G.nodes[u]['xyz'].y)
-            pos_v = (G.nodes[v]['xyz'].x, G.nodes[v]['xyz'].y)
-            ax.annotate("", xy=pos_v, xytext=pos_u,
-                       arrowprops=dict(arrowstyle="->", color='blue', linewidth=1.5, alpha=0.7))
-
-        for u, v in edge_type_leading_vehicle:
-            pos_u = (G.nodes[u]['xyz'].x, G.nodes[u]['xyz'].y)
-            pos_v = (G.nodes[v]['xyz'].x, G.nodes[v]['xyz'].y)
-            ax.annotate("", xy=pos_v, xytext=pos_u,
-                       arrowprops=dict(arrowstyle="->", color='red', linewidth=1.5, alpha=0.7))
-
-        for u, v in edge_type_neighbor_vehicle:
-            pos_u = (G.nodes[u]['xyz'].x, G.nodes[u]['xyz'].y)
-            pos_v = (G.nodes[v]['xyz'].x, G.nodes[v]['xyz'].y)
-            ax.annotate("", xy=pos_v, xytext=pos_u,
-                       arrowprops=dict(arrowstyle="->", color='forestgreen', linewidth=1.5, alpha=0.7))
-
-        for u, v in edge_type_opposite_vehicle:
-            pos_u = (G.nodes[u]['xyz'].x, G.nodes[u]['xyz'].y)
-            pos_v = (G.nodes[v]['xyz'].x, G.nodes[v]['xyz'].y)
-            ax.annotate("", xy=pos_v, xytext=pos_u,
-                       arrowprops=dict(arrowstyle="->", color='orange', linewidth=1.5, alpha=0.7))
+       # Collect all edges and their positions for overlap detection
+        all_edge_positions = []
+        
+        # Draw edges with arrows and offset handling
+        for edge_type_name, edges, color in [
+            ("following_lead", edge_type_following_lead, 'blue'),
+            ("leading_vehicle", edge_type_leading_vehicle, 'red'),
+            ("neighbor_vehicle", edge_type_neighbor_vehicle, 'forestgreen'),
+            ("opposite_vehicle", edge_type_opposite_vehicle, 'orange')
+        ]:
+            print(f"\n{edge_type_name}: {len(edges)} total edges")
+            
+            for u, v in edges:
+                pos_u = (G.nodes[u]['xyz'].x, G.nodes[u]['xyz'].y)
+                pos_v = (G.nodes[v]['xyz'].x, G.nodes[v]['xyz'].y)
+                
+                # Check if this edge overlaps with any existing edges
+                overlap_count = 0
+                for existing_pos in all_edge_positions:
+                    existing_start, existing_end = existing_pos
+                    # Check if edges share start or end points
+                    if (pos_u == existing_start or pos_u == existing_end or 
+                        pos_v == existing_start or pos_v == existing_end):
+                        overlap_count += 1
+                
+                # Draw the arrow with offset using FancyArrowPatch for better control
+                from matplotlib.patches import FancyArrowPatch
+                
+                if overlap_count > 0:
+                    # Create offset arrow path
+                    arrow = FancyArrowPatch(
+                        pos_u, pos_v,  # Keep original start/end at nodes
+                        connectionstyle=f"arc3,rad={0.1 * overlap_count}",  # Curved path for offset
+                        arrowstyle="->",
+                        color=color,
+                        linewidth=1.5,
+                        alpha=0.7,
+                        mutation_scale=15
+                    )
+                    ax.add_patch(arrow)
+                else:
+                    # No overlap, draw straight arrow
+                    ax.annotate("", xy=pos_v, xytext=pos_u,
+                               arrowprops=dict(arrowstyle="->", color=color, linewidth=1.5, alpha=0.7))
+                
+                # Store this edge position for future overlap detection
+                all_edge_positions.append((pos_u, pos_v))
 
         # Add legend
         legend_elements = [
@@ -161,9 +185,6 @@ if __name__ == "__main__":
     actor_graph = ActorGraph.from_argoverse_scenario(
         scenario, 
         G_map,
-        max_number_lead_vehicle=1,
-        max_number_neighbor=1,
-        max_number_opposite=1,
         max_node_distance=3
     )
     show_timestep = 1.0

@@ -37,12 +37,18 @@ class MapGraph:
         for lane_id, lane in map.vector_lane_segments.items():
             if lane.left_neighbor_id is not None:
                 if str(lane.left_neighbor_id) in G:
-                    G.add_edge(str(lane_id), str(lane.left_neighbor_id), edge_type="neighbor")
-                    G.add_edge(str(lane.left_neighbor_id), str(lane_id), edge_type="neighbor")
+                    # Only add if the edge doesn't already exist
+                    if not G.has_edge(str(lane_id), str(lane.left_neighbor_id)):
+                        G.add_edge(str(lane_id), str(lane.left_neighbor_id), edge_type="neighbor")
+                    if not G.has_edge(str(lane.left_neighbor_id), str(lane_id)):
+                        G.add_edge(str(lane.left_neighbor_id), str(lane_id), edge_type="neighbor")
             if lane.right_neighbor_id is not None:
                 if str(lane.right_neighbor_id) in G:
-                    G.add_edge(str(lane_id), str(lane.right_neighbor_id), edge_type="neighbor")
-                    G.add_edge(str(lane.right_neighbor_id), str(lane_id), edge_type="neighbor")
+                    # Only add if the edge doesn't already exist
+                    if not G.has_edge(str(lane_id), str(lane.right_neighbor_id)):
+                        G.add_edge(str(lane_id), str(lane.right_neighbor_id), edge_type="neighbor")
+                    if not G.has_edge(str(lane.right_neighbor_id), str(lane_id)):
+                        G.add_edge(str(lane.right_neighbor_id), str(lane_id), edge_type="neighbor")
 
         # Rename neighboring lanes from lanes in opposite direction by looking for loops.
         edges_opposite = []
@@ -57,10 +63,12 @@ class MapGraph:
                                         edges_opposite.append((successor, neighbor))
                                         edges_opposite.append((next_node, node))
 
-        # Rename edges to 'opposite'
+        # Convert neighbor edges to opposite edges
         for u, v in edges_opposite:
+            # Just rename the edge type from 'neighbor' to 'opposite'
             G[u][v][0]["edge_type"] = "opposite"
-
+            G[v][u][0]["edge_type"] = "opposite"
+        
         return instance
 
     def _to_2d(self, location):
@@ -190,55 +198,222 @@ class MapGraph:
             node: (data["node_info"].lane_polygon.centroid.x, data["node_info"].lane_polygon.centroid.y)
             for node, data in self.graph.nodes(data=True)
         }
-        labels = {node: node for node in self.graph.nodes()}
-
+        
+        # Create truncated labels by removing common leading characters
+        labels = self._create_truncated_labels(list(self.graph.nodes()))
+        
         plt.figure(figsize=(12, 12))
         node_size = 50
+        
+        # Calculate label positions below nodes with collision detection
+        label_pos = self._calculate_label_positions(pos, labels, node_size)
+        
         nx.draw_networkx_nodes(self.graph, pos, node_size=node_size)
+        
+        # Draw labels at calculated positions (not on nodes)
         nx.draw_networkx_labels(
             self.graph,
-            pos,
+            label_pos,
             labels=labels,
-            font_size=8,
-            font_color="black",
-            verticalalignment="bottom",
+            font_size=6,  # Smaller font size
+            font_color="darkred",  # Changed to darkred for better visibility against blue arrows
+            font_weight="bold",  # Make text more readable
         )
 
-        # move label away from nodes..
-        # Draw edges with different styles based on edge type
+        # Helper function to offset edges orthogonally to their direction
+        def offset_edge_positions(edges, offset_distance=0.5):
+            """Offset edge positions orthogonally to make overlapping edges visible"""
+            offset_pos = pos.copy()
+            
+            for u, v in edges:
+                if u in pos and v in pos:
+                    # Calculate edge direction vector
+                    dx = pos[v][0] - pos[u][0]
+                    dy = pos[v][1] - pos[u][1]
+                    edge_length = np.sqrt(dx**2 + dy**2)
+                    
+                    if edge_length > 0:
+                        # Normalize and rotate 90 degrees to get orthogonal direction
+                        orthogonal_dx = -dy / edge_length
+                        orthogonal_dy = dx / edge_length
+                        
+                        # Apply offset to both nodes
+                        offset_pos[u] = (pos[u][0] + orthogonal_dx * offset_distance, 
+                                       pos[u][1] + orthogonal_dy * offset_distance)
+                        offset_pos[v] = (pos[v][0] + orthogonal_dx * offset_distance, 
+                                       pos[v][1] + orthogonal_dy * offset_distance)
+            
+            return offset_pos
+
+        # Separate edges by type
         edge_type_fol = [(u, v) for u, v, d in self.graph.edges(data=True) if d["edge_type"] == "following"]
         edge_type_nei = [(u, v) for u, v, d in self.graph.edges(data=True) if d["edge_type"] == "neighbor"]
         edge_type_opp = [(u, v) for u, v, d in self.graph.edges(data=True) if d["edge_type"] == "opposite"]
 
+        # Draw edges with offsets to prevent overlap
+        fol_pos = offset_edge_positions(edge_type_fol, offset_distance=0.3)
+        nei_pos = offset_edge_positions(edge_type_nei, offset_distance=-0.3)
+        opp_pos = offset_edge_positions(edge_type_opp, offset_distance=0.6)
+
+        # Draw following edges (blue)
         nx.draw_networkx_edges(
             self.graph,
-            pos,
+            fol_pos,
             edgelist=edge_type_fol,
             width=2,
             edge_color="blue",
             node_size=node_size,
+            label="Following",
         )
+        
+        # Draw neighbor edges (green)
         nx.draw_networkx_edges(
             self.graph,
-            pos,
+            nei_pos,
             edgelist=edge_type_nei,
             width=1,
             edge_color="green",
             node_size=node_size,
+            label="Neighbor",
         )
+        
+        # Draw opposite edges (red)
         nx.draw_networkx_edges(
             self.graph,
-            pos,
+            opp_pos,
             edgelist=edge_type_opp,
             width=1,
             edge_color="red",
             node_size=node_size,
+            label="Opposite",
         )
 
+        # Add legend
+        plt.legend(loc='upper right', fontsize=10)
+
         if save_path:
-            plt.savefig(save_path)
+            plt.savefig(save_path, bbox_inches='tight', dpi=300)
         else:
             plt.show()
+
+    def _create_truncated_labels(self, node_ids):
+        """
+        Create truncated labels by removing common leading characters.
+        
+        Args:
+            node_ids: List of node IDs (strings)
+            
+        Returns:
+            Dictionary mapping original node IDs to truncated labels
+        """
+        if not node_ids:
+            return {}
+        
+        # Convert to strings and find common leading characters
+        str_ids = [str(node_id) for node_id in node_ids]
+        
+        # Find the longest common prefix
+        if len(str_ids) == 1:
+            common_prefix = ""
+        else:
+            # Find common prefix by comparing characters
+            common_prefix = ""
+            min_length = min(len(s) for s in str_ids)
+            
+            for i in range(min_length):
+                char = str_ids[0][i]
+                if all(s[i] == char for s in str_ids):
+                    common_prefix += char
+                else:
+                    break
+        
+        # Create truncated labels
+        labels = {}
+        for node_id in node_ids:
+            str_id = str(node_id)
+            if str_id.startswith(common_prefix):
+                # Remove common prefix and keep the rest
+                truncated = str_id[len(common_prefix):]
+                # If truncated is empty, keep at least one character
+                if not truncated:
+                    truncated = str_id[-1] if len(str_id) > 0 else str_id
+                labels[node_id] = truncated
+            else:
+                # Fallback: keep original if no common prefix
+                labels[node_id] = str_id
+        
+        return labels
+
+    def _calculate_label_positions(self, pos, labels, node_size, label_offset=0.8):
+        """
+        Calculate label positions below nodes with collision detection to prevent overlapping.
+        
+        Args:
+            pos: Dictionary of node positions
+            labels: Dictionary of node labels
+            node_size: Size of nodes (used for spacing calculations)
+            label_offset: Vertical offset below nodes
+            
+        Returns:
+            Dictionary of label positions
+        """
+        label_pos = {}
+        used_positions = []
+        
+        # Convert node_size to coordinate units (approximate)
+        # node_size is in points, we need to estimate coordinate units
+        # This is a rough approximation - you may need to adjust based on your data
+        spacing = node_size * 0.01  # Adjust this multiplier based on your coordinate system
+        
+        for node, label in labels.items():
+            if node not in pos:
+                continue
+                
+            x, y = pos[node]
+            # Start with position below the node
+            label_x, label_y = x, y - label_offset
+            
+            # Check for collisions and adjust position
+            attempts = 0
+            max_attempts = 20
+            
+            while attempts < max_attempts:
+                collision = False
+                
+                # Check collision with existing labels
+                for used_x, used_y in used_positions:
+                    if abs(label_x - used_x) < spacing and abs(label_y - used_y) < spacing:
+                        collision = True
+                        break
+                
+                if not collision:
+                    break
+                
+                # Try different positions: left, right, above, diagonal
+                if attempts % 4 == 0:
+                    label_x, label_y = x - label_offset, y - label_offset  # Left below
+                elif attempts % 4 == 1:
+                    label_x, label_y = x + label_offset, y - label_offset  # Right below
+                elif attempts % 4 == 2:
+                    label_x, label_y = x, y + label_offset  # Above
+                else:
+                    # Diagonal positions
+                    angle = (attempts // 4) * np.pi / 4
+                    label_x = x + label_offset * np.cos(angle)
+                    label_y = y + label_offset * np.sin(angle)
+                
+                attempts += 1
+            
+            # If we still have collision, just place it with some random offset
+            if attempts >= max_attempts:
+                import random
+                label_x = x + random.uniform(-label_offset, label_offset)
+                label_y = y + random.uniform(-label_offset, label_offset)
+            
+            label_pos[node] = (label_x, label_y)
+            used_positions.append((label_x, label_y))
+        
+        return label_pos
 
     def store_graph_to_file(self, save_path=str):
         with open(save_path, "wb") as file:
