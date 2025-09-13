@@ -237,6 +237,7 @@ class ActorGraph:
         max_node_distance_leading=3,
         max_node_distance_neighbor=3,
         max_node_distance_opposite=3,
+        delta_timestep_s=1.0,
     ):
         """
         Create an ActorGraph instance from a CARLA scenario.
@@ -283,6 +284,7 @@ class ActorGraph:
             max_node_distance_leading=max_node_distance_leading,
             max_node_distance_neighbor=max_node_distance_neighbor,
             max_node_distance_opposite=max_node_distance_opposite,
+            delta_timestep_s=delta_timestep_s,
         )
         instance.actor_components = {}
         # print("instance.actor_graphs.keys(): ", instance.actor_graphs.keys())
