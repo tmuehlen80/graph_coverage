@@ -15,7 +15,21 @@
 
 \section{Introduction}
 
-\cite{menzel2021hazard} % no idea why, but this bibtex entry is not working
+
+\begin{itemize}
+    \item In autonomous driving, coverage analysis is a crucial step to ensure the safety and reliability of the system.
+    \item In most situations, coverage arguments are collected either per coverage factor, or maybe up to 2 or 3 factor interactions.
+    \item See for example \cite{foretellix2019} for an production grade implementation of state of the art coverage analysis.
+    \item In contrast to existing approaches, this paper proposes a graph-based framework for coverage analysis.
+    \item There are already other graph-based approaches for analysing and representing traffic scenes, see for example \cite{behr2021graph}.
+    \item However, the work in that paper is not specifically focused on coverage analysis.
+    \item Hence in this paper, graph based traffic scene representations are utilized for coverage analysis.
+    \item This paper is structured as follows:
+    \begin{itemize}
+        \item In the first section, xxx
+    \end{itemize}
+\end{itemize}
+
 
 \cite{wagner2022odd}
 
@@ -69,12 +83,35 @@ add Master thesis Johannes
 
 \cite{pek2019generating}
 
+\subsection{time based graph representations}
 
 \section{Analysing a traffic scene with agraph}
 
-\section{Create subgraphs for coverage analysis}
 
-\section{graph embeddings for coverage analysis}
+\begin{itemize}
+    \item Having defined a graph-based traffic scene representation, we can now analyse the coverage of the system.
+    \item Two methodologies are proposed for this purpose:
+    \item One is to define archetypes of traffice scenes, and to compare graphs from observed traffic scenes to these archetypes.
+    \item The second one is to translate graphs to graph embeddings, and then to compare the embeddings of different sets of traffic scenes.
+\end{itemize}
+
+\subsection{Create subgraphs for coverage analysis}
+
+\begin{itemize}
+    \item There is a lot of knowledge in the literature on how to define archetypes of traffic scenes.
+    \item Once an archetype is defined, a special property of graphs can be used. 
+    \item Two graphs are isomorphic if they have the same structure, regardless of the node and edge labels.
+    \item As the archetypes are not necessarily are involving a lot of actors, these are more like subsets of actual traffic scenes.
+    \item A very simple example might be 2 vehicles on the same lane, driving in the same direction and another vehicle driving on a neighboring lane.
+    \item This situation can be represented by a graph with 3 nodes and 2 edges. 
+    \item In most real traffic situations however, there will be additional actors present, so that we are not searching for isomorphic graphs, but rather want to check if any subgraph of $G$ is isomorphic to the archetype graph $A$.
+    \item This is an example of a subgraph isomorphism problem.
+    \item While this problem is NP-hard, the graphs considered here are rather small, so the computational time is reasonable.
+    \item One such algorithm is the VF2 algorithm, which is implemented in the NetworkX library. <- Check and cite something.
+    \item The strategy we are then applying is 
+\end{itemize}
+
+\subsection{graph embeddings for coverage analysis}
 
 
 \section{Application}
