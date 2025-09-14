@@ -5,7 +5,7 @@
 import pandas as pd
 import os
 
-for i in range(30):
+for ijk in range(30):
     os.chdir("carla")
     from src.generate_traffic_data import clean_carla, spawn_scene, run_scene
     import carla
@@ -251,7 +251,7 @@ for i in range(30):
                             speed_percentage = (speed_factor - 1.0) * 100.0
                             tm.vehicle_percentage_speed_difference(act, speed_percentage)        
         # Apply periodic behavior variations every 500 steps
-        if i % 500 == 0 and i > 0:
+        if i % 100 == 0 and i > 0:
             for act in world.get_actors().filter("vehicle.*"):
                 # Randomly change some vehicle behaviors
                 if random.random() < 0.2:  # 20% chance to change behavior
