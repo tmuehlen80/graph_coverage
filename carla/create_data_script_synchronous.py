@@ -5,7 +5,7 @@
 import pandas as pd
 import os
 
-for i in range(10):
+for i in range(30):
     os.chdir("carla")
     from src.generate_traffic_data import clean_carla, spawn_scene, run_scene
     import carla
