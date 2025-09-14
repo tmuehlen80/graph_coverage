@@ -834,6 +834,8 @@ class ActorGraph:
                 else:
                     lane_change = False
                 self.actor_graphs[ag_timestamps[i]].nodes(data=True)[node]["lane_change"] = lane_change
+        # drop the first graph, as it does not have lane change information.
+        self.actor_graphs = {k: v for k, v in self.actor_graphs.items() if k != ag_timestamps[0]}
 
         return self.actor_graphs
 
