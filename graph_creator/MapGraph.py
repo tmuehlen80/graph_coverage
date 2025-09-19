@@ -75,39 +75,6 @@ class MapGraph:
     def _to_2d(self, location):
         return (location.x, location.y)
 
-    def argoverse_check_intersection(self, lane1, lane2, lane1_info, lane2_info):
-        """
-        Check if two lanes intersect based on the specified criteria.
-        
-        Args:
-            lane1: First Argoverse lane object
-            lane2: Second Argoverse lane object  
-            lane1_info: NodeInfo object for first lane
-            lane2_info: NodeInfo object for second lane
-            
-        Returns:
-            bool: True if lanes should be considered intersecting
-        """
-        # Step 1: If either lane already has is_intersection=True from Argoverse, set both to True
-        if lane1.is_intersection or lane2.is_intersection:
-            return True
-            
-        # Step 2: Use shapely to check if polygons intersect
-        polygon1 = lane1_info.lane_polygon
-        polygon2 = lane2_info.lane_polygon
-        
-        if not polygon1.intersects(polygon2):
-            return False
-            
-        # Step 3: Check intersection area - if more than 10% of total area, consider intersecting
-        intersection_area = polygon1.intersection(polygon2).area
-        total_area = polygon1.area + polygon2.area
-        
-        if total_area > 0:
-            intersection_ratio = intersection_area / total_area
-            return intersection_ratio > 0.1  # 10% threshold
-            
-        return False
 
     def analyze_intersection_status(self, map):
         """
