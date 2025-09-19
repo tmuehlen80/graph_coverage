@@ -68,24 +68,22 @@ def plot_lane_map(graph, figsize=(15, 10), intersection_color='red', lane_color=
    ax.set_title('Lane Map')
    
    # Add legend
-   intersection_patch = patches.Patch(color=intersection_color, label='Intersections')
-   lane_patch = patches.Patch(color=lane_color, label='Regular Lanes')
-   ax.legend(handles=[intersection_patch, lane_patch])
+   # intersection_patch = patches.Patch(color=intersection_color, label='Intersections')
+   # lane_patch = patches.Patch(color=lane_color, label='Regular Lanes')
+   # ax.legend(handles=[intersection_patch, lane_patch])
    
    plt.tight_layout()
    return fig, ax
 
-# Usage
-#fig, ax = plot_lane_map(your_graph)
-#plt.show()
 
-# Advanced version with more customization
 def plot_lane_map_advanced(graph, figsize=(15, 10), show_labels=True, 
-                         color_by_length=False, cmap='viridis'):
+                         color_by_length=False, cmap='viridis', fig = None, ax = None):
    """
    Advanced lane map plotting with additional features.
    """
-   fig, ax = plt.subplots(figsize=figsize)
+
+   if fig is None or ax is None:
+       fig, ax = plt.subplots(figsize=figsize)
    
    all_x_coords = []
    all_y_coords = []
@@ -151,11 +149,11 @@ def plot_lane_map_advanced(graph, figsize=(15, 10), show_labels=True,
    ax.set_ylabel('Y Coordinate')
    ax.set_title('Advanced Lane Map')
    
-   # Add colorbar if coloring by length
-   if color_by_length:
-       sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=min_length, vmax=max_length))
-       sm.set_array([])
-       plt.colorbar(sm, ax=ax, label='Lane Length (m)')
+    # Add colorbar if coloring by length
+    #    if color_by_length:
+    #        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=min_length, vmax=max_length))
+    #        sm.set_array([])
+    #        plt.colorbar(sm, ax=ax, label='Lane Length (m)')
    
    plt.tight_layout()
    return fig, ax
@@ -235,14 +233,14 @@ def add_actors_to_map(fig, ax, actor_graph, actor_size=50, show_actor_labels=Tru
                       bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.7),
                       arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
    
-   # Update legend to include actor types
-   handles, labels = ax.get_legend_handles_labels()
-   
-   # Add actor type handles to legend
-   for actor_type, color in actor_colors.items():
-       handles.append(patches.Patch(color=color, label=f'{actor_type}s'))
-   
-   ax.legend(handles=handles, loc='upper right', bbox_to_anchor=(1, 1))
+    # Update legend to include actor types
+    #    handles, labels = ax.get_legend_handles_labels()
+    
+    #    # Add actor type handles to legend
+    #    for actor_type, color in actor_colors.items():
+    #        handles.append(patches.Patch(color=color, label=f'{actor_type}s'))
+    
+    #    ax.legend(handles=handles, loc='upper right', bbox_to_anchor=(1, 1))
    
    # Update title
    current_title = ax.get_title()

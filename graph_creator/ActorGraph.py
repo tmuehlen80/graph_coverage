@@ -237,6 +237,7 @@ class ActorGraph:
         max_node_distance_leading=3,
         max_node_distance_neighbor=3,
         max_node_distance_opposite=3,
+        delta_timestep_s=1.0,
     ):
         """
         Create an ActorGraph instance from a CARLA scenario.
@@ -283,6 +284,7 @@ class ActorGraph:
             max_node_distance_leading=max_node_distance_leading,
             max_node_distance_neighbor=max_node_distance_neighbor,
             max_node_distance_opposite=max_node_distance_opposite,
+            delta_timestep_s=delta_timestep_s,
         )
         instance.actor_components = {}
         # print("instance.actor_graphs.keys(): ", instance.actor_graphs.keys())
@@ -832,6 +834,8 @@ class ActorGraph:
                 else:
                     lane_change = False
                 self.actor_graphs[ag_timestamps[i]].nodes(data=True)[node]["lane_change"] = lane_change
+        # drop the first graph, as it does not have lane change information.
+        self.actor_graphs = {k: v for k, v in self.actor_graphs.items() if k != ag_timestamps[0]}
 
         return self.actor_graphs
 
