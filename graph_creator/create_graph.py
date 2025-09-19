@@ -5,8 +5,8 @@ import av2.rendering.vector as vector_plotting_utils
 from shapely.geometry import Polygon
 import numpy as np
 
-from MapGraph import MapGraph
-from ActorGraph import ActorGraph
+from graph_creator.MapGraph import MapGraph
+from graph_creator.ActorGraph import ActorGraph
 
 from av2.map.map_api import ArgoverseStaticMap
 from av2.datasets.motion_forecasting import scenario_serialization
