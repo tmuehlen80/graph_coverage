@@ -95,6 +95,38 @@ class ActorGraph:
 
         return s_coord, t_coord
 
+    def _is_parked_vehicle(self, track, max_displacement_threshold=1.5):
+        """
+        Determine if a vehicle is parked based on movement analysis.
+        
+        Args:
+            track: Argoverse track object
+            max_displacement_threshold: Maximum displacement from first detected position to be considered parked (meters)
+        
+        Returns:
+            bool: True if the vehicle is considered parked, False otherwise
+        """
+        if len(track.object_states) < 2:
+            return True  # Not enough data points, consider parked
+        
+        # Extract positions (track.object_states only contains timesteps where vehicle is detected)
+        positions = []
+        
+        for state in track.object_states:
+            position = Point(state.position[0], state.position[1], 0.0)
+            positions.append(position)
+        
+        # Use the first detected position as reference point
+        # Note: positions[0] is the first detection, not necessarily timestep 0
+        first_detected_pos = positions[0]
+        distances_from_first = [pos.distance(first_detected_pos) for pos in positions]
+        max_displacement = max(distances_from_first)
+        
+        # Determine if parked based on max displacement from first detection
+        is_parked = max_displacement < max_displacement_threshold
+        
+        return is_parked
+
     def _create_track_data_argoverse(self, scenario):
         track_lane_dict = {}
         track_s_value_dict = {}
@@ -103,6 +135,10 @@ class ActorGraph:
         track_actor_type_dict = {}
 
         for track in scenario.tracks:
+            # Filter out parked vehicles before processing
+            if self._is_parked_vehicle(track):
+                print(f"Filtering out parked vehicle: {track.track_id}")
+                continue
             track_id = str(track.track_id)  # Convert to string
             lane_ids = self.find_lane_ids_for_track(track)
             track_lane_dict[track_id] = lane_ids

@@ -179,13 +179,21 @@ if __name__ == "__main__":
     scenario, map = get_scenario_data(dataroot, log_id)
     G_map = MapGraph.create_from_argoverse_map(map)
     G_map.visualize_graph(save_path=(repo_root / "map_graph.png"))
-    # visualize_scenario(scenario, map, save_path=(repo_root / "scenario_plot.mp4") )
+    visualize_scenario(scenario, map, save_path=(repo_root / "scenario_plot.mp4") )
     # plot_argoverse_map(map, save_path=(repo_root / "map.png"))
 
     actor_graph = ActorGraph.from_argoverse_scenario(
-        scenario, 
-        G_map,
-        max_node_distance=3
+                                    scenario, 
+                                    G_map, 
+                                    delta_timestep_s=1.0,
+                                    max_distance_lead_veh_m=50,
+                                    max_distance_opposite_forward_m=100,
+                                    max_distance_opposite_backward_m=10,
+                                    max_distance_neighbor_forward_m=50,
+                                    max_distance_neighbor_backward_m=20,
+                                    max_node_distance_leading=10,
+                                    max_node_distance_neighbor=6,
+                                    max_node_distance_opposite=6,
     )
     show_timestep = 1.0
     plot_scene_at_timestep(scenario, map, timestep=show_timestep, save_path=(repo_root / "map.png"))
