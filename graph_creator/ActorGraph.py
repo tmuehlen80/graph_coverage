@@ -95,7 +95,7 @@ class ActorGraph:
 
         return s_coord, t_coord
 
-    def _is_parked_vehicle(self, track, max_displacement_threshold=1.5):
+    def _is_parked_vehicle(self, track, max_displacement_threshold=1.0):
         """
         Determine if a vehicle is parked based on movement analysis.
         
@@ -137,7 +137,6 @@ class ActorGraph:
         for track in scenario.tracks:
             # Filter out parked vehicles before processing
             if self._is_parked_vehicle(track):
-                print(f"Filtering out parked vehicle: {track.track_id}")
                 continue
             track_id = str(track.track_id)  # Convert to string
             lane_ids = self.find_lane_ids_for_track(track)
@@ -812,7 +811,8 @@ class ActorGraph:
 
         for t in graph_timesteps_idx:
             G_t = nx.MultiDiGraph()
-
+            timestep_value = self.timestamps[t]
+            
             # Add nodes with attributes
             for track_id, lane_ids in self.track_lane_dict.items():
                 lane_id_list = lane_ids[t]
@@ -889,8 +889,18 @@ class ActorGraph:
         scale_plot=True
     ):
         if graph_or_component == "graph":
+            # Find the closest available timestep if the requested one doesn't exist
+            if t_idx not in self.actor_graphs:
+                closest_t_idx = min(self.actor_graphs.keys(), key=lambda x: abs(x - t_idx))
+                print(f"Warning: Timestep {t_idx} not found. Using closest available timestep: {closest_t_idx}")
+                t_idx = closest_t_idx
             G = self.actor_graphs[t_idx]
         elif graph_or_component == "component":
+            # Find the closest available timestep if the requested one doesn't exist
+            if t_idx not in self.actor_components:
+                closest_t_idx = min(self.actor_components.keys(), key=lambda x: abs(x - t_idx))
+                print(f"Warning: Timestep {t_idx} not found. Using closest available timestep: {closest_t_idx}")
+                t_idx = closest_t_idx
             G = self.actor_components[t_idx][comp_idx]
 
         # Calculate number of actors and scale figure size accordingly

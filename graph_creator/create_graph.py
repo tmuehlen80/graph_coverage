@@ -77,27 +77,48 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
         vector_plotting_utils.plot_polygon_patch_mpl(pc.polygon, ax, color="brown", alpha=0.2)
 
     # Plot the position of each actor at the given timestep
-    for track in scenario.tracks:
-        timestep_list = [step.timestep for step in track.object_states]
-        if timestep in timestep_list:
-            object_state = track.object_states[timestep_list.index(timestep)]
-            position = object_state.position
-            ax.plot(position[0], position[1], "bo", markersize=5)
+    # If actor_graph is provided, only plot actors that are in the graph (after filtering)
+    if actor_graph is not None:
+        # Find the closest timestep in the actor graph
+        closest_timestep = min(actor_graph.actor_graphs.keys(), key=lambda x: abs(x - timestep))
+        G = actor_graph.actor_graphs[closest_timestep]
+        
+        # Only plot actors that are in the actor graph (non-parked vehicles)
+        # Use positions directly from the actor graph to ensure consistency with arrows
+        for track_id in G.nodes():
+            node_data = G.nodes[track_id]
+            xyz_point = node_data['xyz']
+            ax.plot(xyz_point.x, xyz_point.y, "bo", markersize=5)
             ax.text(
-                position[0],
-                position[1] - 0.5,  # Reduced from 2.5 to 0.5 for closer positioning
-                track.track_id,
+                xyz_point.x,
+                xyz_point.y - 0.5,  # Reduced from 2.5 to 0.5 for closer positioning
+                track_id,
                 fontsize=8,
                 ha="center",
                 va="center",
                 color="red",
             )
+    else:
+        # If no actor_graph provided, plot all actors (original behavior)
+        for track in scenario.tracks:
+            timestep_list = [step.timestep for step in track.object_states]
+            if timestep in timestep_list:
+                object_state = track.object_states[timestep_list.index(timestep)]
+                position = object_state.position
+                ax.plot(position[0], position[1], "bo", markersize=5)
+                ax.text(
+                    position[0],
+                    position[1] - 0.5,  # Reduced from 2.5 to 0.5 for closer positioning
+                    track.track_id,
+                    fontsize=8,
+                    ha="center",
+                    va="center",
+                    color="red",
+                )
 
     # If actor_graph is provided, draw the edges
     if actor_graph is not None:
-        # Find the closest timestep in the actor graph
-        closest_timestep = min(actor_graph.actor_graphs.keys(), key=lambda x: abs(x - timestep))
-        G = actor_graph.actor_graphs[closest_timestep]
+        # Use the same G that was already found above
 
         # Draw edges with different styles based on edge type
         edge_type_following_lead = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "following_lead"]
@@ -174,7 +195,7 @@ if __name__ == "__main__":
     dataroot = repo_root / "argoverse_data" / "train"
 
     # unique log identifier
-    log_id = "d25d1aaa-8bb2-4c6b-98a5-fa5aa2ddd2eb"
+    log_id = "000ace8b-a3d2-4228-bd87-91b66a9c5127"
 
     scenario, map = get_scenario_data(dataroot, log_id)
     G_map = MapGraph.create_from_argoverse_map(map)

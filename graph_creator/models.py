@@ -9,7 +9,7 @@ def _to_2d(location):
     return (location.x, location.y)
 
 class NodeInfo(BaseModel):
-    """Pydantic model for node information in the graph."""
+    """Pydantic model for node information in the map graph."""
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     lane_id: str = Field(..., description="Unique identifier for the lane")
