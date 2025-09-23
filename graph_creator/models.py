@@ -9,7 +9,7 @@ def _to_2d(location):
     return (location.x, location.y)
 
 class NodeInfo(BaseModel):
-    """Pydantic model for node information in the graph."""
+    """Pydantic model for node information in the map graph."""
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
     lane_id: str = Field(..., description="Unique identifier for the lane")
@@ -38,11 +38,12 @@ class NodeInfo(BaseModel):
         return length
 
     @classmethod
-    def from_argoverse_lane(cls, lane) -> 'NodeInfo':
+    def from_argoverse_lane(cls, lane, is_intersection=None) -> 'NodeInfo':
         """Create a NodeInfo instance from an Argoverse lane object.
         
         Args:
             lane: An Argoverse lane object containing lane information
+            is_intersection: Optional intersection status to override the lane's default
             
         Returns:
             NodeInfo instance with the lane information
@@ -63,9 +64,12 @@ class NodeInfo(BaseModel):
         right_length = cls._calculate_boundary_length(lane.right_lane_boundary)
         avg_length = (left_length + right_length) / 2.0
         
+        # Use provided intersection status or fall back to lane's default
+        intersection_status = is_intersection if is_intersection is not None else lane.is_intersection
+        
         return cls(
             lane_id=str(lane.id),
-            is_intersection=lane.is_intersection,
+            is_intersection=intersection_status,
             length=avg_length,
             lane_polygon=lane_polygon,
             left_boundary=left_boundary,

@@ -16,10 +16,11 @@ class MapGraph:
         instance = cls()
         G = instance.graph
 
-        # Add nodes with attributes
+        # Update is_intersection status from argoverse to include all overlapping lanes. 
+        intersection_status = instance.analyze_intersection_status(map)
+
         for lane_id, lane in map.vector_lane_segments.items():
-            # Create NodeInfo instance from the lane
-            node_info = NodeInfo.from_argoverse_lane(lane)
+            node_info = NodeInfo.from_argoverse_lane(lane, is_intersection=intersection_status[str(lane_id)])
             
             # Add node with NodeInfo as attribute, ensuring lane_id is string
             G.add_node(str(lane_id), node_info=node_info)
@@ -73,6 +74,54 @@ class MapGraph:
 
     def _to_2d(self, location):
         return (location.x, location.y)
+
+
+    def analyze_intersection_status(self, map):
+        """
+        Analyze Argoverse map to determine intersection status for each lane.
+        
+        Args:
+            map: Argoverse map object
+            
+        Returns:
+            dict: Dictionary mapping lane IDs (as strings) to intersection status (bool)
+        """
+        # First, create temporary NodeInfo instances for polygon analysis
+        temp_lane_infos = {}
+        for lane_id, lane in map.vector_lane_segments.items():
+            temp_lane_infos[str(lane_id)] = NodeInfo.from_argoverse_lane(lane)
+        
+        intersection_status = {}
+        lane_ids = list(temp_lane_infos.keys())
+        
+        # Initialize with original Argoverse intersection status
+        for lane_id, lane in map.vector_lane_segments.items():
+            intersection_status[str(lane_id)] = lane.is_intersection
+        
+        # Check for polygon-based intersections only between non-intersection lanes
+        for i in range(len(lane_ids)):
+            for j in range(i + 1, len(lane_ids)):
+                lane1_id = lane_ids[i]
+                lane2_id = lane_ids[j]
+                lane1 = map.vector_lane_segments[int(lane1_id)]
+                lane2 = map.vector_lane_segments[int(lane2_id)]
+                
+                # Only check polygon intersection if neither lane is already marked as intersection
+                if not lane1.is_intersection and not lane2.is_intersection:
+                    polygon1 = temp_lane_infos[lane1_id].lane_polygon
+                    polygon2 = temp_lane_infos[lane2_id].lane_polygon
+                    
+                    if polygon1.intersects(polygon2):
+                        intersection_area = polygon1.intersection(polygon2).area
+                        total_area = polygon1.area + polygon2.area
+                        
+                        if total_area > 0:
+                            intersection_ratio = intersection_area / total_area
+                            if intersection_ratio > 0.1:  # 10% threshold
+                                intersection_status[lane1_id] = True
+                                intersection_status[lane2_id] = True
+        
+        return intersection_status
 
     @classmethod
     def create_from_carla_map(cls, map):

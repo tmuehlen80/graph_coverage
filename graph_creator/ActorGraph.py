@@ -95,6 +95,38 @@ class ActorGraph:
 
         return s_coord, t_coord
 
+    def _is_parked_vehicle(self, track, max_displacement_threshold=1.0):
+        """
+        Determine if a vehicle is parked based on movement analysis.
+        
+        Args:
+            track: Argoverse track object
+            max_displacement_threshold: Maximum displacement from first detected position to be considered parked (meters)
+        
+        Returns:
+            bool: True if the vehicle is considered parked, False otherwise
+        """
+        if len(track.object_states) < 2:
+            return True  # Not enough data points, consider parked
+        
+        # Extract positions (track.object_states only contains timesteps where vehicle is detected)
+        positions = []
+        
+        for state in track.object_states:
+            position = Point(state.position[0], state.position[1], 0.0)
+            positions.append(position)
+        
+        # Use the first detected position as reference point
+        # Note: positions[0] is the first detection, not necessarily timestep 0
+        first_detected_pos = positions[0]
+        distances_from_first = [pos.distance(first_detected_pos) for pos in positions]
+        max_displacement = max(distances_from_first)
+        
+        # Determine if parked based on max displacement from first detection
+        is_parked = max_displacement < max_displacement_threshold
+        
+        return is_parked
+
     def _create_track_data_argoverse(self, scenario):
         track_lane_dict = {}
         track_s_value_dict = {}
@@ -103,6 +135,9 @@ class ActorGraph:
         track_actor_type_dict = {}
 
         for track in scenario.tracks:
+            # Filter out parked vehicles before processing
+            if self._is_parked_vehicle(track):
+                continue
             track_id = str(track.track_id)  # Convert to string
             lane_ids = self.find_lane_ids_for_track(track)
             track_lane_dict[track_id] = lane_ids
@@ -776,7 +811,8 @@ class ActorGraph:
 
         for t in graph_timesteps_idx:
             G_t = nx.MultiDiGraph()
-
+            timestep_value = self.timestamps[t]
+            
             # Add nodes with attributes
             for track_id, lane_ids in self.track_lane_dict.items():
                 lane_id_list = lane_ids[t]
@@ -853,8 +889,18 @@ class ActorGraph:
         scale_plot=True
     ):
         if graph_or_component == "graph":
+            # Find the closest available timestep if the requested one doesn't exist
+            if t_idx not in self.actor_graphs:
+                closest_t_idx = min(self.actor_graphs.keys(), key=lambda x: abs(x - t_idx))
+                print(f"Warning: Timestep {t_idx} not found. Using closest available timestep: {closest_t_idx}")
+                t_idx = closest_t_idx
             G = self.actor_graphs[t_idx]
         elif graph_or_component == "component":
+            # Find the closest available timestep if the requested one doesn't exist
+            if t_idx not in self.actor_components:
+                closest_t_idx = min(self.actor_components.keys(), key=lambda x: abs(x - t_idx))
+                print(f"Warning: Timestep {t_idx} not found. Using closest available timestep: {closest_t_idx}")
+                t_idx = closest_t_idx
             G = self.actor_components[t_idx][comp_idx]
 
         # Calculate number of actors and scale figure size accordingly
