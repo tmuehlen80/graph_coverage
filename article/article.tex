@@ -16,6 +16,7 @@
 \section{Introduction}
 
 
+
 \begin{itemize}
     \item In autonomous driving, coverage analysis is a crucial step to ensure the safety and reliability of the system.
     \item In most situations, coverage arguments are collected either per coverage factor, or maybe up to 2 or 3 factor interactions.
@@ -107,12 +108,24 @@ add Master thesis Johannes
     \item In most real traffic situations however, there will be additional actors present, so that we are not searching for isomorphic graphs, but rather want to check if any subgraph of $G$ is isomorphic to the archetype graph $A$.
     \item This is an example of a subgraph isomorphism problem.
     \item While this problem is NP-hard, the graphs considered here are rather small, so the computational time is reasonable.
-    \item One such algorithm is the VF2 algorithm, which is implemented in the NetworkX library. <- Check and cite something.
-    \item The strategy we are then applying is a simple counting strategy.
-    \item TODO: Create pseudo code for double loop counting strategy.
+    \item One such algorithm is the VF2 algorithm, which is implemented in the NetworkX library (see \cite{cordella2004subgraph}).
+    \item The strategy we are then applying is the following:
+    \item \begin{enumerate}
+            \item Define a set of subgraphs $S$ that are considered to be archetypes.
+            \item Define which node and edge attributes are considered for the isomorphism check.
+            \item Create an empty dataframe $C$ with a column for each subgraph in $S$
+            \item Define the set of traffice scenes (e.g. from Carla or Argoverse) defined as graphs $G$
+            \item For each graph $G$, check if any subgraph of $G$ is isomorphic to any subgraph in $S$ and note the result in a new row in table $C$
+        \end{enumerate}
     \item This strategy can be described to some degree as a bottom up approach: Starting from a detail level, individual situations are defined.
     \item Then going upwards to different datasets, it is checked, if the archetype is present.
-\end{itemize}
+    \item Also, follow up analysis of the created coverage dataframe can be performed. For example,
+    \item \begin{itemize}
+        \item The distribution of numeric attributes like speed and and distance to other actors can be visualized for the subset of all traffic scenes which are subgraph isomorphic to an archetype.
+        \item It can be cross tabulated, which combinations of archetypes are jointly present in a traffic scene.
+        \item Pass Fail rates or other AV performance metrics can be calculated for the subset of all traffic scenes which are subgraph isomorphic to an archetype.
+    \end{itemize}
+    \end{itemize}
 
 \subsection{graph embeddings for coverage analysis}
 
