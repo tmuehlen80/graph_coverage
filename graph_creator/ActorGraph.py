@@ -870,6 +870,12 @@ class ActorGraph:
                 else:
                     lane_change = False
                 self.actor_graphs[ag_timestamps[i]].nodes(data=True)[node]["lane_change"] = lane_change
+                # add is_on_intersection attribute
+                if "is_intersection" in dict(self.G_map.graph.nodes[lane_id]["node_info"]).keys():
+                    if self.G_map.graph.nodes[lane_id]["node_info"].is_intersection:
+                        self.actor_graphs[ag_timestamps[i]].nodes(data=True)[node]["is_on_intersection"] = True
+                    else:
+                        self.actor_graphs[ag_timestamps[i]].nodes(data=True)[node]["is_on_intersection"] = False
         # drop the first graph, as it does not have lane change information.
         self.actor_graphs = {k: v for k, v in self.actor_graphs.items() if k != ag_timestamps[0]}
 

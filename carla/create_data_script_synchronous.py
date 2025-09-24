@@ -4,41 +4,44 @@
 
 import pandas as pd
 import os
+os.chdir("carla")
+from src.generate_traffic_data import clean_carla, spawn_scene, run_scene
+import carla
+os.getcwd()
+from datetime import datetime
+import time
+import random
+from tqdm import tqdm
+import networkx as nx
+import numpy as np
+from shapely.geometry import Polygon
+os.chdir("..")
+os.getcwd()
+from graph_creator.MapGraph import MapGraph
 
+def get_t_coordinate(actor, world_map):
+    # Thanks Gemini
+    location = actor.get_location()
+    # Get the closest waypoint on a driving lane
+    waypoint = world_map.get_waypoint(location, project_to_road=True, lane_type=carla.LaneType.Driving)
+    # Center of the lane
+    lane_center = waypoint.transform.location
+    # Right vector of the lane (perpendicular to the forward direction)
+    right_vector = waypoint.transform.get_right_vector()
+    # Vector from lane center to actor
+    offset_vector = location - lane_center
+    # Compute t-coordinate: lateral distance (positive to the right of lane center)
+    t = right_vector.x * offset_vector.x + right_vector.y * offset_vector.y + right_vector.z * offset_vector.z
+    return t
+
+def to_2d(location):
+    return (location.x, location.y)
+
+    
 for ijk in range(30):
-    os.chdir("carla")
-    from src.generate_traffic_data import clean_carla, spawn_scene, run_scene
-    import carla
-    os.getcwd()
-    from datetime import datetime
-    import time
-    import random
-    from tqdm import tqdm
-    import networkx as nx
-    import numpy as np
-    from shapely.geometry import Polygon
-    os.chdir("..")
-    os.getcwd()
-    from graph_creator.MapGraph import MapGraph
     client = carla.Client("localhost", 2000)
     client.set_timeout(50.0)
     world = client.get_world()
-    def to_2d(location):
-        return (location.x, location.y)
-    def get_t_coordinate(actor, world_map):
-        # Thanks Gemini
-        location = actor.get_location()
-        # Get the closest waypoint on a driving lane
-        waypoint = world_map.get_waypoint(location, project_to_road=True, lane_type=carla.LaneType.Driving)
-        # Center of the lane
-        lane_center = waypoint.transform.location
-        # Right vector of the lane (perpendicular to the forward direction)
-        right_vector = waypoint.transform.get_right_vector()
-        # Vector from lane center to actor
-        offset_vector = location - lane_center
-        # Compute t-coordinate: lateral distance (positive to the right of lane center)
-        t = right_vector.x * offset_vector.x + right_vector.y * offset_vector.y + right_vector.z * offset_vector.z
-        return t
     clean_carla(world)
     _ = world.tick()
     client.get_available_maps()
