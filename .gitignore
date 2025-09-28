@@ -2,6 +2,9 @@
 graph_creator/graph_visualizations/
 actor_graphs/*
 carla/data_archived/*
+todos.txt
+carla/data_archived/*
+
 
 # Custom
 CARLA_0.9.15/*

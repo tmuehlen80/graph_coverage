@@ -5,16 +5,16 @@
 import pandas as pd
 import os
 os.chdir("carla")
-from src.generate_traffic_data import clean_carla, spawn_scene, run_scene
+from src.generate_traffic_data import clean_carla# , spawn_scene, run_scene
 import carla
 os.getcwd()
 from datetime import datetime
 import time
 import random
 from tqdm import tqdm
-import networkx as nx
-import numpy as np
-from shapely.geometry import Polygon
+#import networkx as nx
+#import numpy as np
+#from shapely.geometry import Polygon
 os.chdir("..")
 os.getcwd()
 from graph_creator.MapGraph import MapGraph
