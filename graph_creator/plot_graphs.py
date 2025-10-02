@@ -261,10 +261,8 @@ def add_actor_edges_to_map(fig, ax, actor_graph):
    # Color mapping for different edge types
    edge_colors = {
        'opposite_vehicle': 'red',
-       'same_lane': 'blue', 
-       'adjacent_lane': 'green',
-       'intersection': 'orange',
-       'following': 'purple'
+       'following_lead': 'purple',
+       'neighbor_vehicle': 'green',
    }
    default_edge_color = 'gray'
    
@@ -286,8 +284,8 @@ def add_actor_edges_to_map(fig, ax, actor_graph):
        
        # Line style based on path length (negative = dashed, positive = solid)
        linestyle = '--' if path_length < 0 else '-'
-       linewidth = min(max(abs(path_length) / 10, 0.5), 3.0)  # Scale line width by path length
-       
+       # linewidth = min(max(abs(path_length) / 10, 0.5), 3.0)  # Scale line width by path length
+       linewidth = 0.75
        # Draw edge as arrow
        ax.annotate('', xy=(target_x, target_y), xytext=(source_x, source_y),
                   arrowprops=dict(arrowstyle='->', 
