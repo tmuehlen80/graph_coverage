@@ -10,7 +10,7 @@ from tqdm import tqdm
 import numpy as np
 
 files = os.listdir("/home/tmuehlen/repos/graph_coverage/carla/data")
-scn_ids = [file.split("_")[1] for file in files if "tracks" in file]
+scn_ids = [file.split("_")[1] for file in files if "tracks.parquet" in file]
 scn_ids = sorted(scn_ids)
 scn_ids = [scn_id for scn_id in scn_ids if scn_id > "2025-09-05"]
 print(len(scn_ids))
@@ -30,10 +30,13 @@ for j, scn_id in enumerate(scn_ids):
         if distance_orig_lane > 0.0:
             min_distance = np.inf
             for lane in g_map.graph.nodes(data=True):
-                distance = Point(tracks.actor_location_xyz.iloc[i]).distance(lane[1]["node_info"].lane_polygon)
-                if distance < min_distance:
-                    min_distance = distance
-                    min_distance_lane_id = lane[0]
+                try:
+                    distance = Point(tracks.actor_location_xyz.iloc[i]).distance(lane[1]["node_info"].lane_polygon)
+                    if distance < min_distance:
+                        min_distance = distance
+                        min_distance_lane_id = lane[0]
+                except:
+                    print("error", i, road_lane_id)
             distances_orig_lane.append(distance_orig_lane)
             distances_min_lane.append(min_distance)
             min_distances_lane_ids.append(min_distance_lane_id)
