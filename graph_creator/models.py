@@ -78,44 +78,56 @@ class NodeInfo(BaseModel):
 
     @classmethod
     def from_carla_lane(cls, lane) -> 'NodeInfo':
-        """Create a NodeInfo instance from a Carla lane object.
-        
-        Args:
-            lane: A Carla lane object containing lane information
-            
-        Returns:
-            NodeInfo instance with the lane information
-        """
+        """Create a NodeInfo instance from a Carla lane object."""
         import carla
-        # TODO @Thomas
+        
+        # Get waypoints along the lane for better polygon accuracy
         wps = lane[0].next_until_lane_end(0.25)
-        lane_length = sum(
-            [wps[i].transform.location.distance(wps[i + 1].transform.location) for i in range(len(wps) - 1)]
-        )
-        # Create lane polygon
-        forward_vector = lane[0].transform.get_forward_vector()
-        right_vector = carla.Vector3D(-forward_vector.y, forward_vector.x, 0)  # Perpendicular to forward
-        # Compute lane width
-        lane_width = lane[0].lane_width
-        # Compute boundary points
-        left_boundary_start = lane[0].transform.location + right_vector * (lane_width / 2.0)
-        right_boundary_start = lane[0].transform.location - right_vector * (lane_width / 2.0)
-        left_boundary_end = lane[1].transform.location + right_vector * (lane_width / 2.0)
-        right_boundary_end = lane[1].transform.location - right_vector * (lane_width / 2.0)
-        lane_polygon = Polygon(
-            [
-                _to_2d(left_boundary_start),
-                _to_2d(left_boundary_end),
-                _to_2d(right_boundary_end),
-                _to_2d(right_boundary_start),
-            ]
+        if len(wps) < 2:
+            wps = [lane[0], lane[1]]  # fallback for very short segments
+        
+        lane_length = sum([
+            wps[i].transform.location.distance(wps[i + 1].transform.location) 
+            for i in range(len(wps) - 1)
+        ])
+        
+        # Create left and right boundary points separately
+        left_boundary_points = []
+        right_boundary_points = []
+        
+        for wp in wps:
+            forward_vector = wp.transform.get_forward_vector()
+            right_vector = carla.Vector3D(-forward_vector.y, forward_vector.x, 0)
+            lane_width = wp.lane_width
+            
+            left_point = wp.transform.location + right_vector * (lane_width / 2.0)
+            right_point = wp.transform.location - right_vector * (lane_width / 2.0)
+            
+            left_boundary_points.append(_to_2d(left_point))
+            right_boundary_points.append(_to_2d(right_point))
+        
+        # Create polygon by going along left boundary then back along right boundary
+        # This ensures a proper non-self-intersecting polygon
+        polygon_points = left_boundary_points + right_boundary_points[::-1]
+        
+        # Ensure the polygon is closed (Shapely will handle this, but being explicit)
+        if polygon_points[0] != polygon_points[-1]:
+            polygon_points.append(polygon_points[0])
+        
+        lane_polygon = Polygon(polygon_points)
+        
+        # Validate the polygon is valid and not self-intersecting
+        if not lane_polygon.is_valid:
+            print(f"Warning: Invalid polygon created for lane {lane[0].road_id}_{lane[0].lane_id}")
+            # You could fall back to convex hull or buffering approach here
+        
+        return cls(
+            lane_id=f"{lane[0].road_id}_{lane[0].lane_id}",
+            is_intersection=lane[0].is_intersection,
+            length=lane_length,
+            lane_polygon=lane_polygon
         )
 
-        return cls(lane_id = F"{lane[0].road_id}_{lane[0].lane_id}",
-                   is_intersection = lane[0].is_intersection,
-                   length = lane_length,
-                   lane_polygon = lane_polygon
-                   )
 
 class ActorType(Enum):
     VEHICLE = "VEHICLE"  # default
