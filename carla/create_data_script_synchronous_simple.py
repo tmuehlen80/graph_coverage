@@ -38,16 +38,16 @@ def to_2d(location):
 
 
 maps = [
-    '/Game/Carla/Maps/Town01', 
-    '/Game/Carla/Maps/Town01_Opt', 
-    '/Game/Carla/Maps/Town02_Opt', 
-    '/Game/Carla/Maps/Town02', 
-    '/Game/Carla/Maps/Town03', 
-    '/Game/Carla/Maps/Town04', # has a lot of offroad actors
-    '/Game/Carla/Maps/Town04_Opt', # has a lot of offroad actors
-    '/Game/Carla/Maps/Town05_Opt', 
+    # '/Game/Carla/Maps/Town01', 
+    # '/Game/Carla/Maps/Town02', 
+    # '/Game/Carla/Maps/Town03', 
+    # '/Game/Carla/Maps/Town04', 
     '/Game/Carla/Maps/Town05', 
     '/Game/Carla/Maps/Town07', 
+    #'/Game/Carla/Maps/Town04_Opt', # has a lot of offroad actors
+   # '/Game/Carla/Maps/Town05_Opt', 
+    #'/Game/Carla/Maps/Town01_Opt', 
+    # '/Game/Carla/Maps/Town02_Opt', 
     # '/Game/Carla/Maps/Town10HD', # problematic. for whatever reason...
     # '/Game/Carla/Maps/Town10HD_Opt', 
     # '/Game/Carla/Maps/Town11/Town11' 
