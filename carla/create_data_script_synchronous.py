@@ -98,7 +98,7 @@ CAUTIOUS_IN_WEATHER_PROBABILITY = 0.6  # 60% drive more cautiously in bad weathe
 n_steps = 300
 timeout = 150.0
 for map in maps:
-    for ijk in range(5):
+    for ijk in range(3):
         client = carla.Client("localhost", 2000)
         client.set_timeout(timeout)
         client.load_world(map)
