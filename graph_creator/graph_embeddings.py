@@ -55,13 +55,13 @@ def get_feature_dimensions(actor_type_mapping=None, edge_type_mapping=None):
         actor_type_mapping = ACTOR_TYPE_MAPPING
     if edge_type_mapping is None:
         edge_type_mapping = EDGE_TYPE_MAPPING
-    
-    # Node features: 1 (lon_speed) + num_actor_types (one-hot)
-    node_features = 1 + len(actor_type_mapping)
-    
+
+    # Node features: 1 (lon_speed) + num_actor_types (one-hot) + 2 (boolean attributes)
+    node_features = 1 + len(actor_type_mapping) + 2
+
     # Edge features: 1 (path_length) + num_edge_types (one-hot)
     edge_features = 1 + len(edge_type_mapping)
-    
+
     return node_features, edge_features
 
 def networkx_to_pyg(nx_graph, actor_type_mapping=None, edge_type_mapping=None):
@@ -92,27 +92,31 @@ def networkx_to_pyg(nx_graph, actor_type_mapping=None, edge_type_mapping=None):
     node_features = []
     for node in nodes:
         node_data = nx_graph.nodes[node]
-        
+
         # Extract lon_speed (continuous feature)
         lon_speed = node_data.get('lon_speed', 0.0)
-        
+
         # Extract actor_type and convert to one-hot
         actor_type = node_data.get('actor_type')
         if hasattr(actor_type, 'value'):  # Handle enum
             actor_type_str = actor_type.value
         else:
             actor_type_str = str(actor_type)
-        
+
         # Get actor type index
         actor_type_idx = actor_type_mapping.get(actor_type_str, 0)  # Default to 0 if unknown
-        
+
         # Create one-hot encoding for actor type
         num_actor_types = len(actor_type_mapping)
         actor_onehot = [0.0] * num_actor_types
         actor_onehot[actor_type_idx] = 1.0
-        
-        # Combine features: [lon_speed, actor_type_onehot...]
-        node_feature = [lon_speed] + actor_onehot
+
+        # Extract boolean attributes
+        lane_change = float(node_data.get('lane_change', False))  # Convert boolean to float
+        is_on_intersection = float(node_data.get('is_on_intersection', False))  # Convert boolean to float
+
+        # Combine features: [lon_speed, actor_type_onehot..., lane_change, is_on_intersection]
+        node_feature = [lon_speed] + actor_onehot + [lane_change, is_on_intersection]
         node_features.append(node_feature)
     
     # Convert to tensor

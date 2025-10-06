@@ -36,10 +36,10 @@ def to_2d(location):
 
 
 maps = [
-    # '/Game/Carla/Maps/Town01', 
-    # '/Game/Carla/Maps/Town02', 
-    # '/Game/Carla/Maps/Town03', 
-    # '/Game/Carla/Maps/Town04', # has a lot of offroad actors
+    '/Game/Carla/Maps/Town01', 
+    '/Game/Carla/Maps/Town02', 
+    '/Game/Carla/Maps/Town03', 
+    '/Game/Carla/Maps/Town04', # has a lot of offroad actors
     '/Game/Carla/Maps/Town05', 
     '/Game/Carla/Maps/Town07', 
     # '/Game/Carla/Maps/Town04_Opt', # has a lot of offroad actors
@@ -98,7 +98,7 @@ CAUTIOUS_IN_WEATHER_PROBABILITY = 0.6  # 60% drive more cautiously in bad weathe
 n_steps = 300
 timeout = 150.0
 for map in maps:
-    for ijk in range(5):
+    for ijk in range(3):
         client = carla.Client("localhost", 2000)
         client.set_timeout(timeout)
         client.load_world(map)

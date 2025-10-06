@@ -160,9 +160,9 @@ learning embedding representations not only on the graph structure itself but on
 network architectures like GraphSAGE or GAT are not capable of this. (TODO: check if this is true)
 
 
-
-
-
+The exact architecture of the model is shown in Figure \ref{fig:model_architecture}. The features used are the actor type (as a one hot encoding),
+the actor speed (float), if the actor is on an intersection (boolean) and if the actor changed its lane since the last timestep (boolean) for the nodes.
+For the edges, the edge type (as a one hot encoding) and the path length (float) between the two nodes are used.
 
 
 The core component is the \texttt{TrainableGraphGINE} class, which implements a Graph Isomorphism Network with Edge features (GINE) architecture for generating graph-level embeddings. The model consists of multiple GINE convolutional layers, each containing:
