@@ -164,48 +164,72 @@ The exact architecture of the model is shown in Figure \ref{fig:model_architectu
 the actor speed (float), if the actor is on an intersection (boolean) and if the actor changed its lane since the last timestep (boolean) for the nodes.
 For the edges, the edge type (as a one hot encoding) and the path length (float) between the two nodes are used.
 
+The model has been trained on the CARLA and Argoverse 2.0 datasets using self-supervised contrastive learning. 
 
-The core component is the \texttt{TrainableGraphGINE} class, which implements a Graph Isomorphism Network with Edge features (GINE) architecture for generating graph-level embeddings. The model consists of multiple GINE convolutional layers, each containing:
+
+
+The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of randomly samples scenarios, the scenario with 
+closest embedding vector (euclidean distance as well as cosine distance) has been visualized. This is shown in Figure \ref{fig:plausibility_checks}. This 
+includes comparison between CARLA and Argoverse scenarios.
+
+As a next step, the embedding space has been analysed using PCA and t-SNE. This is shown in Figure \ref{fig:embedding_space}. This can be done in a number of 
+different flavors, like for example:
+
 \begin{itemize}
-    \item Sequential multi-layer perceptrons (MLPs) with batch normalization and ReLU activations
-    \item Edge-aware message passing incorporating both node and edge features
-    \item Dropout regularization to prevent overfitting
+    \item distinguishing between CARLA and Argoverse scenarios by a color coding, 
+    \item visualiizing just the CARLA scenarios and color code them by the map, in order to see if the maps deliver different types of scenarios,
+    \item by calculating a density distribution of the embedding space for the Argoverse scenarios, and to check if for a regions with a density 
+    about a certain threshold, there exist CARLA scenarios, i.e. do a coverage analysis in the embedded space
+    \item do the same vice versa, i.e. to check for relevance of CARLA scenarios.
 \end{itemize}
 
-The model employs a combination of three graph pooling strategies - mean, max, and sum pooling - to create a comprehensive graph-level representation. A projection head enables contrastive learning through InfoNCE loss, while an optional classification head supports supervised learning tasks.
+As the embedding space is a normal metric space, representing scenarios across a large range of different driving situations, these embeddings can be used also for 
+many other tasks, like for example clustering, anomaly detection, similarity search, etc.
 
-\subsection{Data Processing and Augmentation}
+The results for this approach are shown in Section xxx.
 
-The \texttt{GraphDataset} class handles the conversion from NetworkX graphs to PyTorch Geometric format through the \texttt{networkx\_to\_pyg} function. This conversion includes:
-\begin{itemize}
-    \item One-hot encoding of categorical node features (actor types: VEHICLE, PEDESTRIAN, CYCLIST, MOTORCYCLE)
-    \item One-hot encoding of edge types (neighbor\_vehicle, opposite\_vehicle, same\_lane, adjacent\_lane, following, intersection)
-    \item Preservation of continuous features such as longitudinal speed and path length
-\end{itemize}
 
-Data augmentation is implemented through the \texttt{augment\_graph} function, which adds Gaussian noise to continuous features to create augmented versions for contrastive learning.
+% The core component is the \texttt{TrainableGraphGINE} class, which implements a Graph Isomorphism Network with Edge features (GINE) architecture for generating graph-level embeddings. The model consists of multiple GINE convolutional layers, each containing:
+% \begin{itemize}
+%     \item Sequential multi-layer perceptrons (MLPs) with batch normalization and ReLU activations
+%     \item Edge-aware message passing incorporating both node and edge features
+%     \item Dropout regularization to prevent overfitting
+% \end{itemize}
 
-\subsection{Training Methodology}
+% The model employs a combination of three graph pooling strategies - mean, max, and sum pooling - to create a comprehensive graph-level representation. A projection head enables contrastive learning through InfoNCE loss, while an optional classification head supports supervised learning tasks.
 
-The training process utilizes self-supervised contrastive learning with the following characteristics:
-\begin{itemize}
-    \item InfoNCE contrastive loss implemented in the \texttt{contrastive\_loss} function
-    \item Adaptive learning rate schedule with exponential decay (starting at 0.02, decaying by factor 0.75)
-    \item Multi-epoch training with 15 epochs per learning rate stage
-    \item Data from both CARLA simulator (4,442 graphs) and Argoverse 2.0 dataset (3,588 graphs)
-\end{itemize}
+% \subsection{Data Processing and Augmentation}
 
-\subsection{Embedding Analysis and Visualization}
+% The \texttt{GraphDataset} class handles the conversion from NetworkX graphs to PyTorch Geometric format through the \texttt{networkx\_to\_pyg} function. This conversion includes:
+% \begin{itemize}
+%     \item One-hot encoding of categorical node features (actor types: VEHICLE, PEDESTRIAN, CYCLIST, MOTORCYCLE)
+%     \item One-hot encoding of edge types (neighbor\_vehicle, opposite\_vehicle, same\_lane, adjacent\_lane, following, intersection)
+%     \item Preservation of continuous features such as longitudinal speed and path length
+% \end{itemize}
 
-The trained model generates 256-dimensional embeddings for each traffic scene graph. Analysis includes:
-\begin{itemize}
-    \item Dimensionality reduction using Principal Component Analysis (PCA) and t-distributed Stochastic Neighbor Embedding (t-SNE)
-    \item Visualization of embedding space distinguishing between CARLA and Argoverse data sources
-    \item Similarity-based scene retrieval using squared Euclidean distance in embedding space
-    \item Integration with visualization functions (\texttt{plot\_lane\_map\_advanced}, \texttt{add\_actors\_to\_map}, \texttt{add\_actor\_edges\_to\_map}) to display similar traffic scenes
-\end{itemize}
+% Data augmentation is implemented through the \texttt{augment\_graph} function, which adds Gaussian noise to continuous features to create augmented versions for contrastive learning.
 
-The implementation demonstrates successful learning of traffic scene representations, with the embedding space capturing meaningful similarities between scenes from different data sources while maintaining distinction between simulation and real-world data.
+% \subsection{Training Methodology}
+
+% The training process utilizes self-supervised contrastive learning with the following characteristics:
+% \begin{itemize}
+%     \item InfoNCE contrastive loss implemented in the \texttt{contrastive\_loss} function
+%     \item Adaptive learning rate schedule with exponential decay (starting at 0.02, decaying by factor 0.75)
+%     \item Multi-epoch training with 15 epochs per learning rate stage
+%     \item Data from both CARLA simulator (4,442 graphs) and Argoverse 2.0 dataset (3,588 graphs)
+% \end{itemize}
+
+% \subsection{Embedding Analysis and Visualization}
+
+% The trained model generates 256-dimensional embeddings for each traffic scene graph. Analysis includes:
+% \begin{itemize}
+%     \item Dimensionality reduction using Principal Component Analysis (PCA) and t-distributed Stochastic Neighbor Embedding (t-SNE)
+%     \item Visualization of embedding space distinguishing between CARLA and Argoverse data sources
+%     \item Similarity-based scene retrieval using squared Euclidean distance in embedding space
+%     \item Integration with visualization functions (\texttt{plot\_lane\_map\_advanced}, \texttt{add\_actors\_to\_map}, \texttt{add\_actor\_edges\_to\_map}) to display similar traffic scenes
+% \end{itemize}
+
+% The implementation demonstrates successful learning of traffic scene representations, with the embedding space capturing meaningful similarities between scenes from different data sources while maintaining distinction between simulation and real-world data.
 
 \section{Application}
 
