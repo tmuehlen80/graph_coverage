@@ -27,7 +27,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 data/
-*.parquet
+# *.parquet
 *.json
 *.tar
 
