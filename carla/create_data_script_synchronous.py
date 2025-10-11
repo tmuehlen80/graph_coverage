@@ -138,7 +138,7 @@ for rep in range(3):
             # Track vehicle behavior states
             vehicle_behaviors = {}
             vehicle_slowdown_timers = {}
-            n_vehicles = random.randint(10, 60)
+            n_vehicles = random.randint(25, 65)
             for i in range(n_vehicles):
                 spawn_point = spawn_points[i]
                 # Select vehicle type based on probabilities
