@@ -13,9 +13,9 @@
 
 \section{Abstract}
 
+test2
 
 \section{Introduction}
-
 
 
 \begin{itemize}
@@ -23,7 +23,7 @@
     \item In most situations, coverage arguments are collected either per coverage factor, or maybe up to 2 or 3 factor interactions.
     \item See for example \cite{foretellix2019} for an production grade implementation of state of the art coverage analysis.
     \item In contrast to existing approaches, this paper proposes a graph-based framework for coverage analysis.
-    \item There are already other graph-based approaches for analysing and representing traffic scenes, see for example \cite{behr2021graph}.
+    \item There are already other graph-based approaches for analysing and representing traffic scenes.
     \item However, the work in that paper is not specifically focused on coverage analysis.
     \item Hence in this paper, graph based traffic scene representations are utilized for coverage analysis.
     \item This paper is structured as follows:
@@ -32,10 +32,6 @@
     \end{itemize}
 \end{itemize}
 
-
-\cite{wagner2022odd}
-
-\cite{arzamasov2021data}
 
 
 
@@ -61,7 +57,7 @@ add Master thesis Johannes
 
 \cite{wachenfeld2016release}
 
-\cite{berger2020survey}
+
 
 \cite{iso21448}
 
@@ -70,20 +66,18 @@ add Master thesis Johannes
 
 \section{Defining a traffic scene graph}
 
-\cite{behr2021graph}
+still to be added: https://sagroups.ieee.org/adwg/wp-content/uploads/sites/661/2024/10/ADWG_STV2_whitepaper.pdf
 
-
+still to be added: https://www.vvm-projekt.de/securedl/sdl-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NDc2OTIxNjgsImV4cCI6MTc0Nzc4MjE2OCwidXNlciI6MCwiZ3JvdXBzIjpbMCwtMV0sImZpbGUiOiJmaWxlYWRtaW4vdXNlcl91cGxvYWQvVlZNZXRob2Rlbl9adXNhbW1lbmZhc3NlbmRlcl9BYnNjaGx1c3NiZXJpY2h0X3YxLjBfenVyX1Zlc_f9d402f084002b57/VVMethoden_Zusammenfassender_Abschlussbericht_v1.0_zur_Veroeffentlichung.pdf
 
 \cite{newman2010networks}
 
-\cite{bagheri2020ontology}
+\cite{bagschik2018ontologybasedscenecreation}
 
-\cite{riedmaier2020realistic}
 
 
 \cite{fremont2020scenic}
 
-\cite{pek2019generating}
 
 \subsection{time based graph representations}
 
@@ -109,12 +103,14 @@ One such algorithm is the VF2 algorithm, which is implemented in the NetworkX li
 The strategy we are then applying is the following:
 
 \begin{enumerate}
-            \item Define a set of subgraphs $S$ that are considered to be archetypes of traffic scenes, e.g. unprotected left turns with opposite traffic or lead vehicle following situations.
-            \item Define which node and edge attributes are considered for the isomorphism check.
-            \item Create an empty dataframe $C$ with a column for each subgraph in $S$
-            \item Define the set of traffice scenes (e.g. from Carla or Argoverse) defined as graphs $G$
-            \item For each graph $G$, check if any subgraph of $G$ is isomorphic to any subgraph in $S$ and note the result in a new row in table $C$
+    \item Define a set of subgraphs $S$ that are considered to be archetypes of traffic scenes, e.g. unprotected left turns with opposite traffic or lead vehicle following situations.
+    \item Define which node and edge attributes are considered for the isomorphism check.
+    \item Create an empty dataframe $C$ with a column for each subgraph in $S$
+    \item Define the set of traffice scenes (e.g. from Carla or Argoverse) defined as graphs $G$
+    \item For each graph $G$, check if any subgraph of $G$ is isomorphic to any subgraph in $S$ and note the result in a new row in table $C$
 \end{enumerate}
+
+
 
 This strategy can be described to some degree as a bottom up approach: Starting from a detail level, individual situations are defined.
 Then going upwards to different datasets, it is checked, if the archetype is present.
