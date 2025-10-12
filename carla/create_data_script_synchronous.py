@@ -39,7 +39,7 @@ maps = [
     '/Game/Carla/Maps/Town01', 
     '/Game/Carla/Maps/Town02', 
     '/Game/Carla/Maps/Town03', 
-    '/Game/Carla/Maps/Town04', # has a lot of offroad actors
+    '/Game/Carla/Maps/Town04',
     '/Game/Carla/Maps/Town05', 
     '/Game/Carla/Maps/Town07', 
     # '/Game/Carla/Maps/Town04_Opt', # has a lot of offroad actors
@@ -99,7 +99,7 @@ n_steps = 300
 timeout = 150.0
 for rep in range(3):
     for map in maps:
-        for ijk in range(2):
+        for ijk in range(1):
             client = carla.Client("localhost", 2000)
             client.set_timeout(timeout)
             client.load_world(map)
@@ -379,6 +379,6 @@ for rep in range(3):
             tracks_df["map"] = world.get_map().name
             tracks_df["scene_id"] = dt_specifier
             tracks_df.to_parquet(f"carla/data/scene_{scene_name}_tracks.parquet")
-            print(f"scene {scene_name} saved")
+            print(f"scene {scene_name} saved, rep {rep}")
             time.sleep(5)
 

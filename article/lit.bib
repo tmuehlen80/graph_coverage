@@ -31,6 +31,7 @@
 
 
 @misc{pegasus2019method,
+  author = {PEGASUS},
   title = {PEGASUS Method},
   year = {2019},
   howpublished = {Available online},
@@ -110,6 +111,7 @@
 }
 
 
+
 @ARTICLE{deGelder2022ontology,
   author={de Gelder, Erwin and Paardekooper, Jan-Pieter and Saberi, Arash Khabbaz and Elrofai, Hala and Camp, Olaf Op den and Kraines, Steven and Ploeg, Jeroen and De Schutter, Bart},
   journal={IEEE Transactions on Intelligent Vehicles}, 
@@ -122,23 +124,21 @@
   doi={10.1109/TIV.2022.3144803}
   }
 
-@inproceedings{wachenfeld2016release,
-  title     = {The Release of Autonomous Vehicles: A Safety Argumentation and its Validation},
-  author    = {Wachenfeld, Walther and Winner, Hermann},
-  booktitle = {Proceedings of the 22nd ESV Conference},
-  year      = {2016}
+@Inbook{wachenfeld2016release,
+author="Wachenfeld, Walther
+and Winner, Hermann",
+title="The Release of Autonomous Vehicles",
+bookTitle="Autonomous Driving: Technical, Legal and Social Aspects",
+year="2016",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="425--449",
+abstract="In the future, the functions of autonomous driving could fundamentally change all road traffic; to do so, it would have to be implemented on a large scale, in series production.",
+isbn="978-3-662-48847-8",
+doi="10.1007/978-3-662-48847-8_21",
+url="https://doi.org/10.1007/978-3-662-48847-8_21"
 }
 
-@article{berger2020survey,
-  title     = {A Survey on Scenario-Based Verification and Validation of Autonomous Vehicles},
-  author    = {Berger, Christian and Rumpe, Bernhard and Stier, Julian and others},
-  journal   = {IEEE Access},
-  volume    = {8},
-  pages     = {87456--87477},
-  year      = {2020},
-  publisher = {IEEE},
-  doi       = {10.1109/ACCESS.2020.2981955}
-}
 
 
 @misc{iso21448,
@@ -150,7 +150,7 @@
 }
 
 @book{ul4600,
-  title        = {{UL 4600: Standard for Evaluation of Autonomous Products}},
+  title        = {{UL 4600: Standard for Safety for the Evaluation of Autonomous Products}},
   year         = {2020},
   author       = {Underwriters Laboratories},
   publisher    = {UL Standards},
@@ -158,57 +158,38 @@
 }
 
 
-@inproceedings{behr2021graph,
-  title     = {A Graph-Based Model for Representing and Analyzing Traffic Scenarios},
-  author    = {Behr, Felix and Menzel, Thomas and Bagschik, Gerrit and Maurer, Markus},
-  booktitle = {2021 IEEE International Intelligent Transportation Systems Conference (ITSC)},
-  pages     = {1458--1465},
-  year      = {2021},
-  publisher = {IEEE},
-  doi       = {10.1109/ITSC48978.2021.9564694}
+
+
+@misc{bagschik2018ontologybasedscenecreation,
+      title={Ontology based Scene Creation for the Development of Automated Vehicles}, 
+      author={Gerrit Bagschik and Till Menzel and Markus Maurer},
+      year={2018},
+      eprint={1704.01006},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/1704.01006}, 
 }
 
 
-@article{bagheri2020ontology,
-  title     = {Ontology-Based Scene Creation for the Development of Automated Vehicles},
-  author    = {Bagheri, Mojtaba and Menzel, Thomas and Maurer, Markus},
-  journal   = {CEAS Aeronautical Journal},
-  volume    = {11},
-  number    = {3},
-  pages     = {661--673},
-  year      = {2020},
-  publisher = {Springer},
-  doi       = {10.1007/s13272-020-00483-5}
-}
-
-
-@article{riedmaier2020realistic,
-  title     = {Realistic Modeling of Traffic Scenarios for the Safety Validation of Automated Vehicles},
-  author    = {Riedmaier, Stefan and Bock, Christian and Stahl, Anselm and et al.},
-  journal   = {Technische Sicherheit},
-  year      = {2020},
-  note      = {Technical report from PEGASUS and VVM projects}
-}
 
 @inproceedings{fremont2020scenic,
-  title     = {Scenic: A Language for Scenario Specification and Scene Generation},
-  author    = {Fremont, Daniel J. and Dreossi, Tommaso and Seshia, Sanjit A.},
-  booktitle = {Proceedings of the 40th ACM SIGPLAN Conference on Programming Language Design and Implementation (PLDI)},
-  year      = {2020},
-  pages     = {118--132},
-  publisher = {ACM},
-  doi       = {10.1145/3314221.3314625}
+author = {Fremont, Daniel J. and Dreossi, Tommaso and Ghosh, Shromona and Yue, Xiangyu and Sangiovanni-Vincentelli, Alberto L. and Seshia, Sanjit A.},
+title = {Scenic: a language for scenario specification and scene generation},
+year = {2019},
+isbn = {9781450367127},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3314221.3314633},
+doi = {10.1145/3314221.3314633},
+abstract = {We propose a new probabilistic programming language for the design and analysis of perception systems, especially those based on machine learning. Specifically, we consider the problems of training a perception system to handle rare events, testing its performance under different conditions, and debugging failures. We show how a probabilistic programming language can help address these problems by specifying distributions encoding interesting types of inputs and sampling these to generate specialized training and test sets. More generally, such languages can be used for cyber-physical systems and robotics to write environment models, an essential prerequisite to any formal analysis. In this paper, we focus on systems like autonomous cars and robots, whose environment is a scene, a configuration of physical objects and agents. We design a domain-specific language, Scenic, for describing scenarios that are distributions over scenes. As a probabilistic programming language, Scenic allows assigning distributions to features of the scene, as well as declaratively imposing hard and soft constraints over the scene. We develop specialized techniques for sampling from the resulting distribution, taking advantage of the structure provided by Scenic's domain-specific syntax. Finally, we apply Scenic in a case study on a convolutional neural network designed to detect cars in road images, improving its performance beyond that achieved by state-of-the-art synthetic data generation methods.},
+booktitle = {Proceedings of the 40th ACM SIGPLAN Conference on Programming Language Design and Implementation},
+pages = {63–78},
+numpages = {16},
+keywords = {synthetic data, scenario description language, probabilistic programming, fuzz testing, deep learning, automatic test generation},
+location = {Phoenix, AZ, USA},
+series = {PLDI 2019}
 }
 
-@inproceedings{pek2019generating,
-  title     = {Generating Traffic Scenario Variants Using Ontologies and Graph Transformations},
-  author    = {Pek, Carlos and Bagschik, Gerrit and Menzel, Thomas and Maurer, Markus},
-  booktitle = {2019 IEEE Intelligent Vehicles Symposium (IV)},
-  year      = {2019},
-  pages     = {1394--1401},
-  publisher = {IEEE},
-  doi       = {10.1109/IVS.2019.8813980}
-}
 
 
 @article{menzel2021hazard,
@@ -222,26 +203,7 @@
 }
 
 
-@inproceedings{wagner2022odd,
-  title     = {Operational Design Domain Verification and Validation: Challenges and Approaches},
-  author    = {Wagner, Stephan and Menzel, Thomas and Bagschik, Gerrit and Maurer, Markus},
-  booktitle = {2022 IEEE Intelligent Vehicles Symposium (IV)},
-  pages     = {948--955},
-  year      = {2022},
-  publisher = {IEEE},
-  doi       = {10.1109/IV51971.2022.9827135}
-}
 
-@article{arzamasov2021data,
-  title     = {Data-Driven Testing of Autonomous Driving Systems: A Survey},
-  author    = {Arzamasov, Artem and Lauer, Martin and Bengler, Klaus},
-  journal   = {Journal of Field Robotics},
-  volume    = {38},
-  number    = {8},
-  pages     = {1063--1087},
-  year      = {2021},
-  doi       = {10.1002/rob.22010}
-}
 
 @inproceedings{Dosovitskiy17Carla,
   title = { {CARLA}: {An} Open Urban Driving Simulator},

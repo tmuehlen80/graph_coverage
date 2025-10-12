@@ -13,9 +13,9 @@
 
 \section{Abstract}
 
+test2
 
 \section{Introduction}
-
 
 
 \begin{itemize}
@@ -23,7 +23,7 @@
     \item In most situations, coverage arguments are collected either per coverage factor, or maybe up to 2 or 3 factor interactions.
     \item See for example \cite{foretellix2019} for an production grade implementation of state of the art coverage analysis.
     \item In contrast to existing approaches, this paper proposes a graph-based framework for coverage analysis.
-    \item There are already other graph-based approaches for analysing and representing traffic scenes, see for example \cite{behr2021graph}.
+    \item There are already other graph-based approaches for analysing and representing traffic scenes.
     \item However, the work in that paper is not specifically focused on coverage analysis.
     \item Hence in this paper, graph based traffic scene representations are utilized for coverage analysis.
     \item This paper is structured as follows:
@@ -32,10 +32,6 @@
     \end{itemize}
 \end{itemize}
 
-
-\cite{wagner2022odd}
-
-\cite{arzamasov2021data}
 
 
 
@@ -61,7 +57,7 @@ add Master thesis Johannes
 
 \cite{wachenfeld2016release}
 
-\cite{berger2020survey}
+
 
 \cite{iso21448}
 
@@ -70,63 +66,61 @@ add Master thesis Johannes
 
 \section{Defining a traffic scene graph}
 
-\cite{behr2021graph}
+still to be added: https://sagroups.ieee.org/adwg/wp-content/uploads/sites/661/2024/10/ADWG_STV2_whitepaper.pdf
 
-
+still to be added: https://www.vvm-projekt.de/securedl/sdl-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NDc2OTIxNjgsImV4cCI6MTc0Nzc4MjE2OCwidXNlciI6MCwiZ3JvdXBzIjpbMCwtMV0sImZpbGUiOiJmaWxlYWRtaW4vdXNlcl91cGxvYWQvVlZNZXRob2Rlbl9adXNhbW1lbmZhc3NlbmRlcl9BYnNjaGx1c3NiZXJpY2h0X3YxLjBfenVyX1Zlc_f9d402f084002b57/VVMethoden_Zusammenfassender_Abschlussbericht_v1.0_zur_Veroeffentlichung.pdf
 
 \cite{newman2010networks}
 
-\cite{bagheri2020ontology}
+\cite{bagschik2018ontologybasedscenecreation}
 
-\cite{riedmaier2020realistic}
 
 
 \cite{fremont2020scenic}
 
-\cite{pek2019generating}
 
 \subsection{time based graph representations}
 
-\section{Analysing a traffic scene with agraph}
+\section{Analysing a traffic scene with a graph}
 
-
-\begin{itemize}
-    \item Having defined a graph-based traffic scene representation, we can now analyse the coverage of the system.
-    \item Two methodologies are proposed for this purpose:
-    \item One is to define archetypes of traffice scenes, and to compare graphs from observed traffic scenes to these archetypes.
-    \item The second one is to translate graphs to graph embeddings, and then to compare the embeddings of different sets of traffic scenes.
-\end{itemize}
+Having defined a graph-based traffic scene representation, we can now analyse the coverage of the system.
+Two methodologies are proposed for this purpose:
+One is to define archetypes of traffice scenes, and to compare graphs from observed traffic scenes to these archetypes.
+The second one is to translate graphs to graph embeddings, and then to compare the embeddings of different sets of traffic scenes.
 
 \section{Create subgraphs for coverage analysis}
 
+There is a lot of knowledge in the literature on how to define archetypes of traffic scenes.
+Once an archetype is defined, a special property of graphs can be used. 
+Two graphs are isomorphic if they have the same structure, regardless of the node and edge labels.
+As the archetypes are not necessarily are involving a lot of actors, these are more like subsets of actual traffic scenes.
+A very simple example might be 2 vehicles on the same lane, driving in the same direction and another vehicle driving on a neighboring lane.
+This situation can be represented by a graph with 3 nodes and 2 edges. 
+In most real traffic situations however, there will be additional actors present, so that we are not searching for isomorphic graphs, but rather want to check if any subgraph of $G$ is isomorphic to the archetype graph $A$.
+This is an example of a subgraph isomorphism problem.
+While this problem is NP-hard, the graphs considered here are rather small, so the computational time is reasonable.
+One such algorithm is the VF2 algorithm, which is implemented in the NetworkX library (see \cite{cordella2004subgraph}).
+The strategy we are then applying is the following:
+
+\begin{enumerate}
+    \item Define a set of subgraphs $S$ that are considered to be archetypes of traffic scenes, e.g. unprotected left turns with opposite traffic or lead vehicle following situations.
+    \item Define which node and edge attributes are considered for the isomorphism check.
+    \item Create an empty dataframe $C$ with a column for each subgraph in $S$
+    \item Define the set of traffice scenes (e.g. from Carla or Argoverse) defined as graphs $G$
+    \item For each graph $G$, check if any subgraph of $G$ is isomorphic to any subgraph in $S$ and note the result in a new row in table $C$
+\end{enumerate}
+
+
+
+This strategy can be described to some degree as a bottom up approach: Starting from a detail level, individual situations are defined.
+Then going upwards to different datasets, it is checked, if the archetype is present.
+Also, follow up analysis of the created coverage dataframe can be performed. For example,
+
 \begin{itemize}
-    \item There is a lot of knowledge in the literature on how to define archetypes of traffic scenes.
-    \item Once an archetype is defined, a special property of graphs can be used. 
-    \item Two graphs are isomorphic if they have the same structure, regardless of the node and edge labels.
-    \item As the archetypes are not necessarily are involving a lot of actors, these are more like subsets of actual traffic scenes.
-    \item A very simple example might be 2 vehicles on the same lane, driving in the same direction and another vehicle driving on a neighboring lane.
-    \item This situation can be represented by a graph with 3 nodes and 2 edges. 
-    \item In most real traffic situations however, there will be additional actors present, so that we are not searching for isomorphic graphs, but rather want to check if any subgraph of $G$ is isomorphic to the archetype graph $A$.
-    \item This is an example of a subgraph isomorphism problem.
-    \item While this problem is NP-hard, the graphs considered here are rather small, so the computational time is reasonable.
-    \item One such algorithm is the VF2 algorithm, which is implemented in the NetworkX library (see \cite{cordella2004subgraph}).
-    \item The strategy we are then applying is the following:
-    \item \begin{enumerate}
-            \item Define a set of subgraphs $S$ that are considered to be archetypes.
-            \item Define which node and edge attributes are considered for the isomorphism check.
-            \item Create an empty dataframe $C$ with a column for each subgraph in $S$
-            \item Define the set of traffice scenes (e.g. from Carla or Argoverse) defined as graphs $G$
-            \item For each graph $G$, check if any subgraph of $G$ is isomorphic to any subgraph in $S$ and note the result in a new row in table $C$
-        \end{enumerate}
-    \item This strategy can be described to some degree as a bottom up approach: Starting from a detail level, individual situations are defined.
-    \item Then going upwards to different datasets, it is checked, if the archetype is present.
-    \item Also, follow up analysis of the created coverage dataframe can be performed. For example,
-    \item \begin{itemize}
-        \item The distribution of numeric attributes like speed and and distance to other actors can be visualized for the subset of all traffic scenes which are subgraph isomorphic to an archetype.
-        \item It can be cross tabulated, which combinations of archetypes are jointly present in a traffic scene.
-        \item Pass Fail rates or other AV performance metrics can be calculated for the subset of all traffic scenes which are subgraph isomorphic to an archetype.
-    \end{itemize}
-    \end{itemize}
+    \item The distribution of numeric attributes like speed and and distance to other actors can be visualized for the subset of all traffic scenes which are subgraph isomorphic to an archetype.
+    \item It can be cross tabulated, which combinations of archetypes are jointly present in a traffic scene.
+    \item Pass Fail rates or other AV performance metrics can be calculated for the subset of all traffic scenes which are subgraph isomorphic to an archetype.
+\end{itemize}
 
     
 
@@ -167,7 +161,6 @@ For the edges, the edge type (as a one hot encoding) and the path length (float)
 The model has been trained on the CARLA and Argoverse 2.0 datasets using self-supervised contrastive learning. 
 
 
-
 The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of randomly samples scenarios, the scenario with 
 closest embedding vector (euclidean distance as well as cosine distance) has been visualized. This is shown in Figure \ref{fig:plausibility_checks}. This 
 includes comparison between CARLA and Argoverse scenarios.
@@ -185,6 +178,10 @@ different flavors, like for example:
 
 As the embedding space is a normal metric space, representing scenarios across a large range of different driving situations, these embeddings can be used also for 
 many other tasks, like for example clustering, anomaly detection, similarity search, etc.
+
+And, as the main task considered here is coverage analysis, the embeddings can be used to check if a target distribution is met by a test distribution in the embedded space. 
+Specifically, considering the Argoverse 2.0 scenarios as the target distribution, and the CARLA scenarios as the test distribution, the embeddings can be used to check 
+if the CARLA scenarios cover the Argoverse 2.0 scenarios in the embedded space.
 
 The results for this approach are shown in Section xxx.
 
