@@ -13,29 +13,30 @@
 
 \section{Abstract}
 
-test2
+test3
 
 \section{Introduction}
 
 
-\begin{itemize}
-    \item In autonomous driving, coverage analysis is a crucial step to ensure the safety and reliability of the system.
-    \item In most situations, coverage arguments are collected either per coverage factor, or maybe up to 2 or 3 factor interactions.
-    \item See for example \cite{foretellix2019} for an production grade implementation of state of the art coverage analysis.
-    \item In contrast to existing approaches, this paper proposes a graph-based framework for coverage analysis.
-    \item There are already other graph-based approaches for analysing and representing traffic scenes.
-    \item However, the work in that paper is not specifically focused on coverage analysis.
-    \item Hence in this paper, graph based traffic scene representations are utilized for coverage analysis.
-    \item This paper is structured as follows:
-    \begin{itemize}
-        \item In the first section, xxx
-    \end{itemize}
-\end{itemize}
+
+In autonomous driving, coverage analysis is a crucial step to ensure the safety and reliability of the system.
+In most situations, coverage arguments are collected either per coverage factor, or maybe up to 2 or 3 factor interactions.
+See for example \cite{foretellix2019} for an production grade implementation of state of the art coverage analysis.
+In contrast to existing approaches, this paper proposes a graph-based framework for coverage analysis.
+There are already other graph-based approaches for analysing and representing traffic scenes.
+However, the work in that paper is not specifically focused on coverage analysis.
+Hence in this paper, graph based traffic scene representations are utilized for coverage analysis.
+
+This paper is structured as follows: In chapter \ref{chapter:existing_approaches}, existing coverage and analysis approaches are discussed.
+The basis for the following chapters is layed in chapter \ref{chapter:defining_a_traffic_scene_graph}. Afterwards, two coverage approaches 
+using the traffic scene graphs are discussed in chapter \ref{chapter:create_subgraphs_for_coverage_analysis} and 
+chapter \ref{chapter:implementation_of_graph_embeddings_for_traffic_scene_analysis}.
+Finally, the developed methods are applied to Carla and Argoverse 2.0 data in chapter \ref{chapter:application} 
+followed by a short summary and outlook.
 
 
-
-
-\section{exsting coverage and analysis approaches}
+\section{Existing coverage and analysis approaches}
+\label{chapter:existing_approaches}
 
 add Master thesis Johannes
 
@@ -65,10 +66,11 @@ add Master thesis Johannes
 
 
 \section{Defining a traffic scene graph}
+\label{chapter:defining_a_traffic_scene_graph}
 
-still to be added: https://sagroups.ieee.org/adwg/wp-content/uploads/sites/661/2024/10/ADWG_STV2_whitepaper.pdf
+still to be added: \url{https://sagroups.ieee.org/adwg/wp-content/uploads/sites/661/2024/10/ADWG_STV2_whitepaper.pdf}
 
-still to be added: https://www.vvm-projekt.de/securedl/sdl-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NDc2OTIxNjgsImV4cCI6MTc0Nzc4MjE2OCwidXNlciI6MCwiZ3JvdXBzIjpbMCwtMV0sImZpbGUiOiJmaWxlYWRtaW4vdXNlcl91cGxvYWQvVlZNZXRob2Rlbl9adXNhbW1lbmZhc3NlbmRlcl9BYnNjaGx1c3NiZXJpY2h0X3YxLjBfenVyX1Zlc_f9d402f084002b57/VVMethoden_Zusammenfassender_Abschlussbericht_v1.0_zur_Veroeffentlichung.pdf
+still to be added: \url{https://www.vvm-projekt.de/securedl/sdl-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NDc2OTIxNjgsImV4cCI6MTc0Nzc4MjE2OCwidXNlciI6MCwiZ3JvdXBzIjpbMCwtMV0sImZpbGUiOiJmaWxlYWRtaW4vdXNlcl91cGxvYWQvVlZNZXRob2Rlbl9adXNhbW1lbmZhc3NlbmRlcl9BYnNjaGx1c3NiZXJpY2h0X3YxLjBfenVyX1Zlc_f9d402f084002b57/VVMethoden_Zusammenfassender_Abschlussbericht_v1.0_zur_Veroeffentlichung.pdf}
 
 \cite{newman2010networks}
 
@@ -80,6 +82,24 @@ still to be added: https://www.vvm-projekt.de/securedl/sdl-eyJ0eXAiOiJKV1QiLCJhb
 
 
 \subsection{time based graph representations}
+The graph creation strategy described above is assuming to create a graph for a single timestep. One possible 
+extension is to create a graph which contains information for multiple timesteps.
+
+\begin{itemize}
+    \item create a graph for multiple timesteps
+    \item create a joint set of nodes. 
+    \item For each time step, determine the corresponding edges.
+    \item Add all edges to the graph, resulting in a di-graph, which can contain for a pair of nodes as many edges as there are time steps.
+\end{itemize}
+
+This extension allows the graph to easily represent changing states, e.g. the relationship between two vehicles 
+changes from neighbor to leading vehicle, i.e. a cut in happened. One important special case for this type of processing is 
+to handle actors, which are not present in all time steps, i.e. they appear and disappear during the time window. Especially 
+if node attributes are used in the processing, a suitable imputation strategy is necessary to avoid 
+non-equal dimensions of tensors for node attributes.
+
+The methods derived in the following chapters can be applied to this extended graph representation as well, even though 
+the focus in this paper will be on single timestep graphs.
 
 \section{Analysing a traffic scene with a graph}
 
@@ -89,6 +109,7 @@ One is to define archetypes of traffice scenes, and to compare graphs from obser
 The second one is to translate graphs to graph embeddings, and then to compare the embeddings of different sets of traffic scenes.
 
 \section{Create subgraphs for coverage analysis}
+\label{chapter:create_subgraphs_for_coverage_analysis}
 
 There is a lot of knowledge in the literature on how to define archetypes of traffic scenes.
 Once an archetype is defined, a special property of graphs can be used. 
@@ -125,6 +146,7 @@ Also, follow up analysis of the created coverage dataframe can be performed. For
     
 
 \section{Implementation of Graph Embeddings for Traffic Scene Analysis}
+\label{chapter:implementation_of_graph_embeddings_for_traffic_scene_analysis}
 
 This section describes the concepts, implementation and application of graph embeddings to traffic scene graphs. 
 The implementation follows a comprehensive approach to learning graph representations through self-supervised 
@@ -229,6 +251,7 @@ The results for this approach are shown in Section xxx.
 % The implementation demonstrates successful learning of traffic scene representations, with the embedding space capturing meaningful similarities between scenes from different data sources while maintaining distinction between simulation and real-world data.
 
 \section{Application}
+\label{chapter:application}
 
 \subsection{Argoverse 2.0}
 
