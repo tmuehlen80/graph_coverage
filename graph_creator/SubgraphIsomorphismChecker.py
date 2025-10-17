@@ -46,5 +46,6 @@ class IsomorphicGrapCoverageCounter:
             self.cov_data["degree"].append(sum(dict(ag_nx.degree()).values()) / len(ag_nx.nodes()))
             self.cov_data["density"].append(nx.density(ag_nx))
             self.cov_data["diameter"].append(nx.diameter(ag_nx))
+            self.cov_data["path"] = graph_path
 
         self.cov_data_df = pd.DataFrame(self.cov_data)
