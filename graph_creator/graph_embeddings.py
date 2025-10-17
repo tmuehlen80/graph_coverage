@@ -32,7 +32,6 @@ ACTOR_TYPE_MAPPING = {
     'PEDESTRIAN': 1,
     'CYCLIST': 2,
     'MOTORCYCLE': 3,
-    # Add more types as needed
 }
 
 EDGE_TYPE_MAPPING = {
@@ -42,7 +41,6 @@ EDGE_TYPE_MAPPING = {
     'adjacent_lane': 3,
     'following': 4,
     'intersection': 5,
-    # Add more edge types as needed
 }
 
 

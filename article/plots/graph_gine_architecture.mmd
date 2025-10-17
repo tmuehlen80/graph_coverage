@@ -1,0 +1,42 @@
+flowchart LR
+  subgraph Inputs
+    X["x: R[N,7]"]
+    EI["edge_index: R[2,E]"]
+    EA["edge_attr: R[E,7]"]
+    B["batch: R[N]"]
+  end
+  subgraph GINE_Stack
+    G0["GINEConv + BN + ReLU + Dropout (hidden=96)"]
+    G1["GINEConv + BN + ReLU + Dropout (hidden=96)"]
+    G2["GINEConv + BN + ReLU + Dropout (hidden=96)"]
+    G3["GINEConv + BN + ReLU + Dropout (hidden=96)"]
+  end
+  subgraph Pooling
+    POOL_MEAN[global_mean_pool]
+    POOL_MAX[global_max_pool]
+    POOL_SUM[global_add_pool]
+  end
+  subgraph Embedding
+    E1["Linear 3*hidden to 256; ReLU; Dropout"]
+    E2["Linear 256 to 256"]
+  end
+  subgraph ProjectionHead
+    P1["Linear 256 to 256; ReLU"]
+    P2["Linear 256 to 128"]
+  end
+  X --> G0
+  EI --> G0
+  EA --> G0
+  B --> G0
+  G0 --> G1
+  G1 --> G2
+  G2 --> G3
+  G3 --> POOL_MEAN
+  G3 --> POOL_MAX
+  G3 --> POOL_SUM
+  POOL_MEAN --> E1
+  POOL_MAX --> E1
+  POOL_SUM --> E1
+  E1 --> E2
+  E2 --> P1
+  P1 --> P2
