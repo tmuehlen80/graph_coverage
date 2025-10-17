@@ -3,6 +3,8 @@
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{svg}
+
 \title{A Graph-based Framework for Coverage Analysis in Autonomous Driving}
 \author{xxx}
 \date{\today}
@@ -175,8 +177,14 @@ pytorch geometric library (\cite{Fey/Lenssen/2019}). Main reason for using this 
 learning embedding representations not only on the graph structure itself but on both node and edge attributes. Other 
 network architectures like GraphSAGE or GAT are not capable of this. (TODO: check if this is true)
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plots/graph_gine_architecture.pdf}
+    \caption{Model architecture for the Graph Isomorphism Network with Edge features (GINE).}
+    \label{fig:graph_gine_architecture}
+\end{figure}
 
-The exact architecture of the model is shown in Figure \ref{fig:model_architecture}. The features used are the actor type (as a one hot encoding),
+The exact architecture of the model is shown in Figure \ref{fig:graph_gine_architecture}. The features used are the actor type (as a one hot encoding),
 the actor speed (float), if the actor is on an intersection (boolean) and if the actor changed its lane since the last timestep (boolean) for the nodes.
 For the edges, the edge type (as a one hot encoding) and the path length (float) between the two nodes are used.
 
@@ -303,14 +311,14 @@ similar data size as the Argoverse 2.0 dataset.
     \centering
     \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_carla_coverage_barchart.png}
     \caption{Coverage barchart for the manually defined coverage scenarios for CARLA.}
-    \label{fig:carla_coverage_barchart_manual_scenarios}
+    \label{fig:subgraph_isomorphism_carla_coverage_barchart}
 \end{figure}
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_carla.png}
     \caption{Agreement matrix for manually defined coverage scenarios for CARLA.}
-    \label{fig:carla_coverage_barchart_manual_scenarios}
+    \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_carla}
 \end{figure}
 
 
@@ -329,6 +337,13 @@ similar data size as the Argoverse 2.0 dataset.
     \end{tabular}
 \end{table}
 % \cite{goodfellow2016deep} % needed?
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\textwidth]{plots/combined_distributions_plots_speed_distance_carla.png}
+    \caption{Agreement matrix for manually defined coverage scenarios for CARLA.}
+    \label{fig:combined_distributions_plots_speed_distance_carla}
+\end{figure}
 
 
 \section{Summary}
