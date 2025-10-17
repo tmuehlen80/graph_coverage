@@ -2,7 +2,7 @@
 \usepackage{cite}
 \usepackage{hyperref}
 \usepackage{graphicx}
-
+\usepackage{booktabs}
 \title{A Graph-based Framework for Coverage Analysis in Autonomous Driving}
 \author{xxx}
 \date{\today}
@@ -13,7 +13,7 @@
 
 \section{Abstract}
 
-test3
+test4
 
 \section{Introduction}
 
@@ -299,8 +299,35 @@ have between 20 and 60 vehicles each.
 The resulting data consists of xxx scenes with 11 seconds of simulation time each, in order to have a 
 similar data size as the Argoverse 2.0 dataset.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_carla_coverage_barchart.png}
+    \caption{Coverage barchart for the manually defined coverage scenarios for CARLA.}
+    \label{fig:carla_coverage_barchart_manual_scenarios}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_carla.png}
+    \caption{Agreement matrix for manually defined coverage scenarios for CARLA.}
+    \label{fig:carla_coverage_barchart_manual_scenarios}
+\end{figure}
 
 
+\begin{table}[htbp]
+    \caption{My Table}
+    \label{tab:mytable}
+    \begin{tabular}{rrrrr}
+    \toprule
+    scn 1 & scn 2 & scn 3 & scn 4 & size \\
+    \midrule
+    False & False & False & False & 613 \\
+    False & False & True & False & 3 \\
+    True & True & False & True & 377 \\
+    True & True & True & True & 7 \\
+    \bottomrule
+    \end{tabular}
+\end{table}
 % \cite{goodfellow2016deep} % needed?
 
 
