@@ -193,6 +193,22 @@ For the edges, the edge type (as a one hot encoding) and the path length (float)
 The model has been trained on the CARLA and Argoverse 2.0 datasets using self-supervised contrastive learning. 
 
 
+Training employed a self-supervised contrastive objective on mini-batches of 128 graphs. 
+For each batch, two correlated views of every graph were created by 
+perturbing continuous attributes with zero-mean Gaussian noise ($\sigma=0.1$) applied to node 
+longitudinal speed and edge path length. A four-layer GINE encoder 
+(hidden width 96) produced graph-level representations via the concatenation of 
+mean, max, and sum pooling, followed by an embedding MLP (yielding 256-dimensional embeddings) and a projection head. The contrastive loss was a temperature-scaled cross-entropy over in-batch similarities (cosine similarity of $\ell_2$-normalized projections, temperature $\tau=0.1$), maximizing agreement of the two views of the same graph while contrasting against other graphs in the batch. Optimization used Adam with an exponentially decaying learning rate, initialized at 0.02 and multiplied by 0.75 across successive stages. 
+This setup follows established practice in contrastive pretraining for GNNs \cite{hu2020strategiespretraininggraphneural} 
+and is implemented using PyTorch Geometric \cite{Fey/Lenssen/2019}.
+
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{plots/train_test_graph_embeddings_loss_plot.png}
+\caption{Training and test loss for the graph embeddings model trained jointly on CARLA and Argoverse 2.0 data.}
+\label{fig:train_test_graph_embeddings_loss_plot}
+\end{figure}
 
 
 The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of 
@@ -201,6 +217,13 @@ closest embedding vector (euclidean distance as well as cosine distance) has bee
 This is shown in Figure \ref{fig:plausibility_checks}. This 
 includes comparison between CARLA and Argoverse scenarios.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plots/graph_embeddings_pca_tsne_test_plot.png}
+    \caption{PCA and t-SNE visualization of the embedding space for Carla and Argoverse 2.0 scenarios.}
+    \label{fig:embedding_space}
+\end{figure}
+    
 As a next step, the embedding space has been analysed using PCA and t-SNE. This is shown in Figure \ref{fig:embedding_space}. This can be done in a number of 
 different flavors, like for example:
 
