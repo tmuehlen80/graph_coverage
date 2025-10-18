@@ -6,7 +6,7 @@
 \usepackage{svg}
 
 \title{A Graph-based Framework for Coverage Analysis in Autonomous Driving}
-\author{xxx}
+\author{Thomas Mühlenstädt and Marius Bause}
 \date{\today}
 
 \begin{document}
@@ -147,7 +147,7 @@ Also, follow up analysis of the created coverage dataframe can be performed. For
 
     
 
-\section{Implementation of Graph Embeddings for Traffic Scene Analysis}
+\section{Graph Embeddings for Traffic Scene Analysis}
 \label{chapter:implementation_of_graph_embeddings_for_traffic_scene_analysis}
 
 This section describes the concepts, implementation and application of graph embeddings to traffic scene graphs. 
@@ -184,15 +184,21 @@ network architectures like GraphSAGE or GAT are not capable of this. (TODO: chec
     \label{fig:graph_gine_architecture}
 \end{figure}
 
-The exact architecture of the model is shown in Figure \ref{fig:graph_gine_architecture}. The features used are the actor type (as a one hot encoding),
-the actor speed (float), if the actor is on an intersection (boolean) and if the actor changed its lane since the last timestep (boolean) for the nodes.
+The exact architecture of the model is shown in Figure \ref{fig:graph_gine_architecture}. The features 
+used are the actor type (as a one hot encoding),
+the actor speed (float), if the actor is on an intersection (boolean) and if the actor changed its 
+lane since the last timestep (boolean) for the nodes.
 For the edges, the edge type (as a one hot encoding) and the path length (float) between the two nodes are used.
 
 The model has been trained on the CARLA and Argoverse 2.0 datasets using self-supervised contrastive learning. 
 
 
-The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of randomly samples scenarios, the scenario with 
-closest embedding vector (euclidean distance as well as cosine distance) has been visualized. This is shown in Figure \ref{fig:plausibility_checks}. This 
+
+
+The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of 
+randomly samples scenarios, the scenario with 
+closest embedding vector (euclidean distance as well as cosine distance) has been visualized. 
+This is shown in Figure \ref{fig:plausibility_checks}. This 
 includes comparison between CARLA and Argoverse scenarios.
 
 As a next step, the embedding space has been analysed using PCA and t-SNE. This is shown in Figure \ref{fig:embedding_space}. This can be done in a number of 
