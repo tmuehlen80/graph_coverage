@@ -6,7 +6,7 @@
 \usepackage{svg}
 
 \title{A Graph-based Framework for Coverage Analysis in Autonomous Driving}
-\author{xxx}
+\author{Thomas Mühlenstädt and Marius Bause}
 \date{\today}
 
 \begin{document}
@@ -147,7 +147,7 @@ Also, follow up analysis of the created coverage dataframe can be performed. For
 
     
 
-\section{Implementation of Graph Embeddings for Traffic Scene Analysis}
+\section{Graph Embeddings for Traffic Scene Analysis}
 \label{chapter:implementation_of_graph_embeddings_for_traffic_scene_analysis}
 
 This section describes the concepts, implementation and application of graph embeddings to traffic scene graphs. 
@@ -184,17 +184,46 @@ network architectures like GraphSAGE or GAT are not capable of this. (TODO: chec
     \label{fig:graph_gine_architecture}
 \end{figure}
 
-The exact architecture of the model is shown in Figure \ref{fig:graph_gine_architecture}. The features used are the actor type (as a one hot encoding),
-the actor speed (float), if the actor is on an intersection (boolean) and if the actor changed its lane since the last timestep (boolean) for the nodes.
+The exact architecture of the model is shown in Figure \ref{fig:graph_gine_architecture}. The features 
+used are the actor type (as a one hot encoding),
+the actor speed (float), if the actor is on an intersection (boolean) and if the actor changed its 
+lane since the last timestep (boolean) for the nodes.
 For the edges, the edge type (as a one hot encoding) and the path length (float) between the two nodes are used.
 
 The model has been trained on the CARLA and Argoverse 2.0 datasets using self-supervised contrastive learning. 
 
 
-The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of randomly samples scenarios, the scenario with 
-closest embedding vector (euclidean distance as well as cosine distance) has been visualized. This is shown in Figure \ref{fig:plausibility_checks}. This 
+Training employed a self-supervised contrastive objective on mini-batches of 128 graphs. 
+For each batch, two correlated views of every graph were created by 
+perturbing continuous attributes with zero-mean Gaussian noise ($\sigma=0.1$) applied to node 
+longitudinal speed and edge path length. A four-layer GINE encoder 
+(hidden width 96) produced graph-level representations via the concatenation of 
+mean, max, and sum pooling, followed by an embedding MLP (yielding 256-dimensional embeddings) and a projection head. The contrastive loss was a temperature-scaled cross-entropy over in-batch similarities (cosine similarity of $\ell_2$-normalized projections, temperature $\tau=0.1$), maximizing agreement of the two views of the same graph while contrasting against other graphs in the batch. Optimization used Adam with an exponentially decaying learning rate, initialized at 0.02 and multiplied by 0.75 across successive stages. 
+This setup follows established practice in contrastive pretraining for GNNs \cite{hu2020strategiespretraininggraphneural} 
+and is implemented using PyTorch Geometric \cite{Fey/Lenssen/2019}.
+
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{plots/train_test_graph_embeddings_loss_plot.png}
+\caption{Training and test loss for the graph embeddings model trained jointly on CARLA and Argoverse 2.0 data.}
+\label{fig:train_test_graph_embeddings_loss_plot}
+\end{figure}
+
+
+The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of 
+randomly samples scenarios, the scenario with 
+closest embedding vector (euclidean distance as well as cosine distance) has been visualized. 
+This is shown in Figure \ref{fig:plausibility_checks}. This 
 includes comparison between CARLA and Argoverse scenarios.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plots/graph_embeddings_pca_tsne_test_plot.png}
+    \caption{PCA and t-SNE visualization of the embedding space for Carla and Argoverse 2.0 scenarios.}
+    \label{fig:embedding_space}
+\end{figure}
+    
 As a next step, the embedding space has been analysed using PCA and t-SNE. This is shown in Figure \ref{fig:embedding_space}. This can be done in a number of 
 different flavors, like for example:
 
@@ -350,5 +379,21 @@ similar data size as the Argoverse 2.0 dataset.
 
 \bibliographystyle{plain}
 \bibliography{lit}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_0.png}
+    
+    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_1.png}
+    
+    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_2.png}
+    
+    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_3.png}
+    
+    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_4.png}
+    \caption{Plausibility checks showing graph embedding comparisons. For randomly sampled scenarios, the most similar scenarios based on embedding distance (both Euclidean and cosine) are visualized, including comparisons between CARLA and Argoverse scenarios.}
+    \label{fig:plausibility_checks}
+\end{figure}
+
 
 \end{document}
