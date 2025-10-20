@@ -42,17 +42,68 @@ followed by a short summary and outlook.
 
 add Master thesis Johannes
 
-\cite{pegasus2019method}
+There exist a larger 
+The PEGASUS project (\cite{pegasus2019method}) introduces a systematic, scenario-based methodology for the verification and 
+validation of highly automated driving functions, addressing the impracticality of traditional 
+distance-based testing approaches. The core of the method is a six-layer model used to 
+systematically describe and structure the driving environment, encompassing factors from road geometry to weather conditions. 
+This framework is particularly relevant for coverage analysis, as it facilitates a structured decomposition of the vast, 
+continuous test space into discrete, manageable "logical scenarios". By systematically 
+parameterizing and exploring these logical scenarios across simulation, proving ground, and field tests, 
+the methodology aims to ensure the completeness of relevant test runs and provides a structured 
+foundation for arguing that the automated system has been adequately tested across its entire operational design 
+domain (ODD). This shift from random sampling to a structured, scenario-based approach allows 
+for a more efficient and comprehensive assessment to generate evidence for a final safety argumentation
 
-\cite{Ries2021traj_clustering}
 
-\cite{ORAD2021taxonomy}
+The authors of (\cite{Ries2021traj_clustering}) address the challenge of validating automated driving systems 
+in complex urban environments by proposing a trajectory-based clustering method for real-world driving data. 
+They extract motion trajectories and associated features from urban driving recordings, apply unsupervised 
+clustering to group similar driving behaviours/scenes, then analyze the resulting clusters to reveal common 
+scenario types and redundancies. Their approach enables structuring the enormous scenario space, 
+supporting more efficient test-set generation and scenario selection for automated vehicle verification. While 
+not explicitly focused on coverage analysis, their approach is a good starting point for coverage analysis.
 
-\cite{Ulbrich2015scene}
 
-\cite{DBLP:journals/corr/abs-1801-08598}
+In \cite{Ulbrich2015scene}, the authors identify that key concepts in automated driving—namely scene, 
+situation, and scenario—are inconsistently defined in the literature, which complicates the 
+development, testing and validation of driving-automation modules. They propose clear 
+definitions: a scene is a snapshot of the environment including dynamic and static 
+elements plus actors’ self-representations; a situation is the set of all circumstances relevant for 
+behaviour decision at a given moment, derived from the scene but reflecting the actor’s goals and 
+values; and a scenario is a temporal development of several scenes in sequence, involving 
+actions/events and goals/values. The paper also provides example implementations of these 
+definitions in the context of automated-vehicle systems and how they interface with perception, 
+planning and control, and testing.
 
-\cite{Ammann_Offutt_2008}
+Another important reference is the SAE International recommended practice \cite{ORAD2021taxonomy}, which 
+provides many foundational terms in the context of autonomous driving.
+It provides a functional taxonomy and clear definitions for key terms related to 
+driving automation systems (DAS) used in on-road motor vehicles. The document defines six 
+levels of driving automation (Levels 0 through 5) based on the role of three primary actors — 
+the human driver, the driving automation system (DAS), and other vehicle systems/components. It introduces 
+important related terms such as the Dynamic Driving Task (DDT), Operational Design 
+Domain (ODD), Automated Driving System (ADS), and Vehicle Motion Control, 
+among others. The 2021-04 revision (superseding the 2018 version) was developed in 
+collaboration with ISO/TC 204/WG14 to harmonise global terminology and improve clarity for multi-discipline audiences 
+(engineering, legal, media). The document emphasises that it is descriptive (not normative); 
+it does not prescribe specifications or impose performance requirements for DAS.
+
+The paper \cite{DBLP:journals/corr/abs-1801-08598} proposes a scenario-based framework for developing and 
+validating automated-driving systems across different development phases. It 
+introduces three abstraction levels of scenarios—functional, logical, and 
+concrete—and discusses how these can be transformed for use in testing. The authors note that 
+existing parameter-selection methods, such as equivalence-class or combinatorial testing, lack a 
+systematic way to determine meaningful test coverage, highlighting coverage analysis as 
+an open challenge in scenario-based validation.
+
+
+In \cite{Ammann_Offutt_2008}, a standard textbook on software testing although not specifically focused on autonomous driving, the authors provide an 
+introduction to software testing, which is a 
+good starting point for coverage analysis. They introduce the concept of coverage and discuss the 
+different types of coverage, such as statement coverage, branch coverage, condition coverage, 
+and decision coverage. They also discuss the different techniques for measuring coverage, such as 
+branch coverage, condition coverage, and decision coverage.
 
 \cite{foretellix2019}
 
