@@ -42,17 +42,71 @@ followed by a short summary and outlook.
 
 add Master thesis Johannes
 
-\cite{pegasus2019method}
+There exist a large amount of literature on coverage analysis in the context of autonomous driving.
+In the following, some of the most relevant approaches are discussed.
 
-\cite{Ries2021traj_clustering}
 
-\cite{ORAD2021taxonomy}
+The PEGASUS project (\cite{pegasus2019method}) introduces a systematic, scenario-based methodology for the verification and 
+validation of highly automated driving functions, addressing the impracticality of traditional 
+distance-based testing approaches. The core of the method is a six-layer model used to 
+systematically describe and structure the driving environment, encompassing factors from road geometry to weather conditions. 
+This framework is particularly relevant for coverage analysis, as it facilitates a structured decomposition of the vast, 
+continuous test space into discrete, manageable "logical scenarios". By systematically 
+parameterizing and exploring these logical scenarios across simulation, proving ground, and field tests, 
+the methodology aims to ensure the completeness of relevant test runs and provides a structured 
+foundation for arguing that the automated system has been adequately tested across its entire operational design 
+domain (ODD). This shift from random sampling to a structured, scenario-based approach allows 
+for a more efficient and comprehensive assessment to generate evidence for a final safety argumentation
 
-\cite{Ulbrich2015scene}
 
-\cite{DBLP:journals/corr/abs-1801-08598}
+The authors of (\cite{Ries2021traj_clustering}) address the challenge of validating automated driving systems 
+in complex urban environments by proposing a trajectory-based clustering method for real-world driving data. 
+They extract motion trajectories and associated features from urban driving recordings, apply unsupervised 
+clustering to group similar driving behaviours/scenes, then analyze the resulting clusters to reveal common 
+scenario types and redundancies. Their approach enables structuring the enormous scenario space, 
+supporting more efficient test-set generation and scenario selection for automated vehicle verification. While 
+not explicitly focused on coverage analysis, their approach is a good starting point for coverage analysis.
 
-\cite{Ammann_Offutt_2008}
+
+In \cite{Ulbrich2015scene}, the authors identify that key concepts in automated driving—namely scene, 
+situation, and scenario—are inconsistently defined in the literature, which complicates the 
+development, testing and validation of driving-automation modules. They propose clear 
+definitions: a scene is a snapshot of the environment including dynamic and static 
+elements plus actors’ self-representations; a situation is the set of all circumstances relevant for 
+behaviour decision at a given moment, derived from the scene but reflecting the actor’s goals and 
+values; and a scenario is a temporal development of several scenes in sequence, involving 
+actions/events and goals/values. The paper also provides example implementations of these 
+definitions in the context of automated-vehicle systems and how they interface with perception, 
+planning and control, and testing.
+
+Another important reference is the SAE International recommended practice \cite{ORAD2021taxonomy}, which 
+provides many foundational terms in the context of autonomous driving.
+It provides a functional taxonomy and clear definitions for key terms related to 
+driving automation systems (DAS) used in on-road motor vehicles. The document defines six 
+levels of driving automation (Levels 0 through 5) based on the role of three primary actors — 
+the human driver, the driving automation system (DAS), and other vehicle systems/components. It introduces 
+important related terms such as the Dynamic Driving Task (DDT), Operational Design 
+Domain (ODD), Automated Driving System (ADS), and Vehicle Motion Control, 
+among others. The 2021-04 revision (superseding the 2018 version) was developed in 
+collaboration with ISO/TC 204/WG14 to harmonise global terminology and improve clarity for multi-discipline audiences 
+(engineering, legal, media). The document emphasises that it is descriptive (not normative); 
+it does not prescribe specifications or impose performance requirements for DAS.
+
+The paper \cite{DBLP:journals/corr/abs-1801-08598} proposes a scenario-based framework for developing and 
+validating automated-driving systems across different development phases. It 
+introduces three abstraction levels of scenarios—functional, logical, and 
+concrete—and discusses how these can be transformed for use in testing. The authors note that 
+existing parameter-selection methods, such as equivalence-class or combinatorial testing, lack a 
+systematic way to determine meaningful test coverage, highlighting coverage analysis as 
+an open challenge in scenario-based validation.
+
+
+In \cite{Ammann_Offutt_2008}, a standard textbook on software testing although not specifically focused on 
+autonomous driving, the authors provide an introduction to software testing, which is a 
+good starting point for coverage analysis. They introduce the concept of coverage and discuss the 
+different types of coverage, such as statement coverage, branch coverage, condition coverage, 
+and decision coverage. They also discuss the different techniques for measuring coverage, such as 
+branch coverage, condition coverage, and decision coverage.
 
 \cite{foretellix2019}
 
@@ -83,16 +137,14 @@ still to be added: \url{https://www.vvm-projekt.de/securedl/sdl-eyJ0eXAiOiJKV1Qi
 \cite{fremont2020scenic}
 
 
-\subsection{time based graph representations}
+\subsection{Time based graph representations}
 The graph creation strategy described above is assuming to create a graph for a single timestep. One possible 
-extension is to create a graph which contains information for multiple timesteps.
-
-\begin{itemize}
-    \item create a graph for multiple timesteps
-    \item create a joint set of nodes. 
-    \item For each time step, determine the corresponding edges.
-    \item Add all edges to the graph, resulting in a di-graph, which can contain for a pair of nodes as many edges as there are time steps.
-\end{itemize}
+extension is to create a graph which contains information for multiple timesteps. In order to create a time indexed graph,
+first the actor graphs for all timesteps are created. The joint set of all nodes across all timesteps is then determined.
+Node attributes of single timestep graphs are combined into a tensor of node attributes, introducing a new dimension for the time index.
+While the nodes are somehow time independent by this strategy, the edges are modeled as time dependent. Here it is utilized, that 
+there can be multiple edges between the same pair of nodes, keeping potential edge attributes and adding an additional edge attribute to indicate the
+time stamp of the edge.
 
 This extension allows the graph to easily represent changing states, e.g. the relationship between two vehicles 
 changes from neighbor to leading vehicle, i.e. a cut in happened. One important special case for this type of processing is 
@@ -116,7 +168,7 @@ The second one is to translate graphs to graph embeddings, and then to compare t
 There is a lot of knowledge in the literature on how to define archetypes of traffic scenes.
 Once an archetype is defined, a special property of graphs can be used. 
 Two graphs are isomorphic if they have the same structure, regardless of the node and edge labels.
-As the archetypes are not necessarily are involving a lot of actors, these are more like subsets of actual traffic scenes.
+As the archetypes are not necessarily involving a lot of actors, these are more like subsets of actual traffic scenes.
 A very simple example might be 2 vehicles on the same lane, driving in the same direction and another vehicle driving on a neighboring lane.
 This situation can be represented by a graph with 3 nodes and 2 edges. 
 In most real traffic situations however, there will be additional actors present, so that we are not searching for isomorphic graphs, but rather want to check if any subgraph of $G$ is isomorphic to the archetype graph $A$.
@@ -133,8 +185,6 @@ The strategy we are then applying is the following:
     \item For each graph $G$, check if any subgraph of $G$ is isomorphic to any subgraph in $S$ and note the result in a new row in table $C$
 \end{enumerate}
 
-
-
 This strategy can be described to some degree as a bottom up approach: Starting from a detail level, individual situations are defined.
 Then going upwards to different datasets, it is checked, if the archetype is present.
 Also, follow up analysis of the created coverage dataframe can be performed. For example,
@@ -145,7 +195,14 @@ Also, follow up analysis of the created coverage dataframe can be performed. For
     \item Pass Fail rates or other AV performance metrics can be calculated for the subset of all traffic scenes which are subgraph isomorphic to an archetype.
 \end{itemize}
 
-    
+In the above approach, the archetypes are defined manually. An alternative approach is to automatically extract all possible archetypes 
+from a dataset of real world traffic observation data. 
+
+xxxxxx
+
+TODO MARIUS: Describe the approach of automatically extracting archetypes from real world traffic observation data.
+
+xxxxxx
 
 \section{Graph Embeddings for Traffic Scene Analysis}
 \label{chapter:implementation_of_graph_embeddings_for_traffic_scene_analysis}
@@ -203,46 +260,7 @@ This setup follows established practice in contrastive pretraining for GNNs \cit
 and is implemented using PyTorch Geometric \cite{Fey/Lenssen/2019}.
 
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.8\textwidth]{plots/train_test_graph_embeddings_loss_plot.png}
-\caption{Training and test loss for the graph embeddings model trained jointly on CARLA and Argoverse 2.0 data.}
-\label{fig:train_test_graph_embeddings_loss_plot}
-\end{figure}
 
-
-The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of 
-randomly samples scenarios, the scenario with 
-closest embedding vector (euclidean distance as well as cosine distance) has been visualized. 
-This is shown in Figure \ref{fig:plausibility_checks}. This 
-includes comparison between CARLA and Argoverse scenarios.
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.8\textwidth]{plots/graph_embeddings_pca_tsne_test_plot.png}
-    \caption{PCA and t-SNE visualization of the embedding space for Carla and Argoverse 2.0 scenarios.}
-    \label{fig:embedding_space}
-\end{figure}
-    
-As a next step, the embedding space has been analysed using PCA and t-SNE. This is shown in Figure \ref{fig:embedding_space}. This can be done in a number of 
-different flavors, like for example:
-
-\begin{itemize}
-    \item distinguishing between CARLA and Argoverse scenarios by a color coding, 
-    \item visualiizing just the CARLA scenarios and color code them by the map, in order to see if the maps deliver different types of scenarios,
-    \item by calculating a density distribution of the embedding space for the Argoverse scenarios, and to check if for a regions with a density 
-    about a certain threshold, there exist CARLA scenarios, i.e. do a coverage analysis in the embedded space
-    \item do the same vice versa, i.e. to check for relevance of CARLA scenarios.
-\end{itemize}
-
-As the embedding space is a normal metric space, representing scenarios across a large range of different driving situations, these embeddings can be used also for 
-many other tasks, like for example clustering, anomaly detection, similarity search, etc.
-
-And, as the main task considered here is coverage analysis, the embeddings can be used to check if a target distribution is met by a test distribution in the embedded space. 
-Specifically, considering the Argoverse 2.0 scenarios as the target distribution, and the CARLA scenarios as the test distribution, the embeddings can be used to check 
-if the CARLA scenarios cover the Argoverse 2.0 scenarios in the embedded space.
-
-The results for this approach are shown in Section xxx.
 
 
 % The core component is the \texttt{TrainableGraphGINE} class, which implements a Graph Isomorphism Network with Edge features (GINE) architecture for generating graph-level embeddings. The model consists of multiple GINE convolutional layers, each containing:
@@ -294,6 +312,8 @@ The results for this approach are shown in Section xxx.
 
 \cite{Argoverse2}
 
+TODO MARIUS: Describe the Argoverse 2.0 dataset.
+
 \subsection{Carla}
 
 CARLA (Car Learning to Act, \cite{Dosovitskiy17Carla}) is an open-source simulator specifically designed for autonomous driving research and 
@@ -336,6 +356,9 @@ have between 20 and 60 vehicles each.
 The resulting data consists of xxx scenes with 11 seconds of simulation time each, in order to have a 
 similar data size as the Argoverse 2.0 dataset.
 
+
+\subsection{Subgraph Isomorphism Coverage Analysis}
+
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_carla_coverage_barchart.png}
@@ -373,6 +396,50 @@ similar data size as the Argoverse 2.0 dataset.
     \caption{Agreement matrix for manually defined coverage scenarios for CARLA.}
     \label{fig:combined_distributions_plots_speed_distance_carla}
 \end{figure}
+
+\subsection{Graph Embeddings Coverage Analysis}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plots/train_test_graph_embeddings_loss_plot.png}
+    \caption{Training and test loss for the graph embeddings model trained jointly on CARLA and Argoverse 2.0 data.}
+    \label{fig:train_test_graph_embeddings_loss_plot}
+\end{figure}
+    
+
+The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of 
+randomly samples scenarios, the scenario with 
+closest embedding vector (euclidean distance as well as cosine distance) has been visualized. 
+This is shown in Figure \ref{fig:plausibility_checks}. This 
+includes comparison between CARLA and Argoverse scenarios.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plots/graph_embeddings_pca_tsne_test_plot.png}
+    \caption{PCA and t-SNE visualization of the embedding space for Carla and Argoverse 2.0 scenarios.}
+    \label{fig:embedding_space}
+\end{figure}
+    
+As a next step, the embedding space has been analysed using PCA and t-SNE. This is shown in Figure \ref{fig:embedding_space}. This can be done in a number of 
+different flavors, like for example:
+
+\begin{itemize}
+    \item distinguishing between CARLA and Argoverse scenarios by a color coding, 
+    \item visualiizing just the CARLA scenarios and color code them by the map, in order to see if the maps deliver different types of scenarios,
+    \item by calculating a density distribution of the embedding space for the Argoverse scenarios, and to check if for a regions with a density 
+    about a certain threshold, there exist CARLA scenarios, i.e. do a coverage analysis in the embedded space
+    \item do the same vice versa, i.e. to check for relevance of CARLA scenarios.
+\end{itemize}
+
+As the embedding space is a normal metric space, representing scenarios across a large range of different driving situations, these embeddings can be used also for 
+many other tasks, like for example clustering, anomaly detection, similarity search, etc.
+
+And, as the main task considered here is coverage analysis, the embeddings can be used to check if a target distribution is met by a test distribution in the embedded space. 
+Specifically, considering the Argoverse 2.0 scenarios as the target distribution, and the CARLA scenarios as the test distribution, the embeddings can be used to check 
+if the CARLA scenarios cover the Argoverse 2.0 scenarios in the embedded space.
+
+The results for this approach are shown in Section xxx.
+
 
 
 \section{Summary}
