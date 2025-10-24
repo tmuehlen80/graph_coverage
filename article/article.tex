@@ -58,6 +58,10 @@ foundation for arguing that the automated system has been adequately tested acro
 domain (ODD). This shift from random sampling to a structured, scenario-based approach allows 
 for a more efficient and comprehensive assessment to generate evidence for a final safety argumentation
 
+In a similar direction, \cite{deGelder2022ontology} focus on defining ontoligies for automated vehicles
+in an object oriented manner, with the intention to have a clearly defined and implementable
+structures for scenarios, delivering a clear linkage to coverage arguments.
+
 
 The authors of (\cite{Ries2021traj_clustering}) address the challenge of validating automated driving systems 
 in complex urban environments by proposing a trajectory-based clustering method for real-world driving data. 
@@ -108,17 +112,33 @@ different types of coverage, such as statement coverage, branch coverage, condit
 and decision coverage. They also discuss the different techniques for measuring coverage, such as 
 branch coverage, condition coverage, and decision coverage.
 
-\cite{foretellix2019}
+A much more focussed example of coverage analysis in the context of autonomous driving is provided 
+by \cite{foretellix2019} in a blog 
+post, discussing topics like items, parameters and 
+coverage buckets and performance metrics like time to collision and error collections.
 
-\cite{deGelder2022ontology}
+The authors of (\cite{wachenfeld2016release}) investigate the significant challenge of safety validation and 
+production release for fully autonomous vehicles, positing that established testing concepts are insufficient 
+as they fundamentally rely on the human driver's ability to intervene as a safety backup. 
+The authors introduce the "approval-trap," a statistical argument demonstrating the unfeasibility of proving 
+superior safety through real-world driving, which would necessitate billions of test kilometers. 
+This validation gap is presented as a fundamental problem of coverage analysis, where the
+technical system must now demonstrably cover the vast operational domain previously managed by the 
+human. The paper concludes that overcoming this challenge requires a paradigm shift toward new 
+test case generation methodologies, such as critical scenario identification, and the extensive
+ use of validated simulation-based tools to achieve sufficient test coverage efficiently.
 
-\cite{wachenfeld2016release}
 
+Well known standards for coverage analysis in the context of autonomous driving are the 
+ISO 21448 (\cite{iso21448}) and the UL 4600 (\cite{ul4600}).
+The ISO 21448 is a standard for the safety of the intended functionality of road vehicles, 
+including automated driving systems.
+It defines a framework for coverage analysis, including the definition of coverage criteria and 
+the measurement of coverage.
+The UL 4600 is a standard for the safety of autonomous products, including automated driving systems.
+It defines a framework for coverage analysis, including the definition of coverage criteria and the 
+measurement of coverage.
 
-
-\cite{iso21448}
-
-\cite{ul4600}
 
 
 \section{Defining a traffic scene graph}
@@ -236,7 +256,8 @@ network architectures like GraphSAGE or GAT are not capable of this. (TODO: chec
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.8\textwidth]{plots/graph_gine_architecture.pdf}
+    %\includegraphics[width=0.8\textwidth]{plots/graph_gine_architecture.pdf}
+    \includegraphics[width=0.8\textwidth]{plots/graph_gine_architecture_manually_updated.png}
     \caption{Model architecture for the Graph Isomorphism Network with Edge features (GINE).}
     \label{fig:graph_gine_architecture}
 \end{figure}
@@ -259,51 +280,6 @@ mean, max, and sum pooling, followed by an embedding MLP (yielding 256-dimension
 This setup follows established practice in contrastive pretraining for GNNs \cite{hu2020strategiespretraininggraphneural} 
 and is implemented using PyTorch Geometric \cite{Fey/Lenssen/2019}.
 
-
-
-
-
-% The core component is the \texttt{TrainableGraphGINE} class, which implements a Graph Isomorphism Network with Edge features (GINE) architecture for generating graph-level embeddings. The model consists of multiple GINE convolutional layers, each containing:
-% \begin{itemize}
-%     \item Sequential multi-layer perceptrons (MLPs) with batch normalization and ReLU activations
-%     \item Edge-aware message passing incorporating both node and edge features
-%     \item Dropout regularization to prevent overfitting
-% \end{itemize}
-
-% The model employs a combination of three graph pooling strategies - mean, max, and sum pooling - to create a comprehensive graph-level representation. A projection head enables contrastive learning through InfoNCE loss, while an optional classification head supports supervised learning tasks.
-
-% \subsection{Data Processing and Augmentation}
-
-% The \texttt{GraphDataset} class handles the conversion from NetworkX graphs to PyTorch Geometric format through the \texttt{networkx\_to\_pyg} function. This conversion includes:
-% \begin{itemize}
-%     \item One-hot encoding of categorical node features (actor types: VEHICLE, PEDESTRIAN, CYCLIST, MOTORCYCLE)
-%     \item One-hot encoding of edge types (neighbor\_vehicle, opposite\_vehicle, same\_lane, adjacent\_lane, following, intersection)
-%     \item Preservation of continuous features such as longitudinal speed and path length
-% \end{itemize}
-
-% Data augmentation is implemented through the \texttt{augment\_graph} function, which adds Gaussian noise to continuous features to create augmented versions for contrastive learning.
-
-% \subsection{Training Methodology}
-
-% The training process utilizes self-supervised contrastive learning with the following characteristics:
-% \begin{itemize}
-%     \item InfoNCE contrastive loss implemented in the \texttt{contrastive\_loss} function
-%     \item Adaptive learning rate schedule with exponential decay (starting at 0.02, decaying by factor 0.75)
-%     \item Multi-epoch training with 15 epochs per learning rate stage
-%     \item Data from both CARLA simulator (4,442 graphs) and Argoverse 2.0 dataset (3,588 graphs)
-% \end{itemize}
-
-% \subsection{Embedding Analysis and Visualization}
-
-% The trained model generates 256-dimensional embeddings for each traffic scene graph. Analysis includes:
-% \begin{itemize}
-%     \item Dimensionality reduction using Principal Component Analysis (PCA) and t-distributed Stochastic Neighbor Embedding (t-SNE)
-%     \item Visualization of embedding space distinguishing between CARLA and Argoverse data sources
-%     \item Similarity-based scene retrieval using squared Euclidean distance in embedding space
-%     \item Integration with visualization functions (\texttt{plot\_lane\_map\_advanced}, \texttt{add\_actors\_to\_map}, \texttt{add\_actor\_edges\_to\_map}) to display similar traffic scenes
-% \end{itemize}
-
-% The implementation demonstrates successful learning of traffic scene representations, with the embedding space capturing meaningful similarities between scenes from different data sources while maintaining distinction between simulation and real-world data.
 
 \section{Application}
 \label{chapter:application}
