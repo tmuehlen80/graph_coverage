@@ -257,6 +257,13 @@ class ActorGraph:
             delta_timestep_s=delta_timestep_s,
         )
 
+        instance.actor_components = {}
+        # print("instance.actor_graphs.keys(): ", instance.actor_graphs.keys())
+        for key, value in instance.actor_graphs.items():
+            components = list(nx.weakly_connected_components(value))
+            subgraphs = [value.subgraph(c).copy() for c in components]
+            instance.actor_components[key] = subgraphs
+
         return instance
 
     @classmethod
