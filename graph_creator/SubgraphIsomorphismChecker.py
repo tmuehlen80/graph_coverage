@@ -28,10 +28,11 @@ class IsomorphicGrapCoverageCounter:
         self.cov_data["degree"] = []
         self.cov_data["density"] = []
         self.cov_data["diameter"] = []
+        self.cov_data["path"] = []
 
 
     def count_isomorphic_graphs(self):
-        for graph_path in tqdm(self.graph_paths):
+        for graph_path in tqdm(self.graph_paths, desc="Checking isomorphic graphs"):
             with open(graph_path, "rb") as file:
                 ag_nx = pickle.load(file)
 
@@ -46,6 +47,6 @@ class IsomorphicGrapCoverageCounter:
             self.cov_data["degree"].append(sum(dict(ag_nx.degree()).values()) / len(ag_nx.nodes()))
             self.cov_data["density"].append(nx.density(ag_nx))
             self.cov_data["diameter"].append(nx.diameter(ag_nx))
-            self.cov_data["path"] = graph_path
+            self.cov_data["path"].append(graph_path)
 
         self.cov_data_df = pd.DataFrame(self.cov_data)
