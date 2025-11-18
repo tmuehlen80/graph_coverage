@@ -4,6 +4,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{svg}
+\usepackage{subcaption}
 
 \title{A Graph-based Framework for Coverage Analysis in Autonomous Driving \newline \newline Preprint}
 
@@ -18,14 +19,14 @@
 
 tbd 
 
-$$\hat{r} = \frac{N}{E}$$
+% $$\hat{r} = \frac{N}{E}$$
 
-$$LL_{\lambda} = \frac{1}{2}\chi^2_{0.025, 2N}$$
-$$UL_{\lambda} = \frac{1}{2}\chi^2_{0.975, 2N + 2}$$
+% $$LL_{\lambda} = \frac{1}{2}\chi^2_{0.025, 2N}$$
+% $$UL_{\lambda} = \frac{1}{2}\chi^2_{0.975, 2N + 2}$$
 
 
-$$LL_{r} = LL_{\lambda} / E$$
-$$UL_{r} = UL_{\lambda} / E$$
+% $$LL_{r} = LL_{\lambda} / E$$
+% $$UL_{r} = UL_{\lambda} / E$$
 
 \section{Introduction}
 
@@ -345,20 +346,62 @@ similar data size as the Argoverse 2.0 dataset.
 
 \subsection{Subgraph Isomorphism Coverage Analysis}
 
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_carla_coverage_barchart.png}
-    \caption{Coverage barchart for the manually defined coverage scenarios for CARLA.}
-    \label{fig:subgraph_isomorphism_carla_coverage_barchart}
-\end{figure}
+\begin{itemize}
+    \item We apply the subgraph isomorphism approach to both the  CARLA and the Argoverse data to identify coverage scenarios.
+    \item The archetypes used here are defined manually and described in table xxx. The chosen archetypes are typical traffic situations like e.g. lead vehicle situations, lane change situations or different combinations of opposite direction vehicles.
+    \item Also, information like which traffic actors are on an intersection are incorporated into the archetypes.
+    \item The results are shown in Figure \ref{fig:subgraph_isomorphism_coverage_barcharts} to Figure \ref{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_carla}.
+    \item In Figure \ref{fig:subgraph_isomorphism_coverage_barcharts} there is a clear signal that for both datasets the coverage is not uniform.
+    \item Also, the distribution for the Carla dataset is not close to the Argoverse distribution, indicating that the CARLA data is not representative for the Argoverse data.
+    \item Even worse, the Carla dataset is nearly completely missing out e.g. on the cut\_out\_intersection archetype, clearly indicating a coverage gap in the Carla dataset.
+\end{itemize}
+
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_carla.png}
-    \caption{Agreement matrix for manually defined coverage scenarios for CARLA.}
-    \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_carla}
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_carla_coverage_barchart.png}
+        \caption{CARLA coverage scenarios}
+        \label{fig:subgraph_isomorphism_carla_coverage_barchart}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_argo_coverage_barchart.png}
+        \caption{Argoverse coverage scenarios}
+        \label{fig:subgraph_isomorphism_argo_coverage_barchart}
+    \end{subfigure}
+    \caption{Coverage barcharts for the manually defined coverage scenarios for CARLA and Argoverse.}
+    \label{fig:subgraph_isomorphism_coverage_barcharts}
 \end{figure}
 
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_carla.png}
+%     \caption{Agreement matrix for manually defined coverage scenarios for CARLA.}
+%     \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_carla}
+% \end{figure}
+
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_carla.png}
+        \caption{Agreement matrix for CARLA.}  
+        \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_carla}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_argo.png}
+        \caption{Agreement matrix for Argoverse.}  
+        \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_argo}
+    \end{subfigure}
+    \caption{Agreement matrix for manually defined coverage scenarios for CARLA and Argoverse.}
+    \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios}
+\end{figure}
 
 \begin{table}[htbp]
     \caption{My Table}
@@ -378,9 +421,16 @@ similar data size as the Argoverse 2.0 dataset.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.95\textwidth]{plots/combined_distributions_plots_speed_distance_carla.png}
-    \caption{Agreement matrix for manually defined coverage scenarios for CARLA.}
+    \includegraphics[width=0.85\textwidth]{plots/combined_distributions_plots_speed_distance_carla.png}
+    \caption{Parameter distribution for speed and path length for CARLA.}
     \label{fig:combined_distributions_plots_speed_distance_carla}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.85\textwidth]{plots/combined_distributions_plots_speed_distance_argo.png}
+    \caption{Parameter distribution for speed and path length for Argoverse.}
+    \label{fig:combined_distributions_plots_speed_distance_argo}
 \end{figure}
 
 \subsection{Graph Embeddings Coverage Analysis}
