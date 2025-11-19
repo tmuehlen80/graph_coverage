@@ -4,6 +4,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{svg}
+\usepackage{subcaption}
 
 \title{A Graph-based Framework for Coverage Analysis in Autonomous Driving \newline \newline Preprint}
 
@@ -18,14 +19,14 @@
 
 tbd 
 
-$$\hat{r} = \frac{N}{E}$$
+% $$\hat{r} = \frac{N}{E}$$
 
-$$LL_{\lambda} = \frac{1}{2}\chi^2_{0.025, 2N}$$
-$$UL_{\lambda} = \frac{1}{2}\chi^2_{0.975, 2N + 2}$$
+% $$LL_{\lambda} = \frac{1}{2}\chi^2_{0.025, 2N}$$
+% $$UL_{\lambda} = \frac{1}{2}\chi^2_{0.975, 2N + 2}$$
 
 
-$$LL_{r} = LL_{\lambda} / E$$
-$$UL_{r} = UL_{\lambda} / E$$
+% $$LL_{r} = LL_{\lambda} / E$$
+% $$UL_{r} = UL_{\lambda} / E$$
 
 \section{Introduction}
 
@@ -345,42 +346,99 @@ similar data size as the Argoverse 2.0 dataset.
 
 \subsection{Subgraph Isomorphism Coverage Analysis}
 
+We apply the subgraph isomorphism approach to both the  CARLA and the Argoverse data to identify coverage scenarios.
+The archetypes used here are defined manually and described in table xxx. The chosen archetypes are typical traffic situations like e.g. lead vehicle situations, lane change situations or different combinations of opposite direction vehicles.
+Also, information like which traffic actors are on an intersection are incorporated into the archetypes.
+The results are shown in Figure \ref{fig:subgraph_isomorphism_coverage_barcharts} to Figure \ref{fig:combined_distributions_plots_speed_distance_argo}.
+In Figure \ref{fig:subgraph_isomorphism_coverage_barcharts} there is a clear signal that for both datasets the coverage is not uniform per the different archetypes.
+Also, the distribution for the Carla dataset is not close to the Argoverse distribution, indicating that the CARLA data is not representative for the Argoverse data.
+Even worse, the Carla dataset is nearly completely missing out e.g. on the cut\_out\_intersection archetype, clearly indicating a coverage gap in the Carla dataset.
+A next step of analysis is to check, which archetypes are occuring simultaneously in a traffic scene. 
+Figure \ref{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios} shows the agreement matrix for the manually defined coverage scenarios for CARLA and Argoverse.
+The heatmaps show the percentage of agreement between the manually defined coverage scenarios for CARLA and Argoverse.
+
+TODO: Write a sentence about the agreement matrices once using the actual actor graph defintion.
+
+A last example of how to use the assignment of archetypes to traffic scenes is to check the parameter distribution for the speed and path length of the traffic scenes.
+Figure \ref{fig:combined_distributions_plots_speed_distance_carla} and Figure \ref{fig:combined_distributions_plots_speed_distance_argo} show the parameter distribution for the speed and path length of the traffic scenes for CARLA and Argoverse.
+The plots show that the distribution for the CARLA data is not close to the Argoverse distribution, indicating that the CARLA data is not representative for the Argoverse data.
+Given the assignment of archetypes to traffic scenes based on the actors can be used in further analysis not done here, e.g. to check more divers parameters and distributions.
+
+
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_carla_coverage_barchart.png}
-    \caption{Coverage barchart for the manually defined coverage scenarios for CARLA.}
-    \label{fig:subgraph_isomorphism_carla_coverage_barchart}
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_carla_coverage_barchart.png}
+        \caption{CARLA coverage scenarios}
+        \label{fig:subgraph_isomorphism_carla_coverage_barchart}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_argo_coverage_barchart.png}
+        \caption{Argoverse coverage scenarios}
+        \label{fig:subgraph_isomorphism_argo_coverage_barchart}
+    \end{subfigure}
+    \caption{Coverage barcharts for the manually defined coverage scenarios for CARLA and Argoverse.}
+    \label{fig:subgraph_isomorphism_coverage_barcharts}
 \end{figure}
 
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_carla.png}
+%     \caption{Agreement matrix for manually defined coverage scenarios for CARLA.}
+%     \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_carla}
+% \end{figure}
+
+
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.8\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_carla.png}
-    \caption{Agreement matrix for manually defined coverage scenarios for CARLA.}
-    \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_carla}
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_carla.png}
+        \caption{Agreement matrix for CARLA.}  
+        \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_carla}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_argo.png}
+        \caption{Agreement matrix for Argoverse.}  
+        \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_argo}
+    \end{subfigure}
+    \caption{Agreement matrix for manually defined coverage scenarios for CARLA and Argoverse.}
+    \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios}
 \end{figure}
 
-
-\begin{table}[htbp]
-    \caption{My Table}
-    \label{tab:mytable}
-    \begin{tabular}{rrrrr}
-    \toprule
-    scn 1 & scn 2 & scn 3 & scn 4 & size \\
-    \midrule
-    False & False & False & False & 613 \\
-    False & False & True & False & 3 \\
-    True & True & False & True & 377 \\
-    True & True & True & True & 7 \\
-    \bottomrule
-    \end{tabular}
-\end{table}
-% \cite{goodfellow2016deep} % needed?
+% \begin{table}[htbp]
+%     \caption{My Table}
+%     \label{tab:mytable}
+%     \begin{tabular}{rrrrr}
+%     \toprule
+%     scn 1 & scn 2 & scn 3 & scn 4 & size \\
+%     \midrule
+%     False & False & False & False & 613 \\
+%     False & False & True & False & 3 \\
+%     True & True & False & True & 377 \\
+%     True & True & True & True & 7 \\
+%     \bottomrule
+%     \end{tabular}
+% \end{table}
+% % \cite{goodfellow2016deep} % needed?
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.95\textwidth]{plots/combined_distributions_plots_speed_distance_carla.png}
-    \caption{Agreement matrix for manually defined coverage scenarios for CARLA.}
+    \includegraphics[width=0.85\textwidth]{plots/combined_distributions_plots_speed_distance_carla.png}
+    \caption{Parameter distribution for speed and path length for CARLA.}
     \label{fig:combined_distributions_plots_speed_distance_carla}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.85\textwidth]{plots/combined_distributions_plots_speed_distance_argo.png}
+    \caption{Parameter distribution for speed and path length for Argoverse.}
+    \label{fig:combined_distributions_plots_speed_distance_argo}
 \end{figure}
 
 \subsection{Graph Embeddings Coverage Analysis}
@@ -395,7 +453,7 @@ similar data size as the Argoverse 2.0 dataset.
 
 The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of 
 randomly samples scenarios, the scenario with 
-closest embedding vector (euclidean distance as well as cosine distance) has been visualized. 
+closest embedding vector (euclidean distance) has been visualized. 
 This is shown in Figure \ref{fig:plausibility_checks}. This 
 includes comparison between CARLA and Argoverse scenarios.
 
@@ -424,11 +482,29 @@ And, as the main task considered here is coverage analysis, the embeddings can b
 Specifically, considering the Argoverse 2.0 scenarios as the target distribution, and the CARLA scenarios as the test distribution, the embeddings can be used to check 
 if the CARLA scenarios cover the Argoverse 2.0 scenarios in the embedded space.
 
-The results for this approach are shown in Section xxx.
 
 
 
 \section{Summary}
+
+\begin{itemize}
+    \item A method for using traffic scenes represented as graphs for coverage analysis has been developed in this paper.
+    \item Starting from defining rules for the actor graph construction, the resulting graphs are then used by 2 different approaches for coverage analysis.
+    \item Firstly, a non-AI approach is used where a set of archetypes is defined (which is done here manually but in principle could be done automatically as well).
+    \item Then it is checked, which archetypes are present in a traffic scene and how often.
+    \item Secondly, a graph embedding approach is used to create a vector space of the traffic scenes and to check if the target distribution is met by the test distribution in the embedded space.
+    \item The results for this approach are shown in Section \ref{chapter:application}, being applied to Carla and Argoverse 2.0 data.
+    \item The main advantage of this approach over traditional coverage analysis approaches is that it very easily scales to a large number of traffic scenarios archetypes and different driving situations.
+    \item Besides the definition of the actor graph, no specific handling of different types of traffic situations is necessary.
+    \item In other approaches (cite TNO Streetwise) it is necessary to manually define for each scenario type how it is defined. Here the only thing necessary is to define the actor graph construction rules as well as potentially the archetypes as graphs.
+    \item Also, the presented approach easily allows for different number of actors in the traffic scene without excluding actors or only focussing on a subset of actors.
+    \item Next steps in the same line of this research will be to further optimize the actor graph to include several time steps into one graph. 
+    \item Also, automatically extracting archetypes from real world traffic observation data will be investigated.
+    \item The source code for this research is available at \url{https://github.com/tmuehlen80/graph_coverage}.
+\end{itemize}
+
+
+
 
 \bibliographystyle{plain}
 \bibliography{lit}
