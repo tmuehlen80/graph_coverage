@@ -506,8 +506,17 @@ class ActorGraph:
                 else:  # Backward direction (negative path_length)
                     max_distance = max_distance_opposite_backward_m
                 
+                # Check path length constraint
                 if abs(path_length) < max_distance:
-                    return ("opposite_vehicle", path_length)
+                    # Additional validation: Check actual Euclidean distance
+                    # The lane-based path_length can be misleading when lanes are geometrically far apart
+                    pos_A = self.track_xyz_pos_dict[track_id_A][t]
+                    pos_B = self.track_xyz_pos_dict[track_id_B][t]
+                    euclidean_dist = np.sqrt((pos_A.x - pos_B.x)**2 + (pos_A.y - pos_B.y)**2)
+                    
+                    # Only create opposite relation if Euclidean distance is also within limit
+                    if euclidean_dist < max_distance:
+                        return ("opposite_vehicle", path_length)
 
         return None
 
@@ -1121,3 +1130,241 @@ class ActorGraph:
             plt.savefig(save_path)
         else:
             plt.show()
+
+
+def main():
+    """
+    Debug function to investigate the opposing actors distance issue at timestep 9
+    for the 20:53:41.635057_Town01 example.
+    """
+    import pandas as pd
+    from pathlib import Path
+    from graph_creator.MapGraph import MapGraph
+    
+    # Setup paths
+    work_dir = Path(__file__).parent.parent
+    scene_id = "2025-10-05 20:53:41.635057_Town01"
+    
+    print(f"Loading scene: {scene_id}")
+    
+    # Load data
+    tracks_path = work_dir / f"example_data/carla/scene_{scene_id}_tracks.parquet"
+    map_path = work_dir / f"example_data/carla/scene_{scene_id}_map_graph.pickle"
+    
+    print(f"Loading tracks from: {tracks_path}")
+    tracks = pd.read_parquet(tracks_path)
+    tracks['road_lane_id'] = tracks.road_id.astype(str) + '_' + tracks.lane_id.astype(str)
+    
+    print(f"Loading map from: {map_path}")
+    g_map = MapGraph()
+    g_map.read_graph_from_file(str(map_path))
+    
+    # Create ActorGraph with the parameters from the notebook
+    print("\nCreating ActorGraph...")
+    ag = ActorGraph()
+    
+    # Store parameters for debugging
+    max_distance_lead_veh_m = 40
+    max_distance_opposite_forward_m = 50
+    max_distance_opposite_backward_m = 10
+    max_distance_neighbor_forward_m = 20
+    max_distance_neighbor_backward_m = 20
+    max_node_distance_leading = 3
+    max_node_distance_neighbor = 2
+    max_node_distance_opposite = 2
+    
+    ag_carla = ag.from_carla_scenario(
+        tracks,
+        g_map,
+        delta_timestep_s=1.0,
+        max_distance_lead_veh_m=max_distance_lead_veh_m,
+        max_distance_opposite_forward_m=max_distance_opposite_forward_m,
+        max_distance_opposite_backward_m=max_distance_opposite_backward_m,
+        max_distance_neighbor_forward_m=max_distance_neighbor_forward_m,
+        max_distance_neighbor_backward_m=max_distance_neighbor_backward_m,
+        max_node_distance_leading=max_node_distance_leading,
+        max_node_distance_neighbor=max_node_distance_neighbor,
+        max_node_distance_opposite=max_node_distance_opposite,
+    )
+    
+    print(f"Created actor graphs for timestamps: {list(ag_carla.actor_graphs.keys())}")
+    
+    # Check all timesteps for violations
+    print(f"\n{'='*80}")
+    print("CHECKING ALL TIMESTEPS FOR VIOLATIONS")
+    print(f"{'='*80}")
+    
+    total_violations = 0
+    for ts in ag_carla.actor_graphs.keys():
+        graph = ag_carla.actor_graphs[ts]
+        opposing_edges = [(u, v, data) for u, v, data in graph.edges(data=True) 
+                          if data.get('edge_type') == 'opposite_vehicle']
+        
+        violations = []
+        for u, v, data in opposing_edges:
+            pos_u = graph.nodes[u]['xyz']
+            pos_v = graph.nodes[v]['xyz']
+            dist = np.sqrt((pos_u.x - pos_v.x)**2 + (pos_u.y - pos_v.y)**2)
+            if dist > max_distance_opposite_forward_m:
+                violations.append((u, v, dist))
+        
+        if violations:
+            print(f"\nTimestep {ts:.2f}: {len(opposing_edges)} opposing edges, {len(violations)} violations")
+            total_violations += len(violations)
+        else:
+            print(f"Timestep {ts:.2f}: {len(opposing_edges)} opposing edges, 0 violations ✓")
+    
+    print(f"\nTotal violations across all timesteps: {total_violations}")
+    
+    # Focus on timestep 9 - find the closest timestep to 9.5
+    target_timestep = 9.5  # Based on the available timestamps, target ~9.5 which corresponds to timestep 9
+    available_timesteps = list(ag_carla.actor_graphs.keys())
+    timestep = min(available_timesteps, key=lambda x: abs(x - target_timestep))
+    
+    print(f"\n{'='*80}")
+    print(f"DETAILED ANALYSIS OF TIMESTEP ~9")
+    print(f"{'='*80}")
+    print(f"Target timestep: {target_timestep}")
+    print(f"Using closest available timestep: {timestep}")
+    
+    if timestep not in ag_carla.actor_graphs:
+        print(f"\nERROR: Timestep {timestep} not found in actor_graphs!")
+        print(f"Available timesteps: {available_timesteps}")
+        return None, None
+    
+    print(f"\n{'='*80}")
+    print(f"DEBUGGING TIMESTEP {timestep}")
+    print(f"{'='*80}")
+    
+    graph = ag_carla.actor_graphs[timestep]
+    
+    # Find all opposing edges at timestep 9
+    opposing_edges = [(u, v, data) for u, v, data in graph.edges(data=True) 
+                      if data.get('edge_type') == 'opposite_vehicle']
+    
+    print(f"\nFound {len(opposing_edges)} opposing edges at timestep {timestep}")
+    
+    # Analyze each opposing edge
+    for idx, (actor1, actor2, edge_data) in enumerate(opposing_edges):
+        print(f"\n{'-'*80}")
+        print(f"Opposing Edge {idx + 1}: {actor1} <-> {actor2}")
+        print(f"{'-'*80}")
+        
+        # Get actor positions
+        node1_data = graph.nodes[actor1]
+        node2_data = graph.nodes[actor2]
+        
+        pos1 = node1_data['xyz']
+        pos2 = node2_data['xyz']
+        
+        # Calculate Euclidean distance
+        euclidean_dist = np.sqrt((pos1.x - pos2.x)**2 + (pos1.y - pos2.y)**2)
+        
+        print(f"Actor 1 ({actor1}):")
+        print(f"  Position: ({pos1.x:.2f}, {pos1.y:.2f})")
+        print(f"  Lane ID: {node1_data.get('lane_id', 'N/A')}")
+        print(f"  Speed: {node1_data.get('lon_speed', 'N/A')} m/s")
+        print(f"  Actor Type: {node1_data.get('actor_type', 'N/A')}")
+        print(f"  S-coordinate: {node1_data.get('s', 'N/A')}")
+        
+        print(f"\nActor 2 ({actor2}):")
+        print(f"  Position: ({pos2.x:.2f}, {pos2.y:.2f})")
+        print(f"  Lane ID: {node2_data.get('lane_id', 'N/A')}")
+        print(f"  Speed: {node2_data.get('lon_speed', 'N/A')} m/s")
+        print(f"  Actor Type: {node2_data.get('actor_type', 'N/A')}")
+        print(f"  S-coordinate: {node2_data.get('s', 'N/A')}")
+        
+        print(f"\nDistance Analysis:")
+        print(f"  Euclidean distance: {euclidean_dist:.2f} m")
+        print(f"  Edge 'path_length' attribute: {edge_data.get('path_length', 'N/A')}")
+        
+        print(f"\nMax Distance Settings:")
+        print(f"  max_distance_opposite_forward_m: {max_distance_opposite_forward_m}")
+        print(f"  max_distance_opposite_backward_m: {max_distance_opposite_backward_m}")
+        print(f"  max_node_distance_opposite: {max_node_distance_opposite}")
+        
+        # Check if distance exceeds limits
+        if euclidean_dist > max_distance_opposite_forward_m:
+            print(f"\n⚠️  WARNING: Euclidean distance ({euclidean_dist:.2f} m) exceeds max_distance_opposite_forward_m ({max_distance_opposite_forward_m} m)")
+        
+        # Try to understand the path between actors
+        lane1 = node1_data.get('lane_id')
+        lane2 = node2_data.get('lane_id')
+        
+        if lane1 and lane2:
+            print(f"\nLane Analysis:")
+            print(f"  Lane 1: {lane1}")
+            print(f"  Lane 2: {lane2}")
+            
+            # Check if lanes exist in map graph
+            if lane1 in g_map.graph.nodes and lane2 in g_map.graph.nodes:
+                print(f"  Both lanes found in map graph")
+                
+                # Try to find path in map graph
+                try:
+                    import networkx as nx
+                    if nx.has_path(g_map.graph.to_undirected(), lane1, lane2):
+                        path = nx.shortest_path(g_map.graph.to_undirected(), lane1, lane2)
+                        print(f"  Shortest path length in map graph: {len(path) - 1} nodes")
+                        print(f"  Path: {' -> '.join(path)}")
+                    else:
+                        print(f"  No path found between lanes in map graph")
+                except Exception as e:
+                    print(f"  Error finding path: {e}")
+            else:
+                if lane1 not in g_map.graph.nodes:
+                    print(f"  ⚠️  Lane 1 ({lane1}) NOT found in map graph")
+                if lane2 not in g_map.graph.nodes:
+                    print(f"  ⚠️  Lane 2 ({lane2}) NOT found in map graph")
+    
+    # Additional debugging: Check the relation finding logic
+    print(f"\n{'='*80}")
+    print("DEBUGGING RELATION FINDING LOGIC")
+    print(f"{'='*80}")
+    
+    if opposing_edges:
+        actor1, actor2, edge_data = opposing_edges[0]
+        node1_data = graph.nodes[actor1]
+        node2_data = graph.nodes[actor2]
+        
+        print(f"\nFirst opposing pair: {actor1} <-> {actor2}")
+        print(f"Edge path_length: {edge_data.get('path_length', 'N/A')}")
+        
+        # Check s-values
+        print(f"\nS-coordinate Analysis:")
+        print(f"  Actor 1 s-value: {node1_data['s']:.2f}")
+        print(f"  Actor 2 s-value: {node2_data['s']:.2f}")
+        print(f"  S-difference: {abs(node1_data['s'] - node2_data['s']):.2f}")
+        
+        # The path_length in the edge represents the distance calculation used during relation finding
+        # It should be compared against max_distance_opposite_forward_m or max_distance_opposite_backward_m
+        print(f"\nPath length from edge: {edge_data.get('path_length', 'N/A')}")
+        print(f"Max distance forward: {max_distance_opposite_forward_m}")
+        print(f"Max distance backward: {max_distance_opposite_backward_m}")
+    
+    print(f"\n{'='*80}")
+    print("SUMMARY")
+    print(f"{'='*80}")
+    print(f"Total opposing edges at timestep {timestep}: {len(opposing_edges)}")
+    
+    # Count violations
+    violations = []
+    for u, v, data in opposing_edges:
+        pos_u = graph.nodes[u]['xyz']
+        pos_v = graph.nodes[v]['xyz']
+        dist = np.sqrt((pos_u.x - pos_v.x)**2 + (pos_u.y - pos_v.y)**2)
+        if dist > max_distance_opposite_forward_m:
+            violations.append((u, v, dist))
+    
+    print(f"Edges violating max_distance_opposite_forward_m: {len(violations)}")
+    
+    if violations:
+        print("\nViolating edges:")
+        for u, v, dist in violations:
+            print(f"  {u} <-> {v}: {dist:.2f} m")
+    
+    return ag_carla, graph
+
+
+if __name__ == "__main__":
+    ag_carla, graph = main()
