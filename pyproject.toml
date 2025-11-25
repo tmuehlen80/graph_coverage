@@ -26,11 +26,7 @@ tqdm = "^4.67.1"
 pyarrow = "^19.0.1"
 carla = "^0.9.15"
 plotly = "^6.3.0"
-torch-geometric = "^2.6.1"
-torch = "^2.8.0"
-scikit-learn = "^1.7.1"
-onnxscript = "^0.5.4"
-anywidget = "^0.9.21"
+adjusttext = "^1.2.0"
 
 
 [tool.poetry.group.dev.dependencies]
