@@ -31,6 +31,8 @@ data/
 *.json
 *.tar
 
+!graph_settings/*.json
+
 # C extensions
 *.so
 
