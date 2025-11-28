@@ -1,0 +1,11 @@
+{
+    "delta_timestep_s": 1.0,
+    "max_distance_lead_veh_m": 50,
+    "max_distance_opposite_forward_m": 50,
+    "max_distance_opposite_backward_m": 10,
+    "max_distance_neighbor_forward_m": 20,
+    "max_distance_neighbor_backward_m": 20,
+    "max_node_distance_leading": 4,
+    "max_node_distance_neighbor": 4,
+    "max_node_distance_opposite": 4
+}

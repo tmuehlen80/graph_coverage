@@ -97,7 +97,7 @@ CAUTIOUS_IN_WEATHER_PROBABILITY = 0.6  # 60% drive more cautiously in bad weathe
 
 n_steps = 300
 timeout = 150.0
-for rep in range(4):
+for rep in range(7):
     for map in maps:
         for ijk in range(1):
             client = carla.Client("localhost", 2000)
@@ -126,7 +126,7 @@ for rep in range(4):
             tm.set_synchronous_mode(True)  # Make TM sync with simulation
             # Configure global traffic manager behavior for variation
             # if SPEED_VARIATION_ENABLED: # throws error
-            #     # tm.set_global_percentage_speed_difference(-20.0)  # Base speed reduction
+            #     tm.set_global_percentage_speed_difference(-20.0)  # Base speed reduction
             #     tm.vehicle_percentage_speed_difference(-20.0)  # Base speed reduction
             if DISTANCE_VARIATION_ENABLED:
                 tm.set_global_distance_to_leading_vehicle(2.0)  # Base following distance
@@ -138,7 +138,7 @@ for rep in range(4):
             # Track vehicle behavior states
             vehicle_behaviors = {}
             vehicle_slowdown_timers = {}
-            n_vehicles = random.randint(25, 65)
+            n_vehicles = random.randint(20, 75)
             for i in range(n_vehicles):
                 spawn_point = spawn_points[i]
                 # Select vehicle type based on probabilities
