@@ -25,7 +25,7 @@ import json
 from graph_creator.MapGraph import MapGraph
 from graph_creator.ActorGraph import ActorGraph
 from graph_creator.utilities import make_node_edge_df, check_offroad_actors
-from graph_creator.plot_graphs import plot_lane_map_advanced, add_actors_to_map, add_actor_edges_to_map
+#from graph_creator.plot_graphs import plot_lane_map_advanced, add_actors_to_map, add_actor_edges_to_map
 
 
 files = os.listdir("/home/tmuehlen/repos/graph_coverage/carla/data")
@@ -54,8 +54,14 @@ os.makedirs(repo_root / "actor_graphs" / f"carla_{name_aug}_nx", exist_ok=True)
 
 # run through all scens so far and create the graphs:
 #os.makedirs("/home/tmuehlen/repos/graph_coverage/actor_graphs/carla_w_intersection", exist_ok=True)
+
 count = 0
-for scn_id in tqdm(scn_ids):
+
+for i, scn_id in enumerate(scn_ids):
+    print(i, "/", len(scn_ids), scn_id)
+    if os.path.exists(repo_root / "actor_graphs" / f"carla_{name_aug}" / f"{scn_id}_map_graph.pkl"):
+        continue
+    
     g_map = MapGraph()
     g_map.read_graph_from_file(f'/home/tmuehlen/repos/graph_coverage/carla/data/scene_{scn_id}_map_graph.pickle')
     # tracks = pd.read_parquet(f'/home/tmuehlen/repos/graph_coverage/carla/data/scene_{scn_id}_tracks_with_min_distance_to_lane.parquet')
@@ -91,7 +97,7 @@ for scn_id in tqdm(scn_ids):
                 save_path = repo_root / "actor_graphs" / f"carla_{name_aug}_components_nx" / f"graph_{scn_id}_{timestamp_idx}_{component_idx}.pkl"
                 with open(save_path, "wb") as file:
                     pickle.dump(ag_carla.actor_components[ag_timestamps[timestamp_idx]][component_idx], file)
-        save_path = repo_root / "actor_graphs" / f"carla_{name_aug}_nx" / f"graph_{scn_id}_{str(timestamp).replace(".", "_")}.pkl"
+        save_path = repo_root / "actor_graphs" / f"carla_{name_aug}_nx" / f'graph_{scn_id}_{str(timestamp_idx).replace(".", "_")}.pkl'
         with open(save_path, "wb") as file:
             pickle.dump(ag_carla.actor_graphs[ag_timestamps[timestamp_idx]], file)
     else:
