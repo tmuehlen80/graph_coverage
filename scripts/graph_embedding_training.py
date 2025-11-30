@@ -4,9 +4,15 @@ import sys
 import pickle
 import torch
 import numpy as np
+import json
+import argparse
+from datetime import datetime
 from tqdm import tqdm
+from loguru import logger
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Subset
+
+# python scripts/graph_embedding_training.py --config configs/embeddings/training_config_default.json
 
 # Try to import DataLoader from loader (newer PyG) or data (older PyG)
 try:
@@ -31,50 +37,74 @@ def ensure_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def train():
+def train(config):
+    # Setup timestamp and directories
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    base_checkpoint_dir = os.path.join(PROJECT_ROOT, config['training'].get('checkpoint_dir', 'checkpoints'))
+    run_dir = os.path.join(base_checkpoint_dir, timestamp)
+    ensure_dir(run_dir)
+
+    # Logger setup
+    log_file = os.path.join(run_dir, 'training.log')
+    # Configure logger to write to file
+    logger.add(log_file, rotation="10 MB")
+    logger.info(f"Starting training run: {timestamp}")
+    logger.info(f"Run directory: {run_dir}")
+
+    # Save config copy
+    config_save_path = os.path.join(run_dir, "config.json")
+    with open(config_save_path, 'w') as f:
+        json.dump(config, f, indent=4)
+    logger.info(f"Saved config to {config_save_path}")
+
     # Paths
-    carla_pattern = os.path.join(PROJECT_ROOT, "actor_graphs/carla_actor_graph_setting_1_50_50_10_20_20_4_4_4_components_nx/*.pkl")
-    argoverse_pattern = os.path.join(PROJECT_ROOT, "actor_graphs/argoverse_actor_graph_setting_1_50_50_10_20_20_4_4_4_components_nx/*.pkl")
+    carla_pattern = os.path.join(PROJECT_ROOT, config['data']['carla_pattern'])
+    argoverse_pattern = os.path.join(PROJECT_ROOT, config['data']['argoverse_pattern'])
     
-    print("Looking for graphs...")
+    logger.info("Looking for graphs...")
     graph_paths = glob.glob(carla_pattern)
     argoverse_graph_paths = glob.glob(argoverse_pattern)
     graph_paths.extend(argoverse_graph_paths)
     
-    print(f"Found {len(graph_paths)} graphs")
-
-    # Checkpoints
-    checkpoint_dir = os.path.join(PROJECT_ROOT, "checkpoints")
-    ensure_dir(checkpoint_dir)
+    logger.info(f"Found {len(graph_paths)} graphs")
 
     # Device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # device = "cpu"
-    print(f"Using device: {device}")
+    logger.info(f"Using device: {device}")
 
     # Data Loading
     graph_ds = GraphDataset(graph_paths)
     indices = np.arange(len(graph_ds))
-    train_idx, test_idx = train_test_split(indices, test_size=0.2, random_state=42, shuffle=True)
+    
+    test_size = config['data']['test_size']
+    random_state = config['data']['random_state']
+    batch_size = config['data']['batch_size']
+
+    train_idx, test_idx = train_test_split(indices, test_size=test_size, random_state=random_state, shuffle=True)
     
     train_ds = Subset(graph_ds, train_idx)
     test_ds = Subset(graph_ds, test_idx)
     
-    train_loader = DataLoader(train_ds, batch_size=2048, shuffle=True)
-    test_loader = DataLoader(test_ds, batch_size=2048, shuffle=False)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
     
-    print(f"Train size: {len(train_ds)} | Test size: {len(test_ds)}")
+    logger.info(f"Train size: {len(train_ds)} | Test size: {len(test_ds)}")
     data_loaders = {"train": train_loader, "test": test_loader}
 
     # Model
     node_dim, edge_dim = get_feature_dimensions()
-    # model = TrainableGraphGINE(node_dim, edge_dim, 256, 96, 4).to(device)
-    model = TrainableGraphGINE(node_dim, edge_dim, 256, 128, 6).to(device)
-    initial_lr = 0.4
+    
+    hidden_dim = config['model']['hidden_dim']
+    output_dim = config['model']['output_dim']
+    num_layers = config['model']['num_layers']
+
+    model = TrainableGraphGINE(node_dim, edge_dim, hidden_dim, output_dim, num_layers).to(device)
+    
+    initial_lr = config['training']['initial_lr']
     total_losses = {"train": [], "test": [], "lr": [initial_lr]}
 
     # Initial Evaluation (Pre-training)
-    print("Evaluating pre-training loss...")
+    logger.info("Evaluating pre-training loss...")
     for split in data_loaders:
         total_loss = 0
         with torch.no_grad():
@@ -91,16 +121,20 @@ def train():
         avg_loss = total_loss / len(data_loaders[split])
         total_losses[split].append(avg_loss)
     
-    print(f"Pre-training losses: {total_losses}")
+    logger.info(f"Pre-training losses: {total_losses}")
 
     # Training Loop
-    for i in range(10):
-        lr = initial_lr * 0.75**i
+    num_loops = config['training']['num_loops']
+    epochs_per_loop = config['training']['epochs_per_loop']
+    lr_decay = config['training']['lr_decay']
+
+    for i in range(num_loops):
+        lr = initial_lr * (lr_decay ** i)
         # Optimizer is re-initialized every outer loop in the notebook
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-        print(f"loop {i}, Learning rate: {lr}")
+        logger.info(f"loop {i}, Learning rate: {lr}")
         
-        for epoch in range(12):
+        for epoch in range(epochs_per_loop):
             model.train()
             train_loss_sum = 0
             for batch in tqdm(train_loader, desc=f"Loop {i} Epoch {epoch}"):
@@ -116,7 +150,7 @@ def train():
                 train_loss_sum += loss.item()
             
             avg_train_loss = train_loss_sum / len(train_loader)
-            print(f'Epoch {epoch}, Loss: {avg_train_loss:.4f}')
+            logger.info(f'Epoch {epoch}, Loss: {avg_train_loss:.4f}')
             
             # Record LR
             total_losses["lr"].append(lr)
@@ -138,10 +172,10 @@ def train():
                 avg_split_loss = total_loss / len(data_loaders[split])
                 total_losses[split].append(avg_split_loss)
             
-            print(f"Current Losses - Train: {total_losses['train'][-1]:.4f}, Test: {total_losses['test'][-1]:.4f}")
+            logger.info(f"Current Losses - Train: {total_losses['train'][-1]:.4f}, Test: {total_losses['test'][-1]:.4f}")
 
             # Checkpointing
-            checkpoint_path = os.path.join(checkpoint_dir, f"checkpoint_loop{i}_epoch{epoch}.pt")
+            checkpoint_path = os.path.join(run_dir, f"checkpoint_loop{i}_epoch{epoch}.pt")
             torch.save({
                 'loop': i,
                 'epoch': epoch,
@@ -149,8 +183,18 @@ def train():
                 'optimizer_state_dict': optimizer.state_dict(),
                 'losses': total_losses
             }, checkpoint_path)
-            print(f"Saved checkpoint to {checkpoint_path}")
+            logger.info(f"Saved checkpoint to {checkpoint_path}")
 
 if __name__ == "__main__":
-    train()
+    parser = argparse.ArgumentParser(description="Train Graph Embeddings")
+    parser.add_argument("--config", type=str, required=True, help="Path to configuration JSON file")
+    args = parser.parse_args()
 
+    if not os.path.exists(args.config):
+        logger.error(f"Config file not found: {args.config}")
+        sys.exit(1)
+
+    with open(args.config, 'r') as f:
+        config = json.load(f)
+    
+    train(config)
