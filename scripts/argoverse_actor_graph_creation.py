@@ -38,7 +38,7 @@ print(f"Found {len(scenario_folders)} scenarios")
 
 # read the actor graph setting from the json file
 settings_name = "actor_graph_setting_1_50_50_10_20_20_4_4_4"
-with open(f"graph_settings/{settings_name}.json", "rb") as f:
+with open(f"configs/graph_settings/{settings_name}.json", "rb") as f:
     actor_graph_setting = json.load(f)
 
 name_aug = settings_name

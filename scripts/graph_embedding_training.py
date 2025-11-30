@@ -6,12 +6,13 @@ import torch
 import numpy as np
 import json
 import argparse
+from datetime import datetime
 from tqdm import tqdm
 from loguru import logger
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Subset
 
-# python scripts/graph_embedding_training.py --config configs/training_config.json
+# python scripts/graph_embedding_training.py --config configs/embeddings/training_config_default.json
 
 # Try to import DataLoader from loader (newer PyG) or data (older PyG)
 try:
@@ -37,10 +38,24 @@ def ensure_dir(path):
         os.makedirs(path)
 
 def train(config):
+    # Setup timestamp and directories
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    base_checkpoint_dir = os.path.join(PROJECT_ROOT, config['training'].get('checkpoint_dir', 'checkpoints'))
+    run_dir = os.path.join(base_checkpoint_dir, timestamp)
+    ensure_dir(run_dir)
+
     # Logger setup
-    log_file = config['training'].get('log_file', 'training.log')
+    log_file = os.path.join(run_dir, 'training.log')
     # Configure logger to write to file
     logger.add(log_file, rotation="10 MB")
+    logger.info(f"Starting training run: {timestamp}")
+    logger.info(f"Run directory: {run_dir}")
+
+    # Save config copy
+    config_save_path = os.path.join(run_dir, "config.json")
+    with open(config_save_path, 'w') as f:
+        json.dump(config, f, indent=4)
+    logger.info(f"Saved config to {config_save_path}")
 
     # Paths
     carla_pattern = os.path.join(PROJECT_ROOT, config['data']['carla_pattern'])
@@ -52,10 +67,6 @@ def train(config):
     graph_paths.extend(argoverse_graph_paths)
     
     logger.info(f"Found {len(graph_paths)} graphs")
-
-    # Checkpoints
-    checkpoint_dir = os.path.join(PROJECT_ROOT, config['training']['checkpoint_dir'])
-    ensure_dir(checkpoint_dir)
 
     # Device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -164,7 +175,7 @@ def train(config):
             logger.info(f"Current Losses - Train: {total_losses['train'][-1]:.4f}, Test: {total_losses['test'][-1]:.4f}")
 
             # Checkpointing
-            checkpoint_path = os.path.join(checkpoint_dir, f"checkpoint_loop{i}_epoch{epoch}.pt")
+            checkpoint_path = os.path.join(run_dir, f"checkpoint_loop{i}_epoch{epoch}.pt")
             torch.save({
                 'loop': i,
                 'epoch': epoch,
