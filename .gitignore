@@ -5,6 +5,7 @@ carla/data_archived/*
 todos.txt
 carla/data_archived/*
 checkpoints/*
+tmp/*
 
 # Custom
 CARLA_0.9.15/*

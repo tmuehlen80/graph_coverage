@@ -1,0 +1,118 @@
+import networkx as nx
+from graph_creator.ActorGraph import ActorType
+
+G = nx.MultiDiGraph()
+G.add_node("a", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_edge("a", "b", edge_type="following_lead")
+G.add_edge("b", "a", edge_type="following_lead")
+G.add_edge("a", "c", edge_type="neighbor_vehicle")
+G.add_edge("c", "a", edge_type="neighbor_vehicle")
+G.edges(data=True)
+G_lead_vehicle_in_front_with_neighbor_vehicle = G
+
+G = nx.MultiDiGraph()
+G.add_node("a", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
+G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
+G.add_edge("a", "b", edge_type="following_lead")
+G.add_edge("b", "a", edge_type="following_lead")
+G.add_edge("a", "c", edge_type="neighbor_vehicle")
+G.add_edge("c", "a", edge_type="neighbor_vehicle")
+G.edges(data=True)
+G_lead_vehicle_in_front_with_neighbor_vehicle_intersection = G
+
+G = nx.MultiDiGraph()
+G.add_node("a", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_edge("a", "b", edge_type="following_lead")
+G.add_edge("b", "a", edge_type="following_lead")
+G.add_edge("a", "c", edge_type="following_lead")
+G.add_edge("c", "a", edge_type="following_lead")
+G.edges(data=True)
+G_lead_vehicle_in_front_following_vehicle_in_the_back = G
+
+G = nx.MultiDiGraph()
+G.add_node("a", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=True, is_on_intersection=False)
+G.add_edge("a", "b", edge_type="following_lead")
+G.add_edge("b", "a", edge_type="following_lead")
+G.add_edge("a", "c", edge_type="following_lead")
+G.add_edge("c", "a", edge_type="following_lead")
+G.edges(data=True)
+G_cut_in = G
+
+G = nx.MultiDiGraph()
+G.add_node("a", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=True, is_on_intersection=True)
+G.add_edge("a", "b", edge_type="following_lead")
+G.add_edge("b", "a", edge_type="following_lead")
+G.add_edge("a", "c", edge_type="following_lead")
+G.add_edge("c", "a", edge_type="following_lead")
+G.edges(data=True)
+G_cut_in_intersection = G
+
+G = nx.MultiDiGraph()
+G.add_node("a", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=True, is_on_intersection=False)
+G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("d", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_edge("a", "b", edge_type="neighbor_vehicle")
+G.add_edge("b", "a", edge_type="neighbor_vehicle")
+G.add_edge("a", "c", edge_type="following_lead")
+G.add_edge("c", "a", edge_type="following_lead")
+G.add_edge("a", "d", edge_type="following_lead")
+G.add_edge("d", "a", edge_type="following_lead")
+G.edges(data=True)
+G_cut_out = G
+
+G = nx.MultiDiGraph()
+G.add_node("a", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
+G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=True, is_on_intersection=True)
+G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("d", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_edge("a", "b", edge_type="neighbor_vehicle")
+G.add_edge("b", "a", edge_type="neighbor_vehicle")
+G.add_edge("a", "c", edge_type="following_lead")
+G.add_edge("c", "a", edge_type="following_lead")
+G.add_edge("a", "d", edge_type="following_lead")
+G.add_edge("d", "a", edge_type="following_lead")
+G_cut_out_intersection = G
+
+
+G = nx.MultiDiGraph()
+G.add_node("a", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("d", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("e", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_edge("a", "b", edge_type="neighbor_vehicle")
+G.add_edge("b", "a", edge_type="neighbor_vehicle")
+G.add_edge("a", "c", edge_type="following_lead")
+G.add_edge("c", "a", edge_type="following_lead")
+G.add_edge("a", "d", edge_type="following_lead")
+G.add_edge("d", "a", edge_type="following_lead")
+G.add_edge("a", "e", edge_type="opposite_vehicle")
+G.add_edge("e", "a", edge_type="opposite_vehicle")
+G_lead_neighbor_opposite_vehicle = G
+
+G = nx.MultiDiGraph()
+G.add_node("a", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
+G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
+G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("d", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_node("e", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
+G.add_edge("a", "b", edge_type="neighbor_vehicle")
+G.add_edge("b", "a", edge_type="neighbor_vehicle")
+G.add_edge("a", "c", edge_type="following_lead")
+G.add_edge("c", "a", edge_type="following_lead")
+G.add_edge("a", "d", edge_type="following_lead")
+G.add_edge("d", "a", edge_type="following_lead")
+G.add_edge("a", "e", edge_type="opposite_vehicle")
+G.add_edge("e", "a", edge_type="opposite_vehicle")
+G_lead_neighbor_opposite_vehicle_intersection = G
+
