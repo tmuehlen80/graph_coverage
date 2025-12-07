@@ -49,7 +49,7 @@ def plot_argoverse_map(map, save_path=None):
         fig.show()
 
 
-def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=None, lane_label=False):
+def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=None, lane_label=False, node_coverage_dict=None):
     fig = plt.figure(figsize=(20, 20))
     ax = fig.add_subplot()
 
@@ -89,10 +89,17 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
             node_data = G.nodes[track_id]
             xyz_point = node_data['xyz']
             ax.plot(xyz_point.x, xyz_point.y, "bo", markersize=5)
+            
+            # Build label text
+            label_text = track_id
+            if node_coverage_dict is not None and track_id in node_coverage_dict:
+                coverage_count = node_coverage_dict[track_id]
+                label_text = f"{track_id}\n({coverage_count})"
+            
             ax.text(
                 xyz_point.x,
                 xyz_point.y - 0.5,  # Reduced from 2.5 to 0.5 for closer positioning
-                track_id,
+                label_text,
                 fontsize=8,
                 ha="center",
                 va="center",
@@ -106,10 +113,17 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
                 object_state = track.object_states[timestep_list.index(timestep)]
                 position = object_state.position
                 ax.plot(position[0], position[1], "bo", markersize=5)
+                
+                # Build label text
+                label_text = track.track_id
+                if node_coverage_dict is not None and track.track_id in node_coverage_dict:
+                    coverage_count = node_coverage_dict[track.track_id]
+                    label_text = f"{track.track_id}\n({coverage_count})"
+                
                 ax.text(
                     position[0],
                     position[1] - 0.5,  # Reduced from 2.5 to 0.5 for closer positioning
-                    track.track_id,
+                    label_text,
                     fontsize=8,
                     ha="center",
                     va="center",
