@@ -6,6 +6,8 @@ todos.txt
 carla/data_archived/*
 checkpoints/*
 tmp/*
+argoverse_components_nx/* 
+carla_actor_graph*
 
 # Custom
 CARLA_0.9.15/*

@@ -412,12 +412,10 @@ class ActorGraph:
 
 
     def _find_relation_between_actors(self, track_id_A, track_id_B, t, G_map, max_distance_lead_veh_m, 
-                                     max_distance_neighbor_forward_m, max_distance_opposite_forward_m, max_distance_opposite_backward_m):
+                                     max_distance_neighbor_forward_m, max_distance_opposite_forward_m, max_distance_opposite_backward_m,
+                                     max_node_distance_leading, max_node_distance_neighbor, max_node_distance_opposite):
         """
         Find the best relation from actor A to actor B.
-        
-        Discovery phase: finds all potential relations based on distance limits.
-        Does NOT check max_node_distance_* parameters - those are used in construction phase only.
         
         Args:
             track_id_A: ID of actor A
@@ -428,6 +426,9 @@ class ActorGraph:
             max_distance_neighbor_forward_m: Maximum distance for forward neighbor relations
             max_distance_opposite_forward_m: Maximum distance for forward opposite vehicle relations
             max_distance_opposite_backward_m: Maximum distance for backward opposite vehicle relations
+            max_node_distance_leading: Maximum number of nodes for leading/following path checking
+            max_node_distance_neighbor: Maximum number of nodes for neighbor path checking
+            max_node_distance_opposite: Maximum number of nodes for opposite path checking
         
         Returns:
             Tuple of (relation_type, path_length) or None if no relation found
@@ -588,12 +589,10 @@ class ActorGraph:
         return hierarchy.get(relation_type, 0)
 
     def _explore_relations(self, t, G_map, max_distance_lead_veh_m, max_distance_neighbor_forward_m, 
-                          max_distance_opposite_forward_m, max_distance_opposite_backward_m):
+                          max_distance_opposite_forward_m, max_distance_opposite_backward_m,
+                          max_node_distance_leading, max_node_distance_neighbor, max_node_distance_opposite):
         """
         Exploration phase: find all potential relations between actors at timestep t.
-        
-        Discovers ALL potential relations based on distance limits in meters.
-        Does NOT use max_node_distance_* parameters - those are for construction phase only.
         
         Args:
             t: timestep index
@@ -602,6 +601,9 @@ class ActorGraph:
             max_distance_neighbor_forward_m: Maximum distance for forward neighbor relations
             max_distance_opposite_forward_m: Maximum distance for forward opposite vehicle relations
             max_distance_opposite_backward_m: Maximum distance for backward opposite vehicle relations
+            max_node_distance_leading: Maximum number of nodes for leading/following path checking
+            max_node_distance_neighbor: Maximum number of nodes for neighbor path checking
+            max_node_distance_opposite: Maximum number of nodes for opposite path checking
             
         Returns:
             Dictionary mapping actor_id to relation types and target actors with path lengths
@@ -628,12 +630,14 @@ class ActorGraph:
                 # Find relations in both directions
                 relation_A_to_B = self._find_relation_between_actors(
                     track_id_A, track_id_B, t, G_map, 
-                    max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_opposite_forward_m, max_distance_opposite_backward_m
+                    max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_opposite_forward_m, max_distance_opposite_backward_m,
+                    max_node_distance_leading, max_node_distance_neighbor, max_node_distance_opposite
                 )
                 
                 relation_B_to_A = self._find_relation_between_actors(
                     track_id_B, track_id_A, t, G_map, 
-                    max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_opposite_forward_m, max_distance_opposite_backward_m
+                    max_distance_lead_veh_m, max_distance_neighbor_forward_m, max_distance_opposite_forward_m, max_distance_opposite_backward_m,
+                    max_node_distance_leading, max_node_distance_neighbor, max_node_distance_opposite
                 )
 
                 # Choose the better relation based on path length and hierarchy
@@ -878,7 +882,8 @@ class ActorGraph:
             # Exploration phase: discover all potential relations
             relations_dict = self._explore_relations(
                 t, G_map, max_distance_lead_veh_m, max_distance_neighbor_forward_m, 
-                max_distance_opposite_forward_m, max_distance_opposite_backward_m
+                max_distance_opposite_forward_m, max_distance_opposite_backward_m,
+                max_node_distance_leading, max_node_distance_neighbor, max_node_distance_opposite
             )
 
             # Graph construction phase: add edges based on discovered relations
