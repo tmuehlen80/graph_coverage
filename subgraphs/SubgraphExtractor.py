@@ -236,7 +236,7 @@ class SubgraphExtractor:
             'following_lead': 'blue',
             'neighbor_vehicle': 'forestgreen',
             'opposite_vehicle': 'orange',
-            'lead_vehicle': 'red',
+            'leading_vehicle': 'red',
             'default': 'gray'
         }
         
@@ -511,7 +511,7 @@ class SubgraphExtractor:
                     'following_lead': 'blue',
                     'neighbor_vehicle': 'forestgreen',
                     'opposite_vehicle': 'orange',
-                    'lead_vehicle': 'red',
+                    'leading_vehicle': 'red',
                 }
                 
                 # Draw edges by type

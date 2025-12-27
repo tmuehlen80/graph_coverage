@@ -7,6 +7,12 @@ common traffic scenarios for isomorphism-based coverage analysis.
 Patterns are organized into two groups:
 1. SIMPLE_PATTERNS: 2-actor interactions (valid only if isolated/disconnected)
 2. COMPLEX_PATTERNS: 3+ actors with special cases or 4+ actors
+
+IMPORTANT - Edge Direction Semantics:
+- "following_lead": edge from follower TO lead vehicle (A follows B: A→B)
+- "leading_vehicle": edge from lead TO follower vehicle (B leads A: B→A)
+- "neighbor_vehicle": bidirectional, same edge type both ways (symmetric relation)
+- "opposite_vehicle": bidirectional, same edge type both ways (symmetric relation)
 """
 import networkx as nx
 from graph_creator.models import ActorType
@@ -22,7 +28,7 @@ def create_simple_following():
     G.add_node("a", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     return G
 
 
@@ -58,7 +64,7 @@ def create_lead_vehicle_with_neighbor_vehicle():
     G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     G.add_edge("a", "c", edge_type="neighbor_vehicle")
     G.add_edge("c", "a", edge_type="neighbor_vehicle")
     return G
@@ -71,7 +77,7 @@ def create_lead_vehicle_with_neighbor_vehicle_intersection():
     G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     G.add_edge("a", "c", edge_type="neighbor_vehicle")
     G.add_edge("c", "a", edge_type="neighbor_vehicle")
     return G
@@ -84,9 +90,9 @@ def create_lead_vehicle_following_vehicle_in_back():
     G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     G.add_edge("a", "c", edge_type="following_lead")
-    G.add_edge("c", "a", edge_type="following_lead")
+    G.add_edge("c", "a", edge_type="leading_vehicle")
     return G
 
 
@@ -97,9 +103,9 @@ def create_cut_in():
     G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=True, is_on_intersection=False)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     G.add_edge("a", "c", edge_type="following_lead")
-    G.add_edge("c", "a", edge_type="following_lead")
+    G.add_edge("c", "a", edge_type="leading_vehicle")
     return G
 
 
@@ -110,9 +116,9 @@ def create_cut_in_intersection():
     G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=True, is_on_intersection=True)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     G.add_edge("a", "c", edge_type="following_lead")
-    G.add_edge("c", "a", edge_type="following_lead")
+    G.add_edge("c", "a", edge_type="leading_vehicle")
     return G
 
 
@@ -126,9 +132,9 @@ def create_cut_out():
     G.add_edge("a", "b", edge_type="neighbor_vehicle")
     G.add_edge("b", "a", edge_type="neighbor_vehicle")
     G.add_edge("a", "c", edge_type="following_lead")
-    G.add_edge("c", "a", edge_type="following_lead")
+    G.add_edge("c", "a", edge_type="leading_vehicle")
     G.add_edge("a", "d", edge_type="following_lead")
-    G.add_edge("d", "a", edge_type="following_lead")
+    G.add_edge("d", "a", edge_type="leading_vehicle")
     return G
 
 
@@ -142,9 +148,9 @@ def create_cut_out_intersection():
     G.add_edge("a", "b", edge_type="neighbor_vehicle")
     G.add_edge("b", "a", edge_type="neighbor_vehicle")
     G.add_edge("a", "c", edge_type="following_lead")
-    G.add_edge("c", "a", edge_type="following_lead")
+    G.add_edge("c", "a", edge_type="leading_vehicle")
     G.add_edge("a", "d", edge_type="following_lead")
-    G.add_edge("d", "a", edge_type="following_lead")
+    G.add_edge("d", "a", edge_type="leading_vehicle")
     return G
 
 
@@ -159,9 +165,9 @@ def create_lead_neighbor_opposite_vehicle():
     G.add_edge("a", "b", edge_type="neighbor_vehicle")
     G.add_edge("b", "a", edge_type="neighbor_vehicle")
     G.add_edge("a", "c", edge_type="following_lead")
-    G.add_edge("c", "a", edge_type="following_lead")
+    G.add_edge("c", "a", edge_type="leading_vehicle")
     G.add_edge("a", "d", edge_type="following_lead")
-    G.add_edge("d", "a", edge_type="following_lead")
+    G.add_edge("d", "a", edge_type="leading_vehicle")
     G.add_edge("a", "e", edge_type="opposite_vehicle")
     G.add_edge("e", "a", edge_type="opposite_vehicle")
     return G
@@ -178,9 +184,9 @@ def create_lead_neighbor_opposite_vehicle_intersection():
     G.add_edge("a", "b", edge_type="neighbor_vehicle")
     G.add_edge("b", "a", edge_type="neighbor_vehicle")
     G.add_edge("a", "c", edge_type="following_lead")
-    G.add_edge("c", "a", edge_type="following_lead")
+    G.add_edge("c", "a", edge_type="leading_vehicle")
     G.add_edge("a", "d", edge_type="following_lead")
-    G.add_edge("d", "a", edge_type="following_lead")
+    G.add_edge("d", "a", edge_type="leading_vehicle")
     G.add_edge("a", "e", edge_type="opposite_vehicle")
     G.add_edge("e", "a", edge_type="opposite_vehicle")
     return G
@@ -193,9 +199,9 @@ def create_platoon_with_intersection():
     G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
     G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     G.add_edge("b", "c", edge_type="following_lead")
-    G.add_edge("c", "b", edge_type="following_lead")
+    G.add_edge("c", "b", edge_type="leading_vehicle")
     return G
 
 
@@ -206,7 +212,7 @@ def create_opposite_traffic_at_intersection():
     G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
     G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     G.add_edge("a", "c", edge_type="opposite_vehicle")
     G.add_edge("c", "a", edge_type="opposite_vehicle")
     return G
@@ -219,7 +225,7 @@ def create_lead_with_neighbor_at_intersection():
     G.add_node("b", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
     G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     G.add_edge("a", "c", edge_type="neighbor_vehicle")
     G.add_edge("c", "a", edge_type="neighbor_vehicle")
     return G
@@ -246,11 +252,11 @@ def create_four_vehicle_intersection_platoon():
     G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
     G.add_node("d", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     G.add_edge("b", "c", edge_type="following_lead")
-    G.add_edge("c", "b", edge_type="following_lead")
+    G.add_edge("c", "b", edge_type="leading_vehicle")
     G.add_edge("c", "d", edge_type="following_lead")
-    G.add_edge("d", "c", edge_type="following_lead")
+    G.add_edge("d", "c", edge_type="leading_vehicle")
     return G
 
 
@@ -262,9 +268,9 @@ def create_four_vehicle_opposite_intersection():
     G.add_node("c", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=True)
     G.add_node("d", actor_type=ActorType.VEHICLE, lane_change=False, is_on_intersection=False)
     G.add_edge("a", "b", edge_type="following_lead")
-    G.add_edge("b", "a", edge_type="following_lead")
+    G.add_edge("b", "a", edge_type="leading_vehicle")
     G.add_edge("a", "c", edge_type="following_lead")
-    G.add_edge("c", "a", edge_type="following_lead")
+    G.add_edge("c", "a", edge_type="leading_vehicle")
     G.add_edge("a", "d", edge_type="opposite_vehicle")
     G.add_edge("d", "a", edge_type="opposite_vehicle")
     return G

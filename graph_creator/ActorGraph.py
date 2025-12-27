@@ -668,6 +668,10 @@ class ActorGraph:
         """
         Add leading/following edges to the graph in hierarchical order.
         
+        Direction matters: 
+        - "following_lead": from follower to lead vehicle (A follows B: A→B)
+        - "leading_vehicle": from lead to follower vehicle (B leads A: B→A)
+        
         Args:
             G_t: The graph at timestep t
             relations_dict: Dictionary of discovered relations
@@ -684,9 +688,9 @@ class ActorGraph:
         # Sort by path_length (shortest first) - leading/following distances are always positive (map is one-directional)
         leading_following_relations.sort(key=lambda x: x[3])
         
-        # Add edges bidirectionally - even though exploration only found one relation, 
-        # graph construction needs both directions for complete path finding
+        # Add edges bidirectionally with correct directional edge types
         for actor_id, target_actor_id, relation_type, path_length in leading_following_relations:
+            # Forward direction: use the discovered relation_type
             if not self._has_path_within_distance(G_t, actor_id, target_actor_id, max_node_distance):
                 G_t.add_edge(
                     actor_id,
@@ -695,11 +699,13 @@ class ActorGraph:
                     path_length=path_length,
                 )
             
+            # Reverse direction: use the opposite edge type
+            reverse_edge_type = "leading_vehicle" if relation_type == "following_lead" else "following_lead"
             if not self._has_path_within_distance(G_t, target_actor_id, actor_id, max_node_distance):
                 G_t.add_edge(
                     target_actor_id,
                     actor_id,
-                    edge_type=relation_type,
+                    edge_type=reverse_edge_type,
                     path_length=path_length,
                 )
 
