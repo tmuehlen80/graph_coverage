@@ -94,14 +94,31 @@ def train(config):
     # Model
     node_dim, edge_dim = get_feature_dimensions()
     
+    # Model params (support embedding_dim with fallback to output_dim)
+    embedding_dim = config['model'].get('embedding_dim', config['model'].get('output_dim', 128))
     hidden_dim = config['model']['hidden_dim']
-    output_dim = config['model']['output_dim']
     num_layers = config['model']['num_layers']
 
-    model = TrainableGraphGINE(node_dim, edge_dim, hidden_dim, output_dim, num_layers).to(device)
+    model = TrainableGraphGINE(
+        node_dim,
+        edge_dim,
+        embedding_dim=embedding_dim,
+        hidden_dim=hidden_dim,
+        num_layers=num_layers
+    ).to(device)
     
     initial_lr = config['training']['initial_lr']
     total_losses = {"train": [], "test": [], "lr": [initial_lr]}
+
+    # Training hyperparams
+    weight_decay = config['training'].get('weight_decay', 0.0)
+    optimizer_name = config['training'].get('optimizer', 'Adam')
+    gradient_clip_norm = config['training'].get('gradient_clip_norm', None)
+
+    # Augmentation and loss hyperparams
+    node_noise = config.get('augmentation', {}).get('node_noise', 0.1)
+    edge_noise = config.get('augmentation', {}).get('edge_noise', 0.1)
+    loss_temperature = config.get('loss', {}).get('temperature', 0.1)
 
     # Initial Evaluation (Pre-training)
     logger.info("Evaluating pre-training loss...")
@@ -111,11 +128,11 @@ def train(config):
             for batch in tqdm(data_loaders[split], desc=f"Pre-train {split}"):
                 # Batch comes as (data, path), so we take batch[0]
                 batch_data = batch[0].to(device)
-                aug_batch = augment_graph(batch_data).to(device)
+                aug_batch = augment_graph(batch_data, node_noise=node_noise, edge_noise=edge_noise).to(device)
                 
                 outputs1 = model(batch_data)
                 outputs2 = model(aug_batch)
-                loss = contrastive_loss(outputs1['projection'], outputs2['projection'])
+                loss = contrastive_loss(outputs1['projection'], outputs2['projection'], temperature=loss_temperature)
                 total_loss += loss.item()
         
         avg_loss = total_loss / len(data_loaders[split])
@@ -130,22 +147,27 @@ def train(config):
 
     for i in range(num_loops):
         lr = initial_lr * (lr_decay ** i)
-        # Optimizer is re-initialized every outer loop in the notebook
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-        logger.info(f"loop {i}, Learning rate: {lr}")
+        # Optimizer is re-initialized every outer loop
+        if optimizer_name.lower() == 'adamw':
+            optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+        else:
+            optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+        logger.info(f"loop {i}, Learning rate: {lr}, Optimizer: {optimizer_name}, weight_decay: {weight_decay}")
         
         for epoch in range(epochs_per_loop):
             model.train()
             train_loss_sum = 0
             for batch in tqdm(train_loader, desc=f"Loop {i} Epoch {epoch}"):
                 batch_data = batch[0].to(device)
-                aug_batch = augment_graph(batch_data).to(device)
+                aug_batch = augment_graph(batch_data, node_noise=node_noise, edge_noise=edge_noise).to(device)
                 
                 optimizer.zero_grad()
                 outputs1 = model(batch_data)
                 outputs2 = model(aug_batch)
-                loss = contrastive_loss(outputs1['projection'], outputs2['projection'])
+                loss = contrastive_loss(outputs1['projection'], outputs2['projection'], temperature=loss_temperature)
                 loss.backward()
+                if gradient_clip_norm:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clip_norm)
                 optimizer.step()
                 train_loss_sum += loss.item()
             
@@ -162,17 +184,18 @@ def train(config):
                 with torch.no_grad():
                     for batch in data_loaders[split]:
                         batch_data = batch[0].to(device)
-                        aug_batch = augment_graph(batch_data).to(device)
+                        aug_batch = augment_graph(batch_data, node_noise=node_noise, edge_noise=edge_noise).to(device)
                         
                         outputs1 = model(batch_data)
                         outputs2 = model(aug_batch)
-                        loss = contrastive_loss(outputs1['projection'], outputs2['projection'])
+                        loss = contrastive_loss(outputs1['projection'], outputs2['projection'], temperature=loss_temperature)
                         total_loss += loss.item()
                 
                 avg_split_loss = total_loss / len(data_loaders[split])
                 total_losses[split].append(avg_split_loss)
             
             logger.info(f"Current Losses - Train: {total_losses['train'][-1]:.4f}, Test: {total_losses['test'][-1]:.4f}")
+            logger.info(f"Current lr: {lr:.4f}")
 
             # Checkpointing
             checkpoint_path = os.path.join(run_dir, f"checkpoint_loop{i}_epoch{epoch}.pt")

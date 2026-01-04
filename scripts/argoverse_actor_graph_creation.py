@@ -27,7 +27,8 @@ from graph_creator.create_graph import get_scenario_data, plot_scene_at_timestep
 from pathlib import Path
 # repo_root = Path("/Users/marius/code/graph_coverage")
 repo_root = Path("/home/tmuehlen/repos/graph_coverage")
-dataroot = repo_root / "argoverse_data" / "train"
+#dataroot = repo_root / "argoverse_data_tmp" / "train"
+dataroot =  Path("/home/tmuehlen/argoverse_data_tmp") / "train"
 print(repo_root)
 
 scenario_folders = [f for f in dataroot.iterdir() if f.is_dir()]
@@ -46,7 +47,7 @@ os.makedirs(repo_root / "actor_graphs" / f"argoverse_{name_aug}", exist_ok=True)
 os.makedirs(repo_root / "actor_graphs" / f"argoverse_{name_aug}_components_nx", exist_ok=True)
 os.makedirs(repo_root / "actor_graphs" / f"argoverse_{name_aug}_nx", exist_ok=True)
 
-for i, scenario in enumerate(scenario_folders):
+for i, scenario in enumerate(scenario_folders[:17000]):
     log_id = scenario.name
     timestamp = 1.0
     print(i, "/", len(scenario_folders), log_id)

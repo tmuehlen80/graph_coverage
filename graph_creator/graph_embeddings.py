@@ -313,18 +313,18 @@ def contrastive_loss(z1, z2, temperature=0.1):
     return F.cross_entropy(sim_matrix, labels)
 
 # Data augmentation for contrastive learning
-def augment_graph(data):
-    """Simple graph augmentation"""
+def augment_graph(data, node_noise=0.1, edge_noise=0.1):
+    """Simple graph augmentation with configurable noise"""
     augmented_data = data.clone()
     
     # Add noise to continuous features
     # Node features: first feature is lon_speed
-    if augmented_data.x.size(1) > 0:
-        augmented_data.x[:, 0] += torch.randn_like(augmented_data.x[:, 0]) * 0.1
+    if augmented_data.x.size(1) > 0 and node_noise > 0:
+        augmented_data.x[:, 0] += torch.randn_like(augmented_data.x[:, 0]) * node_noise
     
     # Edge features: first feature is path_length
-    if augmented_data.edge_attr.size(0) > 0 and augmented_data.edge_attr.size(1) > 0:
-        augmented_data.edge_attr[:, 0] += torch.randn_like(augmented_data.edge_attr[:, 0]) * 0.1
+    if augmented_data.edge_attr.size(0) > 0 and augmented_data.edge_attr.size(1) > 0 and edge_noise > 0:
+        augmented_data.edge_attr[:, 0] += torch.randn_like(augmented_data.edge_attr[:, 0]) * edge_noise
     
     return augmented_data
 

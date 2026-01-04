@@ -1,0 +1,33 @@
+{
+    "data": {
+        "carla_pattern": "actor_graphs/carla_actor_graph_setting_1_50_50_10_20_20_4_4_4_components_nx/*.pkl",
+        "argoverse_pattern": "actor_graphs/argoverse_actor_graph_setting_1_50_50_10_20_20_4_4_4_components_nx/*.pkl",
+        "test_size": 0.2,
+        "random_state": 42,
+        "batch_size": 256
+    },
+    "model": {
+        "embedding_dim": 512,
+        "hidden_dim": 1024,
+        "num_layers": 8
+    },
+    "training": {
+        "initial_lr": 0.001,
+        "lr_decay": 0.90,
+        "num_loops": 10,
+        "epochs_per_loop": 5,
+        "optimizer": "Adam",
+        "weight_decay": 1e-6,
+        "gradient_clip_norm": 1.0,
+        "checkpoint_dir": "checkpoints",
+        "log_file": "training.log"
+   },
+   "augmentation": {
+       "node_noise": 0.05,
+       "edge_noise": 0.05
+   },
+   "loss": {
+       "temperature": 0.1
+   }
+}
+
