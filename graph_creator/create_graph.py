@@ -49,7 +49,8 @@ def plot_argoverse_map(map, save_path=None):
         fig.show()
 
 
-def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=None, lane_label=False, node_coverage_dict=None):
+def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=None, lane_label=False, node_coverage_dict=None, 
+                          actor_label_fontsize=8, actor_label_offset=0.5, legend_fontsize=10, title=None):
     fig = plt.figure(figsize=(20, 20))
     ax = fig.add_subplot()
 
@@ -98,9 +99,9 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
             
             ax.text(
                 xyz_point.x,
-                xyz_point.y - 0.5,  # Reduced from 2.5 to 0.5 for closer positioning
+                xyz_point.y - actor_label_offset,
                 label_text,
-                fontsize=8,
+                fontsize=actor_label_fontsize,
                 ha="center",
                 va="center",
                 color="red",
@@ -122,9 +123,9 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
                 
                 ax.text(
                     position[0],
-                    position[1] - 0.5,  # Reduced from 2.5 to 0.5 for closer positioning
+                    position[1] - actor_label_offset,
                     label_text,
-                    fontsize=8,
+                    fontsize=actor_label_fontsize,
                     ha="center",
                     va="center",
                     color="red",
@@ -195,7 +196,15 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
             plt.Line2D([0], [0], color='forestgreen', label='neighbor_vehicle'),
             plt.Line2D([0], [0], color='orange', label='opposite_vehicle')
         ]
-        ax.legend(handles=legend_elements, loc='upper right')
+        ax.legend(handles=legend_elements, loc='upper right', fontsize=legend_fontsize)
+    
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    
+    if title:
+        plt.title(title, fontsize=30)
 
     if save_path:
         fig.savefig(save_path)

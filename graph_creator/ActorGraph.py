@@ -244,7 +244,7 @@ class ActorGraph:
         instance.track_speed_lon_dict = track_data.track_speed_lon_dict
         instance.track_actor_type_dict = track_data.track_actor_type_dict
 
-        instance.actor_graphs = instance.create_actor_graphs(
+        instance.create_actor_graphs(
             G_Map,
             max_distance_lead_veh_m=max_distance_lead_veh_m,
             max_distance_neighbor_forward_m=max_distance_neighbor_forward_m,
@@ -826,6 +826,73 @@ class ActorGraph:
         # Step 3: Add opposite relations (shortest first)
         self._add_opposite_edges(G_t, relations_dict, max_node_distance_opposite, max_distance_opposite_forward_m, max_distance_opposite_backward_m)
 
+    def _construct_graph_all_relations(self, G_t, relations_dict, max_distance_opposite_forward_m, max_distance_opposite_backward_m):
+        """
+        Graph construction phase: add ALL edges from discovered relations without hierarchical selection.
+        This bypasses redundancy prevention and adds all discovered relations.
+        
+        Args:
+            G_t: The graph at timestep t
+            relations_dict: Dictionary of discovered relations
+            max_distance_opposite_forward_m: Maximum distance for forward opposite vehicle relations
+            max_distance_opposite_backward_m: Maximum distance for backward opposite vehicle relations
+        """
+        # Add all leading/following edges (sorted by path_length, shortest first)
+        leading_following_relations = []
+        for actor_id, relation_types in relations_dict.items():
+            for relation_type in ["leading_vehicle", "following_lead"]:
+                if relation_type in relation_types:
+                    for target_actor_id, path_length in relation_types[relation_type]:
+                        if actor_id in G_t and target_actor_id in G_t:
+                            leading_following_relations.append((actor_id, target_actor_id, relation_type, path_length))
+        
+        leading_following_relations.sort(key=lambda x: x[3])  # Sort by path_length
+        
+        for actor_id, target_actor_id, relation_type, path_length in leading_following_relations:
+            # Forward direction
+            G_t.add_edge(actor_id, target_actor_id, edge_type=relation_type, path_length=path_length)
+            # Reverse direction
+            reverse_edge_type = "leading_vehicle" if relation_type == "following_lead" else "following_lead"
+            G_t.add_edge(target_actor_id, actor_id, edge_type=reverse_edge_type, path_length=path_length)
+        
+        # Add all neighbor edges (sorted by abs(path_length), shortest first)
+        neighbor_relations = []
+        for actor_id, relation_types in relations_dict.items():
+            if "neighbor_vehicle" in relation_types:
+                for target_actor_id, path_length in relation_types["neighbor_vehicle"]:
+                    if actor_id in G_t and target_actor_id in G_t:
+                        neighbor_relations.append((actor_id, target_actor_id, path_length))
+        
+        neighbor_relations.sort(key=lambda x: abs(x[2]))  # Sort by abs(path_length)
+        
+        for actor_id, target_actor_id, path_length in neighbor_relations:
+            # Bidirectional
+            G_t.add_edge(actor_id, target_actor_id, edge_type="neighbor_vehicle", path_length=path_length)
+            G_t.add_edge(target_actor_id, actor_id, edge_type="neighbor_vehicle", path_length=path_length)
+        
+        # Add all opposite edges (sorted by abs(path_length), shortest first)
+        opposite_relations = []
+        for actor_id, relation_types in relations_dict.items():
+            if "opposite_vehicle" in relation_types:
+                for target_actor_id, path_length in relation_types["opposite_vehicle"]:
+                    if actor_id in G_t and target_actor_id in G_t:
+                        opposite_relations.append((actor_id, target_actor_id, path_length))
+        
+        opposite_relations.sort(key=lambda x: abs(x[2]))  # Sort by abs(path_length)
+        
+        for actor_id, target_actor_id, path_length in opposite_relations:
+            # Check distance limits
+            if path_length >= 0:
+                max_distance = max_distance_opposite_forward_m
+            else:
+                max_distance = max_distance_opposite_backward_m
+            
+            # Add if within distance limit (no path checking)
+            if abs(path_length) <= max_distance:
+                # Bidirectional
+                G_t.add_edge(actor_id, target_actor_id, edge_type="opposite_vehicle", path_length=path_length)
+                G_t.add_edge(target_actor_id, actor_id, edge_type="opposite_vehicle", path_length=path_length)
+
     def create_actor_graphs(
         self,
         G_map,
@@ -902,6 +969,90 @@ class ActorGraph:
 
         self.actor_graphs = timestep_graphs
 
+    def create_actor_graphs_all_relations(
+        self,
+        G_map,
+        max_distance_lead_veh_m,
+        max_distance_neighbor_forward_m,
+        max_distance_neighbor_backward_m,
+        max_distance_opposite_forward_m,
+        max_distance_opposite_backward_m,
+        max_node_distance_leading=3,
+        max_node_distance_neighbor=3,
+        max_node_distance_opposite=3,
+        delta_timestep_s=1.0,
+    ):
+        """
+        Create actor graphs using ALL discovered relations without hierarchical selection.
+        This is an alternative to create_actor_graphs that bypasses redundancy prevention.
+        
+        Args:
+            G_map: Map graph
+            max_distance_lead_veh_m: Maximum distance for leading vehicle relations
+            max_distance_neighbor_forward_m: Maximum distance for forward neighbor relations
+            max_distance_neighbor_backward_m: Maximum distance for backward neighbor relations
+            max_distance_opposite_forward_m: Maximum distance for forward opposite vehicle relations
+            max_distance_opposite_backward_m: Maximum distance for backward opposite vehicle relations
+            max_node_distance_leading: Not used in this method (kept for compatibility)
+            max_node_distance_neighbor: Not used in this method (kept for compatibility)
+            max_node_distance_opposite: Not used in this method (kept for compatibility)
+            delta_timestep_s: Time step delta
+        """
+        graph_timesteps = []
+        graph_timesteps_idx = []
+        assert all(a <= b for a, b in zip(self.timestamps, self.timestamps[1:])), "graph timestamps are not sorted"
+
+        current_timestep = self.timestamps[0]
+        while True:
+            closest_idx = min(range(len(self.timestamps)), 
+                            key=lambda i: abs(self.timestamps[i] - current_timestep))
+            closest_timestep = self.timestamps[closest_idx]
+            
+            if graph_timesteps and closest_timestep == graph_timesteps[-1]:
+                break
+                
+            graph_timesteps.append(closest_timestep)
+            graph_timesteps_idx.append(closest_idx)
+            current_timestep += delta_timestep_s
+
+        timestep_graphs = {}
+
+        for t in graph_timesteps_idx:
+            G_t = nx.MultiDiGraph()
+            timestep_value = self.timestamps[t]
+            
+            # Add nodes with attributes (same as create_actor_graphs)
+            for track_id, lane_ids in self.track_lane_dict.items():
+                lane_id_list = lane_ids[t]
+                if lane_id_list is not None and lane_id_list != [None]:
+                    primary_lane_id = lane_id_list[0] if lane_id_list[0] is not None else None
+                    if primary_lane_id is not None:
+                        G_t.add_node(
+                            track_id,
+                            lane_id=primary_lane_id,
+                            lane_ids=lane_id_list,
+                            s=self.track_s_value_dict[track_id][t],
+                            xyz=self.track_xyz_pos_dict[track_id][t],
+                            lon_speed=self.track_speed_lon_dict[track_id][t],
+                            actor_type=self.track_actor_type_dict[track_id],
+                        )
+
+            # Exploration phase: discover all potential relations
+            relations_dict = self._explore_relations(
+                t, G_map, max_distance_lead_veh_m, max_distance_neighbor_forward_m, 
+                max_distance_opposite_forward_m, max_distance_opposite_backward_m,
+                max_node_distance_leading, max_node_distance_neighbor, max_node_distance_opposite
+            )
+
+            # Graph construction phase: add ALL edges without hierarchical selection
+            self._construct_graph_all_relations(
+                G_t, relations_dict, max_distance_opposite_forward_m, max_distance_opposite_backward_m
+            )
+
+            timestep_graphs[self.timestamps[t]] = G_t
+
+        self.actor_graphs = timestep_graphs
+
         # Add lane change attribute to nodes
         ag_timestamps = list(self.actor_graphs.keys())
         ag_timestamps = sorted(ag_timestamps)
@@ -923,6 +1074,108 @@ class ActorGraph:
                     #if lane_change:
                     #     # print(node, previous_lane_id, lane_id, start_points, lane_change)
                 # In principle, here there could also be added a check for lane merge, i.e. counting if the start points had more then 1 element (before adding the current lane_id)
+
+    def create_actor_graphs_all_relations(
+        self,
+        G_map,
+        max_distance_lead_veh_m,
+        max_distance_neighbor_forward_m,
+        max_distance_neighbor_backward_m,
+        max_distance_opposite_forward_m,
+        max_distance_opposite_backward_m,
+        max_node_distance_leading=3,
+        max_node_distance_neighbor=3,
+        max_node_distance_opposite=3,
+        delta_timestep_s=1.0,
+    ):
+        """
+        Create actor graphs using ALL discovered relations without hierarchical selection.
+        This is an alternative to create_actor_graphs that bypasses redundancy prevention.
+        
+        Args:
+            G_map: Map graph
+            max_distance_lead_veh_m: Maximum distance for leading vehicle relations
+            max_distance_neighbor_forward_m: Maximum distance for forward neighbor relations
+            max_distance_neighbor_backward_m: Maximum distance for backward neighbor relations
+            max_distance_opposite_forward_m: Maximum distance for forward opposite vehicle relations
+            max_distance_opposite_backward_m: Maximum distance for backward opposite vehicle relations
+            max_node_distance_leading: Not used in this method (kept for compatibility)
+            max_node_distance_neighbor: Not used in this method (kept for compatibility)
+            max_node_distance_opposite: Not used in this method (kept for compatibility)
+            delta_timestep_s: Time step delta
+        """
+        graph_timesteps = []
+        graph_timesteps_idx = []
+        assert all(a <= b for a, b in zip(self.timestamps, self.timestamps[1:])), "graph timestamps are not sorted"
+
+        current_timestep = self.timestamps[0]
+        while True:
+            closest_idx = min(range(len(self.timestamps)), 
+                            key=lambda i: abs(self.timestamps[i] - current_timestep))
+            closest_timestep = self.timestamps[closest_idx]
+            
+            if graph_timesteps and closest_timestep == graph_timesteps[-1]:
+                break
+                
+            graph_timesteps.append(closest_timestep)
+            graph_timesteps_idx.append(closest_idx)
+            current_timestep += delta_timestep_s
+
+        timestep_graphs = {}
+
+        for t in graph_timesteps_idx:
+            G_t = nx.MultiDiGraph()
+            timestep_value = self.timestamps[t]
+            
+            # Add nodes with attributes (same as create_actor_graphs)
+            for track_id, lane_ids in self.track_lane_dict.items():
+                lane_id_list = lane_ids[t]
+                if lane_id_list is not None and lane_id_list != [None]:
+                    primary_lane_id = lane_id_list[0] if lane_id_list[0] is not None else None
+                    if primary_lane_id is not None:
+                        G_t.add_node(
+                            track_id,
+                            lane_id=primary_lane_id,
+                            lane_ids=lane_id_list,
+                            s=self.track_s_value_dict[track_id][t],
+                            xyz=self.track_xyz_pos_dict[track_id][t],
+                            lon_speed=self.track_speed_lon_dict[track_id][t],
+                            actor_type=self.track_actor_type_dict[track_id],
+                        )
+
+            # Exploration phase: discover all potential relations
+            relations_dict = self._explore_relations(
+                t, G_map, max_distance_lead_veh_m, max_distance_neighbor_forward_m, 
+                max_distance_opposite_forward_m, max_distance_opposite_backward_m,
+                max_node_distance_leading, max_node_distance_neighbor, max_node_distance_opposite
+            )
+
+            # Graph construction phase: add ALL edges without hierarchical selection
+            self._construct_graph_all_relations(
+                G_t, relations_dict, max_distance_opposite_forward_m, max_distance_opposite_backward_m
+            )
+
+            timestep_graphs[self.timestamps[t]] = G_t
+
+        self.actor_graphs = timestep_graphs
+
+        # Add lane change attribute to nodes (same as create_actor_graphs)
+        ag_timestamps = list(self.actor_graphs.keys())
+        ag_timestamps = sorted(ag_timestamps)
+
+        for i in range(1, len(ag_timestamps)):
+            all_nodes = list(self.actor_graphs[ag_timestamps[i]].nodes)
+            for node in all_nodes:
+                lane_id = self.actor_graphs[ag_timestamps[i]].nodes(data=True)[node]["lane_id"]
+                start_points = [u for u, v, d in G_map.graph.in_edges(lane_id, data=True) if d.get('edge_type') == 'following']
+                start_points.append(lane_id)
+                if self.actor_graphs[ag_timestamps[i - 1]].has_node(node):
+                    previous_lane_id = self.actor_graphs[ag_timestamps[i - 1]].nodes(data=True)[node]["lane_id"]
+                    if previous_lane_id in start_points:
+                        lane_change = False
+                    else:
+                        lane_change = True
+                    self.actor_graphs[ag_timestamps[i]].nodes[node]["lane_change"] = lane_change
                 else:
                     lane_change = False
                 self.actor_graphs[ag_timestamps[i]].nodes(data=True)[node]["lane_change"] = lane_change
@@ -986,40 +1239,96 @@ class ActorGraph:
         nodes_with_edges = [node for node in G.nodes() if G.degree(node) > 0]
 
         plt.figure(figsize=(fig_size, fig_size))
-        nx.draw_networkx_nodes(G, pos, nodelist=nodes_with_edges, node_size=scaled_node_size)
-        nx.draw_networkx_labels(G, pos, labels=labels, font_size=10 * scale_factor, font_color="black")
+        ax = plt.gca()
+        nx.draw_networkx_nodes(G, pos, nodelist=nodes_with_edges, node_size=scaled_node_size, ax=ax)
+        nx.draw_networkx_labels(G, pos, labels=labels, font_size=10 * scale_factor, font_color="black", ax=ax)
 
         # Draw edges with different styles based on edge type
         edge_type_following_lead = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "following_lead"]
-        edge_type_direct_neighbor_vehicle = [
-            (u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "direct_neighbor_vehicle"
-        ]
+        edge_type_leading_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "leading_vehicle"]
         edge_type_neighbor_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "neighbor_vehicle"]
         edge_type_opposite_vehicle = [(u, v) for u, v, d in G.edges(data=True) if d["edge_type"] == "opposite_vehicle"]
 
         # Scale edge width with figure size
         edge_width = 2 * scale_factor
         
-        nx.draw_networkx_edges(
-            G,
-            pos,
-            edgelist=edge_type_following_lead,
-            width=edge_width,
-            edge_color="blue",
-            arrows=True,
-            node_size=scaled_node_size,
-            label="following_lead",
-        )
-        nx.draw_networkx_edges(
-            G,
-            pos,
-            edgelist=edge_type_direct_neighbor_vehicle,
-            width=edge_width,
-            edge_color="red",
-            arrows=True,
-            node_size=scaled_node_size,
-            label="leading_vehicle",
-        )
+        # Draw following_lead and leading_vehicle edges with curves
+        # Use ConnectionPatch like networkx does, with proper node boundary handling
+        from matplotlib.patches import ConnectionPatch
+        import numpy as np
+        
+        # Check for bidirectional edges to ensure opposite curvature
+        edge_pairs = {}
+        for u, v in edge_type_following_lead:
+            pair_key = frozenset([u, v])
+            if pair_key not in edge_pairs:
+                edge_pairs[pair_key] = []
+            edge_pairs[pair_key].append(('following_lead', u, v))
+        
+        for u, v in edge_type_leading_vehicle:
+            pair_key = frozenset([u, v])
+            if pair_key not in edge_pairs:
+                edge_pairs[pair_key] = []
+            edge_pairs[pair_key].append(('leading_vehicle', u, v))
+        
+        # Draw following_lead edges - curve right (positive rad)
+        for u, v in edge_type_following_lead:
+            if u in pos and v in pos:
+                pair_key = frozenset([u, v])
+                is_bidirectional = pair_key in edge_pairs and len(edge_pairs[pair_key]) > 1
+                # For bidirectional, alternate curvature
+                rad = 0.3 if not is_bidirectional or edge_pairs[pair_key][0][0] == 'following_lead' else -0.3
+                
+                # Calculate shrink in points (ConnectionPatch uses points)
+                # node_size is in points^2, so radius in points is sqrt(node_size/pi)
+                node_radius_points = np.sqrt(scaled_node_size / np.pi)
+                arrow = ConnectionPatch(
+                    pos[u], pos[v],
+                    "data", "data",
+                    arrowstyle="->",
+                    connectionstyle=f"arc3,rad={rad}",
+                    color='blue',
+                    linewidth=edge_width,
+                    alpha=0.7,
+                    mutation_scale=20,
+                    zorder=3,
+                    shrinkA=node_radius_points,
+                    shrinkB=node_radius_points
+                )
+                ax.add_patch(arrow)
+        
+        # Draw leading_vehicle edges - curve left (negative rad), opposite of following_lead
+        for u, v in edge_type_leading_vehicle:
+            if u in pos and v in pos:
+                pair_key = frozenset([u, v])
+                is_bidirectional = pair_key in edge_pairs and len(edge_pairs[pair_key]) > 1
+                # For bidirectional, use opposite curvature of following_lead
+                if is_bidirectional:
+                    fol_edge = next((e for e in edge_pairs[pair_key] if e[0] == 'following_lead'), None)
+                    if fol_edge:
+                        # Use opposite curvature
+                        rad = -0.3 if fol_edge[1:] == (u, v) else 0.3
+                    else:
+                        rad = -0.3
+                else:
+                    rad = -0.3
+                
+                # Calculate shrink in points (ConnectionPatch uses points)
+                node_radius_points = np.sqrt(scaled_node_size / np.pi)
+                arrow = ConnectionPatch(
+                    pos[u], pos[v],
+                    "data", "data",
+                    arrowstyle="->",
+                    connectionstyle=f"arc3,rad={rad}",
+                    color='red',
+                    linewidth=edge_width,
+                    alpha=0.7,
+                    mutation_scale=20,
+                    zorder=2,
+                    shrinkA=node_radius_points,
+                    shrinkB=node_radius_points
+                )
+                ax.add_patch(arrow)
         nx.draw_networkx_edges(
             G,
             pos,
@@ -1028,7 +1337,7 @@ class ActorGraph:
             edge_color="forestgreen",
             arrows=True,
             node_size=scaled_node_size,
-            label="neighbor_vehicle",
+            label="Neighbor vehicle",
         )
         nx.draw_networkx_edges(
             G,
@@ -1038,22 +1347,18 @@ class ActorGraph:
             edge_color="orange",
             arrows=True,
             node_size=scaled_node_size,
-            label="opposite_vehicle",
+            label="Opposite vehicle",
         )
-        # Add legend with custom colors and labels
+        # Add legend with readable names
         legend_elements = [
-            plt.Line2D([0], [0], color='blue', label='following_lead'), 
-            plt.Line2D([0], [0], color='red', label='leading_vehicle'),
-            plt.Line2D([0], [0], color='forestgreen', label='neighbor_vehicle'), 
-            plt.Line2D([0], [0], color='orange', label='opposite_vehicle')
+            plt.Line2D([0], [0], color='blue', label='Follow lead vehicle'), 
+            plt.Line2D([0], [0], color='red', label='Lead vehicle'),
+            plt.Line2D([0], [0], color='forestgreen', label='Neighbor vehicle'), 
+            plt.Line2D([0], [0], color='orange', label='Opposite vehicle')
         ]
-        plt.legend(handles=legend_elements, loc='upper right', fontsize=10 * scale_factor)
+        plt.legend(handles=legend_elements, loc='lower right', fontsize=10 * scale_factor)
 
-        # Add title with scenario_id and timestamp information
-        title = f"Timestamp: {t_idx:.2f}s"
-        if scenario_id is not None:
-            title = f"Scenario: {scenario_id}, {title}"
-        plt.title(title, fontsize=12 * scale_factor)
+        plt.title("Example of an actor graph", fontsize=12 * scale_factor)
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
