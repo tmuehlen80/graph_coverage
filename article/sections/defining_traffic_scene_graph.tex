@@ -47,8 +47,6 @@ to extract these relationships. For intersection detection, lanes are analyzed f
 overlap, and all overlapping lanes are marked as intersection lanes to ensure proper handling of 
 complex road geometries.
 
-%TODO: add figure
-
 \subsection{Actor Graph Construction}
 \label{subsec:actor_graph}
 
@@ -106,7 +104,26 @@ The actor graph defines four types of relationships between actors, ordered by s
           need not be on immediately opposite lanes.
 \end{enumerate}
 
-%TODO: add figure
+\begin{figure}[h]
+      \centering
+      \begin{subfigure}[b]{0.48\textwidth}
+          \centering
+          \includegraphics[width=\textwidth]{plots/actor_map_graph/0922f82c-0640-43a6-b5ce-c42bc729418e_map_graph.png}
+          \caption{Example graph representation of a map.}
+          \label{fig:map_graph_representation}
+      \end{subfigure}
+      \hfill
+      \begin{subfigure}[b]{0.48\textwidth}
+          \centering
+          \includegraphics[width=\textwidth]{plots/actor_map_graph/0922f82c-0640-43a6-b5ce-c42bc729418e_scene_at_1.0.png}
+          \caption{Example traffic graph.}
+          \label{fig:traffic_scene_timestep}
+      \end{subfigure}
+      \caption{The map graph (left) serves as the foundational structure for determining actor relations, encoding spatial relationships between lanes. 
+      The traffic scene (right) shows actors and their relationships at a specific timestep. 
+      Note that actors can be disconnected if they are far enough apart, as the graph construction algorithm only creates edges between actors within the specified distance thresholds.}
+      \label{fig:map_and_scene_graphs}
+  \end{figure}
 
 \subsection{Hierarchical Graph Construction Algorithm}
 \label{subsec:construction_algorithm}
@@ -140,8 +157,6 @@ Each relationship is validated using two distance checks: the lane-based path le
 curved roads are properly accounted for, while the Euclidean distance ensures that only actors in 
 close proximity are considered. All discovered relationships are stored in a relations dictionary 
 for the construction phase.
-
-%TODO: add figure
 
 \subsubsection{Phase 2: Hierarchical Graph Construction}
 \label{subsubsec:construction_phase}
@@ -185,7 +200,38 @@ The graph is updated immediately after each edge addition, ensuring that path ch
 subsequent edges use the current graph state. This incremental approach guarantees that the 
 hierarchical construction works correctly and prevents race conditions.
 
-%TODO: add figure
+Figure~\ref{fig:graph_construction_comparison} illustrates the effect of redundancy prevention 
+by comparing the graph after relation discovery with the final graph after hierarchical selection. 
+The discovery graph respects the maximum distances chosen for discovery, but still contains 
+redundant relations. For example, three vehicles in a row can be described by pairwise 
+lead-follow relations, but the relation of the last vehicle to the first vehicle is already 
+encoded in the graph through the intermediate vehicle. Similarly, for a row of vehicles to a 
+neighboring or opposite vehicle, we only need the opposite/following relation to the closest 
+vehicle in the row; the other actor relations are encoded in the graph. This redundancy prevention 
+reduces the number of edges in the graph significantly, making it more efficient while preserving 
+all necessary connectivity information.
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plots/graph_construction/5758074f-be16-49da-8bb5-d43a0d8cd034_after_discovery.png}
+        \caption{After relation discovery}
+        \label{fig:graph_after_discovery}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{plots/graph_construction/5758074f-be16-49da-8bb5-d43a0d8cd034_final.png}
+        \caption{Final graph after hierarchical selection}
+        \label{fig:graph_final}
+    \end{subfigure}
+    \caption{Comparison of the actor graph after relation discovery and after hierarchical 
+    selection with redundancy prevention. The discovery graph contains all relations found within 
+    the distance limits, while the final graph removes redundant edges that can be represented 
+    through existing paths, significantly reducing the number of edges while preserving connectivity.}
+    \label{fig:graph_construction_comparison}
+\end{figure}
 
 \subsubsection{Input Parameters}
 \label{subsubsec:parameters}

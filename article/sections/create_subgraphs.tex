@@ -31,12 +31,13 @@ Also, follow up analysis of the created coverage dataframe can be performed. For
     \item Pass Fail rates or other AV performance metrics can be calculated for the subset of all traffic scenes which are subgraph isomorphic to an archetype.
 \end{itemize}
 
-In the above approach, the archetypes are defined manually. An alternative approach is to automatically extract all possible archetypes 
-from a dataset of real world traffic observation data. 
-
-xxxxxx
-
-TODO MARIUS: Describe the approach of automatically extracting archetypes from real world traffic observation data.
-
-xxxxxx
+In our case, we defined 18 subgraph archetypes covering common traffic scenarios:
+\begin{itemize}
+    \item Simple 2-actor patterns (only used if 2 actors are isolated): following, opposite traffic, and neighboring vehicles
+    \item Complex 3-actor patterns: lead vehicle with neighbor, platoon formations, opposite traffic configurations, and lane change scenarios (cut-in), with variants at intersections
+    \item Complex 4-actor patterns: cut-out scenarios, multi-vehicle platoons, and lead-following with opposite traffic, with intersection variants
+    \item Complex 5-actor patterns: combined lead, neighbor, and opposite vehicle scenarios with intersection variants
+\end{itemize}
+The node coverage analysis across Argoverse and CARLA datasets achieved 62\% overall coverage. It is posible to define more archetypes or detect them automatically, 
+but this is out of scope for this project.
 
