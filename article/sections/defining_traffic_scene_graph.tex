@@ -130,6 +130,43 @@ The actor graph defines four types of relationships between actors, ordered by s
 
 The actor graph construction follows a two-phase approach that separates relation discovery from 
 graph building, enabling hierarchical processing and preventing redundant edge creation.
+\begin{table}[h]
+      \centering
+      \caption{Input parameters for actor graph construction}
+      \label{tab:construction_parameters}
+      \begin{tabular}{llp{6cm}l}
+      \hline
+      \textbf{Parameter} & \textbf{Type} & \textbf{Description} & \textbf{Value} \\
+      \hline
+      \multicolumn{4}{l}{\textit{Distance limits (discovery phase)}} \\
+      \hline
+      \texttt{max\_distance\_lead\_veh\_m} & float & Maximum distance in meters for leading/following 
+      relationships & 100 \\
+      \texttt{max\_distance\_neighbor\_forward\_m} & float & Maximum distance in meters for forward 
+      neighbor relationships & 50 \\
+      \texttt{max\_distance\_neighbor\_backward\_m} & float & Maximum distance in meters for backward 
+      neighbor relationships & 50 \\
+      \texttt{max\_distance\_opposite\_forward\_m} & float & Maximum distance in meters for forward 
+      opposite relationships & 100 \\
+      \texttt{max\_distance\_opposite\_backward\_m} & float & Maximum distance in meters for backward 
+      opposite relationships & 10 \\
+      \hline
+      \multicolumn{4}{l}{\textit{Node distance limits (construction phase)}} \\
+      \hline
+      \texttt{max\_node\_distance\_leading} & int & Maximum number of edges in actor graph path for 
+      leading/following & 3 \\
+      \texttt{max\_node\_distance\_neighbor} & int & Maximum number of edges in actor graph path for 
+      neighbor & 2 \\
+      \texttt{max\_node\_distance\_opposite} & int & Maximum number of edges in actor graph path for 
+      opposite & 2 \\
+      \hline
+      \multicolumn{4}{l}{\textit{Timestep configuration}} \\
+      \hline
+      \texttt{delta\_timestep\_s} & float & Time step increment in seconds for temporal graph 
+      creation & 1.0 \\
+      \hline
+      \end{tabular}
+      \end{table}
 
 \subsubsection{Phase 1: Relation Discovery}
 \label{subsubsec:discovery_phase}
@@ -140,22 +177,23 @@ algorithm determines their primary lanes and checks if a path exists in the map 
 them. The path structure determines the relationship type:
 
 \begin{itemize}
-    \item \textbf{Following/Leading}: If both actors are on the same lane, or if the path consists 
+    \item \textbf{Following/Leading}: If both actors are on the same lane, or if the connecting lane path consists 
           entirely of following edges.
     
-    \item \textbf{Neighbor}: If the path contains exactly one neighbor edge and the remaining edges 
+    \item \textbf{Neighbor}: If the connecting lane path contains exactly one neighbor edge and the remaining edges 
           are following edges. Note that this does not require the actors to be on immediately 
-          adjacent lanes---the path may contain multiple following edges before and after the single 
-          neighbor edge.
+          adjacent lanes. 
     
     \item \textbf{Opposite}: If the path contains exactly one opposite edge and the remaining edges 
           are following edges. Similar to neighbor relationships, this does not require the actors 
           to be on immediately opposite lanes.
 \end{itemize}
 
-Each relationship is validated using two distance checks: the lane-based path length ensures that 
+Far distance actors are not considered for relation discovery. This is done using two distance checks: 
+the lane-based path length ensures that 
 curved roads are properly accounted for, while the Euclidean distance ensures that only actors in 
-close proximity are considered. All discovered relationships are stored in a relations dictionary 
+close proximity are considered. The maximum distances are defined in Table~\ref{tab:construction_parameters}. 
+All discovered relationships are stored in a relations dictionary 
 for the construction phase.
 
 \subsubsection{Phase 2: Hierarchical Graph Construction}
@@ -182,9 +220,9 @@ Edges are added in three stages, following the semantic hierarchy:
 \paragraph{Redundancy Prevention}
 
 Before adding an edge between actors $A$ and $B$, the algorithm checks if a path already exists 
-in the current actor graph with length $\leq$ the maximum node distance for that relation type. 
-This prevents redundant edges that would create triangles or longer indirect paths when shorter 
-direct paths exist.
+in the current actor graph with length $\leq \text{max\_node\_distance}$ for that relation type (see Table~\ref{tab:construction_parameters}). 
+This prevents redundant edges that would create triangles or long direct paths when an indirect path is already encoded in the graph 
+(see Figure~\ref{fig:graph_construction_comparison}).
 
 For leading/following and neighbor relationships, each direction ($A \to B$ and $B \to A$) is 
 checked independently, as these relationships can be asymmetric. For opposite relationships, if 
@@ -238,44 +276,6 @@ all necessary connectivity information.
 
 Table~\ref{tab:construction_parameters} summarizes all input parameters for the actor graph 
 construction algorithm, their descriptions, and the values used in our experiments.
-
-\begin{table}[h]
-\centering
-\caption{Input parameters for actor graph construction}
-\label{tab:construction_parameters}
-\begin{tabular}{llp{6cm}l}
-\hline
-\textbf{Parameter} & \textbf{Type} & \textbf{Description} & \textbf{Value} \\
-\hline
-\multicolumn{4}{l}{\textit{Distance limits (discovery phase)}} \\
-\hline
-\texttt{max\_distance\_lead\_veh\_m} & float & Maximum distance in meters for leading/following 
-relationships & 100 \\
-\texttt{max\_distance\_neighbor\_forward\_m} & float & Maximum distance in meters for forward 
-neighbor relationships & 50 \\
-\texttt{max\_distance\_neighbor\_backward\_m} & float & Maximum distance in meters for backward 
-neighbor relationships & 50 \\
-\texttt{max\_distance\_opposite\_forward\_m} & float & Maximum distance in meters for forward 
-opposite relationships & 100 \\
-\texttt{max\_distance\_opposite\_backward\_m} & float & Maximum distance in meters for backward 
-opposite relationships & 10 \\
-\hline
-\multicolumn{4}{l}{\textit{Node distance limits (construction phase)}} \\
-\hline
-\texttt{max\_node\_distance\_leading} & int & Maximum number of edges in actor graph path for 
-leading/following & 3 \\
-\texttt{max\_node\_distance\_neighbor} & int & Maximum number of edges in actor graph path for 
-neighbor & 2 \\
-\texttt{max\_node\_distance\_opposite} & int & Maximum number of edges in actor graph path for 
-opposite & 2 \\
-\hline
-\multicolumn{4}{l}{\textit{Timestep configuration}} \\
-\hline
-\texttt{delta\_timestep\_s} & float & Time step increment in seconds for temporal graph 
-creation & 1.0 \\
-\hline
-\end{tabular}
-\end{table}
 
 The distance limits in the discovery phase determine which potential relationships are identified, 
 while the node distance limits in the construction phase control redundancy prevention. The 
