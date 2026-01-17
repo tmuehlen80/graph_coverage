@@ -1,11 +1,30 @@
-\section{Application}
+\section{Application: Analysing traffic scenes with coverage graphs}
 \label{chapter:application}
+
+Having defined a graph-based traffic scene representation, we can now analyse the coverage of the system.
+Two methodologies are proposed for this purpose:
+One is to define archetypes of traffice scenes, and to compare graphs from observed traffic scenes to these archetypes.
+The second one is to translate graphs to graph embeddings, and then to compare the embeddings of different sets of traffic scenes.\section{Application}
 
 \subsection{Argoverse 2.0}
 
-\cite{Argoverse2}
+Argoverse 2.0 \cite{Argoverse2} is a large-scale dataset for autonomous driving research,
+developed by Argo AI. It provides real-world sensor data collected from autonomous vehicle
+test fleets operating in six geographically diverse U.S. cities: Austin, Detroit, Miami,
+Palo Alto, Pittsburgh, and Washington D.C. The dataset includes high-definition LiDAR point
+clouds, ring camera imagery, and detailed vector map information. A key component is the
+Motion Forecasting Dataset, which contains 250,000 scenarios of 11 seconds each, featuring
+tracked object trajectories for vehicles, pedestrians, cyclists, and other road users.
 
-TODO MARIUS: Describe the Argoverse 2.0 dataset.
+The dataset has become a standard benchmark in the autonomous driving community, particularly
+for motion prediction and trajectory forecasting tasks. Its rich annotations include object
+classifications, track identities across frames, and semantic map information such as lane
+boundaries, crosswalks, and traffic signal locations. The diverse geographic coverage ensures
+exposure to varying road geometries, traffic patterns, and driving behaviors, making it
+suitable for developing and evaluating generalizable autonomous driving algorithms.
+
+For this work, the Motion Forecasting Dataset is used, specifically focusing on the tracked
+object trajectories and their spatial relationships to construct traffic scene graphs.
 
 \subsection{Carla}
 
@@ -37,7 +56,7 @@ of these maps are shown in Figure \ref{fig:carla_maps}.
 \label{fig:carla_maps}
 \end{figure}
 
-The data generation script implements sophisticated behavior control mechanisms to create 
+The data generation script implements some behavior control mechanisms to create 
 diverse and realistic traffic scenarios. Multiple vehicle types including trucks, motorcycles, 
 and regular cars are spawned with varying probabilities, each exhibiting different behavioral
 characteristics such as speed preferences, following distances, and lane-changing tendencies. 
@@ -58,16 +77,16 @@ Also, information like which traffic actors are on an intersection are incorpora
 The results are shown in Figure \ref{fig:subgraph_isomorphism_coverage_barcharts} to Figure \ref{fig:combined_distributions_plots_speed_distance_argo}.
 In Figure \ref{fig:subgraph_isomorphism_coverage_barcharts} there is a clear signal that for both datasets the coverage is not uniform per the different archetypes.
 Also, the distribution for the Carla dataset is not close to the Argoverse distribution, indicating that the CARLA data is not representative for the Argoverse data.
-Even worse, the Carla dataset is nearly completely missing out e.g. on the cut\_out\_intersection archetype, clearly indicating a coverage gap in the Carla dataset.
+Even worse, the Carla dataset is nearly completely missing out e.g. on the cut\_out\_intersection archetype, clearly indicating a  rather randomly generated Carla dataset.
 A next step of analysis is to check, which archetypes are occuring simultaneously in a traffic scene. 
 Figure \ref{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios} shows the agreement matrix for the manually defined coverage scenarios for CARLA and Argoverse.
 The heatmaps show the percentage of agreement between the manually defined coverage scenarios for CARLA and Argoverse.
 
-TODO: Write a sentence about the agreement matrices once using the actual actor graph defintion.
+% TODO: Write a sentence about the agreement matrices once using the actual actor graph defintion.
 
 A last example of how to use the assignment of archetypes to traffic scenes is to check the parameter distribution for the speed and path length of the traffic scenes.
 Figure \ref{fig:combined_distributions_plots_speed_distance_carla} and Figure \ref{fig:combined_distributions_plots_speed_distance_argo} show the parameter distribution for the speed and path length of the traffic scenes for CARLA and Argoverse.
-The plots show that the distribution for the CARLA data is not close to the Argoverse distribution, indicating that the CARLA data is not representative for the Argoverse data.
+The plots show that the distribution for the CARLA data differs from the Argoverse distribution, indicating that the CARLA data is not representative for the Argoverse data.
 Given the assignment of archetypes to traffic scenes based on the actors can be used in further analysis not done here, e.g. to check more divers parameters and distributions.
 
 
@@ -170,12 +189,12 @@ includes comparison between CARLA and Argoverse scenarios.
     \label{fig:embedding_space}
 \end{figure}
     
-As a next step, the embedding space has been analysed using PCA and t-SNE. This is shown in Figure \ref{fig:embedding_space}. This can be done in a number of 
+As a next step, the embedding space has been analysed using dimension reduction techniques, specifically PCA and t-SNE. This is shown in Figure \ref{fig:embedding_space}. This can be done in a number of 
 different flavors, like for example:
 
 \begin{itemize}
     \item distinguishing between CARLA and Argoverse scenarios by a color coding, 
-    \item visualiizing just the CARLA scenarios and color code them by the map, in order to see if the maps deliver different types of scenarios,
+    \item visualizing just the CARLA scenarios and color code them by the map, in order to see if the maps deliver different types of scenarios,
     \item by calculating a density distribution of the embedding space for the Argoverse scenarios, and to check if for a regions with a density 
     about a certain threshold, there exist CARLA scenarios, i.e. do a coverage analysis in the embedded space
     \item do the same vice versa, i.e. to check for relevance of CARLA scenarios.
