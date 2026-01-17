@@ -1,8 +1,8 @@
 \section{Create subgraphs for coverage analysis}
 \label{chapter:create_subgraphs_for_coverage_analysis}
 
-There is a lot of knowledge in the literature on how to define archetypes of traffic scenes.
-Once an archetype is defined, a special property of graphs can be used. 
+There is a lot of knowledge in the literature on how to define archetypes of traffic scenes, like e.g. with lead vehicle or opposite traffic vehicles in different circumstances.
+Once an archetype is define and expressed as graph, a special property of graphs can be used. 
 Two graphs are isomorphic if they have the same structure, regardless of the node and edge labels.
 As the archetypes are not necessarily involving a lot of actors, these are more like subsets of actual traffic scenes.
 A very simple example might be 2 vehicles on the same lane, driving in the same direction and another vehicle driving on a neighboring lane.
@@ -26,7 +26,7 @@ Then going upwards to different datasets, it is checked, if the archetype is pre
 Also, follow up analysis of the created coverage dataframe can be performed. For example,
 
 \begin{itemize}
-    \item The distribution of numeric attributes like speed and and distance to other actors can be visualized for the subset of all traffic scenes which are subgraph isomorphic to an archetype.
+    \item The distribution of numeric attributes like speed and and distance to other actors can be visualized for the set of all traffic scenes which are subgraph isomorphic to an archetype.
     \item It can be cross tabulated, which combinations of archetypes are jointly present in a traffic scene.
     \item Pass Fail rates or other AV performance metrics can be calculated for the subset of all traffic scenes which are subgraph isomorphic to an archetype.
 \end{itemize}
