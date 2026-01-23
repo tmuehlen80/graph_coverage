@@ -12,7 +12,7 @@ from loguru import logger
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Subset
 
-# python scripts/graph_embedding_training_v2.py --config configs/embeddings/training_config_optimized.json
+# python scripts/graph_embedding_training.py --config configs/embeddings/training_config_optimized.json
 
 # Try to import DataLoader from loader (newer PyG) or data (older PyG)
 try:
@@ -24,6 +24,7 @@ except ImportError:
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 sys.path.append(PROJECT_ROOT)
+sys.path.append(os.path.join(PROJECT_ROOT, "src"))  # For unpickling graphs that reference graph_creator module
 
 from src.graph_creator.graph_embeddings import (
     GraphDataset,
@@ -85,8 +86,11 @@ def train(config):
     train_ds = Subset(graph_ds, train_idx)
     test_ds = Subset(graph_ds, test_idx)
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
+    # Optimize DataLoader with workers
+    num_workers = config['training'].get('num_workers', 4)
+    logger.info(f"Using {num_workers} DataLoader workers")
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     logger.info(f"Train size: {len(train_ds)} | Test size: {len(test_ds)}")
     data_loaders = {"train": train_loader, "test": test_loader}
@@ -129,7 +133,7 @@ def train(config):
     loss_temperature = config.get('loss', {}).get('temperature', 0.1)
 
     # NEW: Mixed precision scaler
-    scaler = torch.cuda.amp.GradScaler() if use_mixed_precision else None
+    scaler = torch.amp.GradScaler('cuda') if use_mixed_precision else None
     if use_mixed_precision:
         logger.info("Using mixed precision training")
 
@@ -143,6 +147,10 @@ def train(config):
     for split in data_loaders:
         total_loss = 0
         with torch.no_grad():
+            batch_count = 0
+            # Limit pre-training eval to avoid waiting too long
+            PRETRAIN_EVAL_LIMIT = 100
+            
             for batch in tqdm(data_loaders[split], desc=f"Pre-train {split}"):
                 # Batch comes as (data, path), so we take batch[0]
                 batch_data = batch[0].to(device)
@@ -157,6 +165,11 @@ def train(config):
                 outputs2 = model(aug_batch)
                 loss = contrastive_loss(outputs1['projection'], outputs2['projection'], temperature=loss_temperature)
                 total_loss += loss.item()
+                
+                batch_count += 1
+                if batch_count >= PRETRAIN_EVAL_LIMIT:
+                    logger.info(f"Limited pre-training eval to {PRETRAIN_EVAL_LIMIT} batches")
+                    break
 
         avg_loss = total_loss / len(data_loaders[split])
         total_losses[split].append(avg_loss)

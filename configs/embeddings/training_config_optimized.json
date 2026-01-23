@@ -6,13 +6,11 @@
         "random_state": 42,
         "batch_size": 384
     },
-
     "model": {
         "embedding_dim": 192,
         "hidden_dim": 384,
         "num_layers": 5
     },
-
     "training": {
         "initial_lr": 0.0015,
         "lr_decay": 0.85,
@@ -26,15 +24,14 @@
         "warmup_epochs": 3,
         "use_cosine_annealing": true,
         "early_stopping_patience": 10,
-        "use_mixed_precision": true
+        "use_mixed_precision": true,
+        "num_workers": 16
     },
-
     "augmentation": {
         "node_noise": 0.08,
         "edge_noise": 0.08,
         "drop_edge_prob": 0.1
     },
-
     "loss": {
         "temperature": 0.07
     }
