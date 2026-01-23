@@ -58,9 +58,10 @@ def train(config):
         json.dump(config, f, indent=4)
     logger.info(f"Saved config to {config_save_path}")
 
-    # Paths
-    carla_pattern = os.path.join(PROJECT_ROOT, config['data']['carla_pattern'])
-    argoverse_pattern = os.path.join(PROJECT_ROOT, config['data']['argoverse_pattern'])
+    # Paths - use base_path from config if provided, otherwise fall back to PROJECT_ROOT
+    data_base_path = config['data'].get('base_path', PROJECT_ROOT)
+    carla_pattern = os.path.join(data_base_path, config['data']['carla_pattern'])
+    argoverse_pattern = os.path.join(data_base_path, config['data']['argoverse_pattern'])
 
     logger.info("Looking for graphs...")
     graph_paths = glob.glob(carla_pattern)
@@ -147,9 +148,9 @@ def train(config):
     for split in data_loaders:
         total_loss = 0
         with torch.no_grad():
-            batch_count = 0
+            # batch_count = 0
             # Limit pre-training eval to avoid waiting too long
-            PRETRAIN_EVAL_LIMIT = 100
+            # PRETRAIN_EVAL_LIMIT = 100
             
             for batch in tqdm(data_loaders[split], desc=f"Pre-train {split}"):
                 # Batch comes as (data, path), so we take batch[0]
@@ -166,10 +167,10 @@ def train(config):
                 loss = contrastive_loss(outputs1['projection'], outputs2['projection'], temperature=loss_temperature)
                 total_loss += loss.item()
                 
-                batch_count += 1
-                if batch_count >= PRETRAIN_EVAL_LIMIT:
-                    logger.info(f"Limited pre-training eval to {PRETRAIN_EVAL_LIMIT} batches")
-                    break
+                # batch_count += 1
+                # if batch_count >= PRETRAIN_EVAL_LIMIT:
+                #     logger.info(f"Limited pre-training eval to {PRETRAIN_EVAL_LIMIT} batches")
+                #     break
 
         avg_loss = total_loss / len(data_loaders[split])
         total_losses[split].append(avg_loss)
@@ -231,7 +232,7 @@ def train(config):
 
                 # NEW: Mixed precision training
                 if use_mixed_precision:
-                    with torch.cuda.amp.autocast():
+                    with torch.amp.autocast('cuda'):
                         outputs1 = model(batch_data)
                         outputs2 = model(aug_batch)
                         loss = contrastive_loss(outputs1['projection'], outputs2['projection'], temperature=loss_temperature)

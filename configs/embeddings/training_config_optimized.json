@@ -1,5 +1,6 @@
 {
     "data": {
+        "base_path": "/mnt/ssd_data/graph_coverage",
         "carla_pattern": "actor_graphs/carla_actor_graph_setting_1_50_50_10_20_20_4_4_4_components_nx/*.pkl",
         "argoverse_pattern": "actor_graphs/argoverse_actor_graph_setting_1_50_50_10_20_20_4_4_4_components_nx/*.pkl",
         "test_size": 0.2,
