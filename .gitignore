@@ -8,7 +8,8 @@ checkpoints/*
 tmp/*
 argoverse_components_nx/* 
 carla_actor_graph*
-
+**/data_archived/**
+**/carla_scripts_archived_/**
 # Custom
 CARLA_0.9.15/*
 AdditionalMaps_0.9.15/*
