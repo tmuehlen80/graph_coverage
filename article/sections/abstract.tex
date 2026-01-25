@@ -9,6 +9,6 @@ First, a subgraph isomorphism approach matches traffic scenes against a set of m
 Second, a graph embedding approach utilizes Graph Isomorphism Networks with Edge features (GINE) trained via self-supervised contrastive learning to project traffic scenes into a vector space, enabling similarity-based coverage assessment.
 
 The framework is validated on both real-world data from the Argoverse 2.0 dataset and synthetic data from the CARLA simulator.
-The subgraph isomorphism method achieves 62\% node coverage using 18 predefined archetypes, while the embedding approach reveals meaningful structure in the latent space suitable for clustering and anomaly detection.
+The subgraph isomorphism method is used to calculate node coverage percentages using predefined archetypes, while the embedding approach reveals meaningful structure in the latent space suitable for clustering and anomaly detection.
 The proposed approach offers significant advantages over traditional methods by scaling efficiently to diverse traffic scenarios without requiring scenario-specific handling, and by naturally accommodating varying numbers of actors in a scene.
 

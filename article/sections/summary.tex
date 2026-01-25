@@ -4,10 +4,10 @@ This paper presented a graph-based framework for coverage analysis in autonomous
 The framework employs a two-phase graph construction algorithm to systematically capture spatial relationships between traffic participants, encoding leading, following, neighboring, and opposing configurations as typed edges in a directed multigraph structure.
 
 Two complementary approaches for coverage analysis were developed and evaluated.
-The subgraph isomorphism approach utilizes a set of 18 manually defined archetype graphs representing common driving scenarios, achieving 62\% node coverage on the evaluated datasets.
+The subgraph isomorphism approach utilizes a set of manually defined archetype graphs representing common driving scenarios.
 This method provides interpretable coverage metrics by identifying which specific traffic patterns are present in a given scene.
 The graph embedding approach leverages Graph Isomorphism Networks with Edge features trained via self-supervised contrastive learning to project traffic scenes into a continuous vector space.
-This representation enables similarity-based coverage assessment, clustering of related scenarios, and anomaly detection for identifying underrepresented traffic situations.
+This representation enables similarity-based coverage assessment, clustering of related scenarios, and anomaly detection for identifying underrepresented traffic situations with arbitrary number of actors.
 
 Both approaches were validated on real-world data from the Argoverse 2.0 dataset and synthetic data from the CARLA simulator, as presented in Section~\ref{chapter:application}.
 The experimental results demonstrate that the framework successfully captures meaningful traffic scene structure and reveals notable differences in scenario distributions between the two datasets.
