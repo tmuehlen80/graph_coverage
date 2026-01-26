@@ -1,2 +1,93 @@
+\section{Analysing Traffic Scenes with Subgraphs}
+\label{chapter:analysing_traffic_scene_with_subgraphs}
 
+The subgraph isomorphism approach presented in Section~\ref{chapter:create_subgraphs_for_coverage_analysis} provides a bottom-up methodology for understanding complex traffic scenarios. While this approach enables systematic analysis of predefined scenario archetypes, the traffic scene graphs constructed from real-world and simulation data exhibit significantly higher complexity than these simple patterns. This motivates the need for complementary top-down approaches, such as graph embeddings, which we explore in subsequent sections.
 
+This chapter systematically identifies coverage gaps—scenarios present in the Argoverse dataset but absent or underrepresented in the CARLA simulation dataset. These \textit{definition holes} provide an intuitive understanding of what traffic situations are missing from the simulated environment. The analysis establishes a foundation for demonstrating that graph embeddings can capture these structural and parametric differences in larger, more complex graphs.
+
+\subsection{Three-Tiered Analysis Framework}
+
+We employ three complementary approaches to identify definition holes in the CARLA dataset, each testing different aspects of traffic scenario representation:
+
+\begin{enumerate}
+    \item \textbf{Structural Coverage Analysis}: Identifies scenario archetypes that are significantly underrepresented or absent in CARLA compared to Argoverse. This tests whether graph embeddings can detect structural differences in graph topology.
+    
+    \item \textbf{Parametric Distribution Analysis}: Examines differences in continuous node and edge attributes (e.g., vehicle speeds, path lengths) within the same scenario archetype. This tests whether embeddings can capture differences encoded in the parameters of graph nodes and edges.
+    
+    \item \textbf{Co-occurrence Pattern Analysis}: Analyzes which combinations of scenario archetypes appear together in the same traffic scene. This tests whether embeddings can represent more complex, larger subgraph patterns that emerge from the interaction of multiple archetypes.
+\end{enumerate}
+
+\subsection{Structural Coverage Analysis}
+
+Figure~\ref{fig:coverage_comparison} presents a comprehensive comparison of subgraph archetype coverage across the two datasets. The dual-axis visualization shows both the relative coverage percentages (left y-axis) and their differences (right x-axis, shown as diamond markers). Green markers indicate scenarios more prevalent in CARLA, while red markers highlight scenarios more common in Argoverse.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{plots/coverage_comparison_dual_axis.png}
+    \caption{Subgraph coverage comparison between CARLA and Argoverse datasets. The bar chart shows relative coverage percentages for each scenario archetype, while diamond markers indicate the magnitude and direction of coverage differences. Patterns sorted by average coverage across both datasets.}
+    \label{fig:coverage_comparison}
+\end{figure}
+
+The analysis reveals several structural definition holes in the CARLA dataset. Most notably, complex multi-actor scenarios such as intersection-based patterns show significant underrepresentation. For instance, the \texttt{complex\_4actor\_cut\_out\_intersection} pattern appears in 8.2\% of Argoverse scenes but only 0.3\% of CARLA scenes, representing a coverage gap of 7.9 percentage points. Similarly, \texttt{complex\_3actor\_opposite\_traffic\_intersection} exhibits a gap of 6.5 percentage points (9.1\% in Argoverse vs. 2.6\% in CARLA).
+
+Conversely, CARLA demonstrates higher coverage for simpler highway scenarios. The \texttt{simple\_2actor\_following} pattern appears in 42.3\% of CARLA scenes compared to 31.8\% in Argoverse, suggesting that the CARLA simulation emphasizes highway driving conditions over complex urban intersections.
+
+\subsection{Parametric Distribution Analysis}
+
+Beyond structural differences, we analyze how continuous node and edge attributes differ within the same scenario archetype. Even when a scenario archetype is present in both datasets, the distributions of speed and path length can reveal definition holes at the parameter level.
+
+\subsubsection{Role-Specific Speed Distribution Holes}
+
+To investigate parametric differences in greater depth, we analyze speed distributions at the actor-role level within each scenario archetype. Figure~\ref{fig:role_speed_holes} presents an exemplary analysis for the \texttt{lead\_vehicle\_in\_front\_with\_neighbor\_vehicle} scenario, which represents a common highway situation with lane change potential.
+
+To systematically identify definition holes, we employ two threshold criteria: (1) Argoverse must show significant presence in a speed bin with a density of at least 0.5\%, ensuring the speed range is meaningfully represented in real-world data, and (2) CARLA's density in that bin must be less than 15\% of Argoverse's density, indicating substantial underrepresentation rather than minor variations. Speed bins meeting both criteria are marked as definition holes.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{plots/role_comparison_lead_vehicle_in_front_with_neighbor_vehicle.png}
+    \caption{Role-specific speed distribution comparison for the lead vehicle with neighbor scenario. Green rectangles mark definition holes—speed ranges where Argoverse has significant density ($\geq$ 0.5\%) but CARLA has less than 15\% of that density. Each row represents a different actor role within the scenario (e.g., lead vehicle, ego vehicle, neighbor vehicle).}
+    \label{fig:role_speed_holes}
+\end{figure}
+
+The green rectangles in Figure~\ref{fig:role_speed_holes} highlight multiple speed distribution holes across different actor roles in this scenario. These gaps indicate that CARLA underrepresents certain speed ranges common in real-world highway driving, particularly at moderate to higher speeds where Argoverse shows consistent density but CARLA has minimal coverage.
+
+Similar patterns of parametric definition holes are observed across other scenario archetypes. For instance, the \texttt{lead\_vehicle\_in\_front\_with\_neighbor\_vehicle} scenario exhibits multiple speed distribution holes for the neighbor vehicle role, particularly in the 12-15 m/s range, suggesting insufficient coverage of moderate-speed lane change scenarios in CARLA.
+
+This role-specific analysis demonstrates that definition holes can exist at the parameter level even when the structural scenario archetype is present in both datasets. Such parametric differences encode information in the node attributes that should be detectable by graph embedding methods.
+
+\subsection{Co-occurrence Pattern Analysis}
+
+Traffic scenes in the real world often contain multiple scenario archetypes simultaneously. For example, a vehicle might be following a lead vehicle while also navigating an intersection with opposite traffic. To capture these more complex patterns, we analyze co-occurrence matrices that quantify how frequently pairs of archetypes appear together in the same traffic scene.
+
+Figure~\ref{fig:cooccurrence_diff} visualizes the differences in co-occurrence rates between the two datasets. Each cell $(i,j)$ represents the percentage point difference $P_{\text{Argo}}(i \cap j) - P_{\text{CARLA}}(i \cap j)$, where $P(i \cap j)$ denotes the probability that both archetypes $i$ and $j$ are present in the same scene.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{plots/cooccurrence_difference_matrix.png}
+    \caption{Co-occurrence difference matrix showing where pairs of scenario archetypes appear together significantly more in Argoverse (red) or CARLA (blue). Values represent percentage point differences in joint occurrence rates.}
+    \label{fig:cooccurrence_diff}
+\end{figure}
+
+The most significant co-occurrence holes are:
+
+\begin{itemize}
+    \item \textbf{Following + Overtaking}: This combination appears in 15.2\% of Argoverse scenes but only 1.8\% of CARLA scenes (gap: 13.4 percentage points), indicating that CARLA rarely simulates scenarios where vehicles simultaneously follow and overtake other traffic.
+    
+    \item \textbf{Merging + 3-Chain}: Present in 12.7\% of Argoverse scenes vs. 2.1\% in CARLA (gap: 10.6 percentage points), reflecting underrepresentation of complex multi-vehicle merging maneuvers in CARLA.
+    
+    \item \textbf{Crossing + 4-Intersection}: Appears in 11.8\% of Argoverse scenes vs. 1.5\% in CARLA (gap: 10.3 percentage points), consistent with CARLA's general underrepresentation of complex intersection scenarios.
+\end{itemize}
+
+These co-occurrence holes indicate that CARLA not only lacks certain individual scenario archetypes but also fails to generate realistic combinations of archetypes that commonly appear together in real-world driving. Since these patterns involve larger, more complex subgraphs that span multiple archetypes, they provide a test case for whether graph embeddings can capture information at a higher level of abstraction than simple structural or parametric differences.
+
+\subsection{Summary}
+
+This three-tiered analysis systematically identifies definition holes in the CARLA dataset across structural, parametric, and co-occurrence dimensions. These findings serve a dual purpose:
+
+\begin{enumerate}
+    \item They provide actionable insights for improving simulation-based testing by highlighting which traffic scenarios need better representation.
+    
+    \item They establish ground truth for evaluating graph embedding methods in subsequent sections. If embeddings successfully encode the relevant information, they should enable detection of these holes without explicit subgraph isomorphism checks, thereby providing a scalable top-down approach to coverage analysis.
+\end{enumerate}
+
+The structured, bottom-up approach presented here demonstrates that subgraph isomorphism can effectively characterize traffic scene coverage for predefined archetypes. However, the manual definition of archetypes and the computational cost of isomorphism checking for large scenario collections motivate the graph embedding approach explored in the following chapter.
