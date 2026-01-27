@@ -4,16 +4,17 @@
 
 In autonomous driving, coverage analysis is a crucial step to ensure the safety and reliability of the system.
 In most situations, coverage arguments are collected either per coverage factor, or maybe up to 2 or 3 factor interactions.
-See for example \cite{foretellix2019} for an production grade implementation of state of the art coverage analysis.
+See for example \cite{foretellix2019} for a production-grade implementation of state-of-the-art coverage analysis.
 In contrast to existing approaches, this paper proposes a graph-based framework for coverage analysis.
-There are already other graph-based approaches for analysing and representing traffic scenes.
-However, these are not specifically focused on coverage analysis.
-Hence in this paper, graph based traffic scene representations are utilized for coverage analysis.
+While graph-based representations of traffic scenes already exist, they have not been specifically designed for this purpose.
+This work bridges that gap by utilizing graph-based traffic scene representations explicitly for coverage analysis.
 
 This paper is structured as follows: In chapter \ref{chapter:existing_approaches}, existing coverage and analysis approaches are discussed.
 The basis for the following chapters is layed in chapter \ref{chapter:defining_a_traffic_scene_graph}. Afterwards, two coverage approaches 
 using the traffic scene graphs are discussed in chapter \ref{chapter:create_subgraphs_for_coverage_analysis} and 
 chapter \ref{chapter:implementation_of_graph_embeddings_for_traffic_scene_analysis}.
 Finally, the developed methods are applied to Carla and Argoverse 2.0 data in chapter \ref{chapter:application} 
-followed by a short summary and outlook.
+followed by a short summary and outlook. 
+
+%update in the end
 
