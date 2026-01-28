@@ -40,23 +40,27 @@ for coverage analysis.
     \label{fig:graph_gine_architecture}
 \end{figure}
 
-The exact architecture of the model is shown in Figure \ref{fig:graph_gine_architecture}. The features 
-used are the actor type (as a one hot encoding),
-the actor speed (float), if the actor is on an intersection (boolean) and if the actor changed its 
-lane since the last timestep (boolean) for the nodes. 
-# @Thomas this defintion depends on the dt. 
-For the edges, the edge type (as a one hot encoding) and the path length (float) between the two nodes are used.
+The exact architecture of the model is shown in Figure \ref{fig:graph_gine_architecture}. The features
+used are the actor type (as a one-hot encoding with four categories: vehicle, pedestrian, cyclist, motorcycle),
+the actor speed (float), if the actor is on an intersection (boolean), and if the actor changed its
+lane since the last timestep (boolean) for the nodes.
+For the edges, the edge type (as a one-hot encoding with six categories corresponding to different spatial relationships) and the path length (float) between the two nodes are used.
 
 The model has been trained on the CARLA and Argoverse 2.0 datasets using self-supervised contrastive learning 
 \cite{chen2020simple, hu2020strategiespretraininggraphneural}.
 
 
-Training employed a self-supervised contrastive objective on mini-batches of 128 graphs. 
-For each batch, two correlated views of every graph were created by 
-perturbing continuous attributes with zero-mean Gaussian noise ($\sigma=0.1$) applied to node 
-longitudinal speed and edge path length. A four-layer GINE encoder 
-(hidden width 96) produced graph-level representations via the concatenation of 
-mean, max, and sum pooling, followed by an embedding MLP (yielding 256-dimensional embeddings) and a projection head. The contrastive loss was a temperature-scaled cross-entropy over in-batch similarities (cosine similarity of $\ell_2$-normalized projections, temperature $\tau=0.1$), maximizing agreement of the two views of the same graph while contrasting against other graphs in the batch. Optimization used Adam with an exponentially decaying learning rate, initialized at 0.02 and multiplied by 0.75 across successive stages. 
-This setup follows established practice in contrastive pretraining for GNNs \cite{hu2020strategiespretraininggraphneural} 
+Training employed a self-supervised contrastive objective on mini-batches of 384 graphs.
+For each batch, two correlated views of every graph were created through data augmentation:
+continuous attributes were perturbed with zero-mean Gaussian noise ($\sigma=0.08$) applied to node
+longitudinal speed and edge path length, and edges were randomly dropped with probability 0.1.
+A five-layer GINE encoder (hidden width 384) produced graph-level representations via the concatenation of
+mean, max, and sum pooling, followed by an embedding MLP (yielding 192-dimensional $\ell_2$-normalized embeddings)
+and a projection head. The contrastive loss was a temperature-scaled cross-entropy over in-batch similarities
+(cosine similarity of normalized projections, temperature $\tau=0.07$), maximizing agreement of the two views
+of the same graph while contrasting against other graphs in the batch. Optimization used AdamW with weight decay
+($5 \times 10^{-6}$), learning rate warmup over three epochs, and an exponentially decaying learning rate initialized
+at 0.0015 and multiplied by 0.85 across 15 successive training stages.
+This setup follows established practice in contrastive pretraining for GNNs \cite{hu2020strategiespretraininggraphneural}
 and is implemented using PyTorch Geometric \cite{Fey/Lenssen/2019}.
 
