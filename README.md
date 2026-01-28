@@ -40,8 +40,8 @@ graph_coverage/
 
 The framework supports two autonomous driving datasets:
 
-- **Argoverse 2** - Real-world motion forecasting dataset with vehicle, pedestrian, and cyclist trajectories
-- **CARLA** - Synthetic traffic scenarios from the open-source autonomous driving simulator
+- **Argoverse 2** - Real-world motion forecasting dataset with vehicle, pedestrian, and cyclist trajectories. Please check out the `setup_av2.sh` script to get these data.
+- **CARLA** - Synthetic traffic scenarios from the open-source autonomous driving simulator. The script `scripts/carla/create_data_script_synchronous.py` has been used for creation of these data. If interested in getting the exact same data, please create a gh issue with some contact details.
 
 ## Key Features
 
@@ -63,6 +63,8 @@ poetry install
 ## Usage
 
 ### Creating Actor Graphs
+
+For both datasets, the actual track and map data need to be available.
 
 Generate actor graphs from Argoverse 2 scenarios:
 ```bash
