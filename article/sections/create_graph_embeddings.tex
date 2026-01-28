@@ -21,9 +21,16 @@ gained a lot of popularity in the last years, see for example (add references).
 
 In this paper, a network architecture using a Graph Isomorphism Network with Edge features (GINE) as described 
 in \cite{hu2020strategiespretraininggraphneural} is used to generate embeddings for traffic scene graphs as implemented in the 
-pytorch geometric library (\cite{Fey/Lenssen/2019}). Main reason for using this specific architecture is that is capable of
-learning embedding representations not only on the graph structure itself but on both node and edge attributes. Other 
-network architectures like GraphSAGE or GAT are not capable of this. (TODO: check if this is true)
+pytorch geometric library (\cite{Fey/Lenssen/2019}). While edge-augmented versions of architectures like GraphSAGE and GAT 
+now exist \cite{gong2019exploiting}, GINE is chosen specifically because it directly incorporates edge features through 
+its aggregation function. This capability is actively utilized in this work: edge type and path length between actors 
+are encoded as edge features (see Section \ref{fig:graph_gine_architecture}) and directly influence the message-passing 
+process during embedding generation. 
+GINE inherits GIN's expressive power \cite{xu2019powerful}, making it as powerful as the 1-dimensional 
+Weisfeiler-Leman (1-WL) graph isomorphism test \cite{weisfeiler1968reduction} in distinguishing graph structures. 
+This expressiveness is not merely theoretical—it translates directly to the ability to differentiate between 
+structurally distinct traffic configurations where actor relationships and spatial arrangements are critical 
+for coverage analysis.
 
 \begin{figure}[h]
     \centering
@@ -36,10 +43,12 @@ network architectures like GraphSAGE or GAT are not capable of this. (TODO: chec
 The exact architecture of the model is shown in Figure \ref{fig:graph_gine_architecture}. The features 
 used are the actor type (as a one hot encoding),
 the actor speed (float), if the actor is on an intersection (boolean) and if the actor changed its 
-lane since the last timestep (boolean) for the nodes.
+lane since the last timestep (boolean) for the nodes. 
+# @Thomas this defintion depends on the dt. 
 For the edges, the edge type (as a one hot encoding) and the path length (float) between the two nodes are used.
 
-The model has been trained on the CARLA and Argoverse 2.0 datasets using self-supervised contrastive learning. 
+The model has been trained on the CARLA and Argoverse 2.0 datasets using self-supervised contrastive learning 
+\cite{chen2020simple, hu2020strategiespretraininggraphneural}.
 
 
 Training employed a self-supervised contrastive objective on mini-batches of 128 graphs. 
