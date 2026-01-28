@@ -26,13 +26,8 @@ now exist \cite{gong2019exploiting}, GINE is chosen specifically because it dire
 its aggregation function. This capability is actively utilized in this work: edge type and path length between actors 
 are encoded as edge features (see Section \ref{fig:graph_gine_architecture}) and directly influence the message-passing 
 process during embedding generation. 
-GINE inherits GIN's expressive power \cite{xu2019powerful}, making it as powerful as the 1-dimensional 
-Weisfeiler-Leman (1-WL) graph isomorphism test \cite{weisfeiler1968reduction} in distinguishing graph structures. 
-This expressiveness is not merely theoretical—it translates directly to the ability to differentiate between 
-structurally distinct traffic configurations where actor relationships and spatial arrangements are critical 
-for coverage analysis.
 
-\begin{figure}[h]
+\begin{figure}[ht]
     \centering
     %\includegraphics[width=0.8\textwidth]{plots/graph_gine_architecture.pdf}
     \includegraphics[width=0.8\textwidth]{plots/graph_gine_architecture_manually_updated.png}
@@ -47,7 +42,7 @@ lane since the last timestep (boolean) for the nodes.
 For the edges, the edge type (as a one-hot encoding with six categories corresponding to different spatial relationships) and the path length (float) between the two nodes are used.
 
 The model has been trained on the CARLA and Argoverse 2.0 datasets using self-supervised contrastive learning 
-\cite{chen2020simple, hu2020strategiespretraininggraphneural}.
+\cite{chen2020simple}, \cite{hu2020strategiespretraininggraphneural}.
 
 
 Training employed a self-supervised contrastive objective on mini-batches of 384 graphs.
