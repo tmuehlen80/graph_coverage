@@ -121,19 +121,19 @@ Given the assignment of archetypes to traffic scenes based on the actors can be 
     \centering
     \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_carla.png}
-        \caption{Agreement matrix for CARLA.}  
-        \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_carla}
+        \includegraphics[width=\textwidth]{plots/carla_agreement_matrix.png}
+        \caption{Co-occurrence matrix for CARLA.}  
+        \label{fig:carla_cooccurrence_matrix}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_agreement_matrix_manual_scenarios_argo.png}
-        \caption{Agreement matrix for Argoverse.}  
-        \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios_argo}
+        \includegraphics[width=\textwidth]{plots/argo_agreement_matrix.png}
+        \caption{Co-occurrence matrix for Argoverse.}  
+        \label{fig:argo_cooccurrence_matrix}
     \end{subfigure}
-    \caption{Agreement matrix for manually defined coverage scenarios for CARLA and Argoverse.}
-    \label{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios}
+    \caption{Co-occurrence matrices showing the percentage of scenarios where pairs of subgraph patterns appear together in the same traffic scene for CARLA and Argoverse datasets.}
+    \label{fig:cooccurrence_matrices}
 \end{figure}
 
 % \begin{table}[htbp]
@@ -154,16 +154,16 @@ Given the assignment of archetypes to traffic scenes based on the actors can be 
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.85\textwidth]{plots/combined_distributions_plots_speed_distance_carla.png}
-    \caption{Parameter distribution for speed and path length for CARLA.}
-    \label{fig:combined_distributions_plots_speed_distance_carla}
+    \includegraphics[width=0.85\textwidth]{plots/carla_speed_path_distributions.png}
+    \caption{Speed and path length distributions for the top 5 most common scenario archetypes in CARLA. Each row shows a different scenario with speed (left) and path length (right) distributions.}
+    \label{fig:carla_speed_path_distributions}
 \end{figure}
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.85\textwidth]{plots/combined_distributions_plots_speed_distance_argo.png}
-    \caption{Parameter distribution for speed and path length for Argoverse.}
-    \label{fig:combined_distributions_plots_speed_distance_argo}
+    \includegraphics[width=0.85\textwidth]{plots/argo_speed_path_distributions.png}
+    \caption{Speed and path length distributions for the top 5 most common scenario archetypes in Argoverse. Each row shows a different scenario with speed (left) and path length (right) distributions.}
+    \label{fig:argo_speed_path_distributions}
 \end{figure}
 
 \subsection{Graph Embeddings Coverage Analysis}
