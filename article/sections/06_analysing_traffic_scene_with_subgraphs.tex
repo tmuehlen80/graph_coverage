@@ -1,0 +1,20 @@
+\section{Coverage gap analysis using subgraphs}
+\label{chapter:analysing_traffic_scene_with_subgraphs}
+
+
+
+This chapter systematically identifies coverage gaps—scenarios present in the Argoverse dataset but absent or underrepresented in the CARLA simulation dataset. These \textit{definition holes} provide an intuitive understanding of what traffic situations are missing from the simulated environment. The analysis establishes a foundation for demonstrating that graph embeddings can capture these structural and parametric differences in larger, more complex graphs.
+
+%\subsection{Three-Tiered Analysis Framework}
+
+We employ three complementary approaches to identify definition holes in traffic scene dataset, each testing different aspects of traffic scenario representation. For each approach, we assume there is a dataset \textit{TEST} which is compared to another dataset \textit{REF}.
+
+\begin{enumerate}
+    \item \textbf{Structural Coverage Analysis}: Identifies scenario archetypes that are significantly underrepresented or absent in the \textit{TEST} dataset compared to \textit{REF}. This tests whether graph embeddings can detect structural differences in graph topology.
+    
+    \item \textbf{Parametric Distribution Analysis}: Examines differences in continuous node and edge attributes (e.g., vehicle speeds, path lengths) within the same scenario archetype. 
+    
+    \item \textbf{Co-occurrence Pattern Analysis}: Analyzes which combinations of scenario archetypes appear together in the same traffic scene. This tests whether embeddings can represent more complex, larger subgraph patterns that emerge from the interaction of multiple archetypes.
+\end{enumerate}
+
+These concepts will be applied to CARLA and Argoverse datasets in the application chapter \ref{chapter:application}.

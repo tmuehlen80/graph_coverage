@@ -1,0 +1,39 @@
+{
+    "data": {
+        "base_path": "/mnt/ssd_data/graph_coverage",
+        "carla_pattern": "actor_graphs/carla_actor_graph_setting_1_50_50_10_20_20_4_4_4_components_nx/*.pkl",
+        "argoverse_pattern": "actor_graphs/argoverse_actor_graph_setting_1_50_50_10_20_20_4_4_4_components_nx/*.pkl",
+        "test_size": 0.2,
+        "random_state": 42,
+        "batch_size": 384
+    },
+    "model": {
+        "embedding_dim": 192,
+        "hidden_dim": 384,
+        "num_layers": 5
+    },
+    "training": {
+        "initial_lr": 0.0015,
+        "lr_decay": 0.85,
+        "num_loops": 15,
+        "epochs_per_loop": 4,
+        "optimizer": "AdamW",
+        "weight_decay": 5e-6,
+        "gradient_clip_norm": 2.0,
+        "checkpoint_dir": "checkpoints",
+        "use_warmup": true,
+        "warmup_epochs": 3,
+        "use_cosine_annealing": true,
+        "early_stopping_patience": 10,
+        "use_mixed_precision": true,
+        "num_workers": 16
+    },
+    "augmentation": {
+        "node_noise": 0.08,
+        "edge_noise": 0.08,
+        "drop_edge_prob": 0.1
+    },
+    "loss": {
+        "temperature": 0.07
+    }
+}
