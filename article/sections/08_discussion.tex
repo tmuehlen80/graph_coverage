@@ -24,7 +24,7 @@ exposure to varying road geometries, traffic patterns, and driving behaviors, ma
 suitable for developing and evaluating generalizable autonomous driving algorithms.
 
 For this work, the Motion Forecasting Dataset is used, specifically focusing on the tracked
-object trajectories and their spatial relationships to construct traffic scene graphs.
+object trajectories and their spatial relationships to construct traffic scene graphs. As the dataset is quite massive, a subset of 17000 scenes from the train partition is used for the analysis.
 
 \subsection{Carla}
 
@@ -49,14 +49,14 @@ Mine\_1 (which is not really normal roads) at the start of this project.
 Specifically, the following maps were used: Town01, Town02, Town03, Town04, Town05 and Town07. Plots
 of these maps are shown in Figure \ref{fig:carla_maps}.
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{plots/carla_maps_used.png}
 \caption{Overview of CARLA maps used in the simulation study: Town01, Town02, Town03, Town04, Town05, and Town07. These maps provide diverse urban driving environments with varying road layouts, intersections, and traffic patterns.}
 \label{fig:carla_maps}
 \end{figure}
 
-The data generation script implements some behavior control mechanisms to create 
+A data generation script implements some behavior control mechanisms to create 
 diverse and realistic traffic scenarios. Multiple vehicle types including trucks, motorcycles, 
 and regular cars are spawned with varying probabilities, each exhibiting different behavioral
 characteristics such as speed preferences, following distances, and lane-changing tendencies. 
@@ -65,46 +65,91 @@ periodic behavior changes, and adaptive responses to traffic conditions, resulti
 varied traffic scene data across multiple CARLA maps and simulation iterations. The simulation runs
 have between 20 and 60 vehicles each.
 
-The resulting data consists of xxx scenes with 11 seconds of simulation time each, in order to have a 
-similar data size as the Argoverse 2.0 dataset.
+The resulting data consists of 2050 scenes with 11 seconds of simulation time each.
 
 
 \subsection{Subgraph Isomorphism Coverage Analysis}
 
 We apply the subgraph isomorphism approach to both the  CARLA and the Argoverse data to identify coverage scenarios.
-The archetypes used here are defined manually and described in table xxx. The chosen archetypes are typical traffic situations like e.g. lead vehicle situations, lane change situations or different combinations of opposite direction vehicles.
+The archetypes used here are defined manually and described in table \ref{tab:subgraph_archetypes}. The chosen archetypes are typical traffic situations like e.g. lead vehicle situations, lane change situations or different combinations of opposite direction vehicles.
+
+\begin{table}[H]
+\centering
+\caption{Overview of all subgraph archetypes with their structural properties. Edge types: \textit{fl} = following\_lead, \textit{lv} = leading\_vehicle, \textit{nv} = neighbor\_vehicle, \textit{ov} = opposite\_vehicle.}
+\label{tab:subgraph_archetypes}
+\begin{tabular}{llccl}
+\toprule
+\textbf{Group} & \textbf{Archetype} & \textbf{Actors} & \textbf{Edges} & \textbf{Edge Types} \\
+\midrule
+\multirow{3}{*}{Simple (2-actor)}
+  & Simple Following           & 2 & 2 & fl, lv \\
+  & Simple Opposite            & 2 & 2 & ov \\
+  & Simple Neighbor            & 2 & 2 & nv \\
+\midrule
+\multirow{8}{*}{Complex (3-actor)}
+  & Lead + Neighbor (intersection)       & 3 & 4 & fl, lv, nv \\
+  & Cut-in                               & 3 & 4 & fl, lv \\
+  & Cut-in (intersection)                & 3 & 4 & fl, lv \\
+  & Platoon (intersection)               & 3 & 4 & fl, lv \\
+  & Opposite Traffic (intersection)      & 3 & 4 & fl, lv, ov \\
+  & Lead + Neighbor at Intersection      & 3 & 4 & fl, lv, nv \\
+  & Triple Opposite (intersection)       & 3 & 4 & ov \\
+  & Lead + Following in Back             & 3 & 4 & fl, lv \\
+\midrule
+\multirow{5}{*}{Complex (4-actor)}
+  & Lead + Neighbor                      & 3 & 4 & fl, lv, nv \\
+  & Cut-out                              & 4 & 6 & fl, lv, nv \\
+  & Cut-out (intersection)               & 4 & 6 & fl, lv, nv \\
+  & 4-Vehicle Platoon (intersection)     & 4 & 6 & fl, lv \\
+  & 4-Vehicle Opposite (intersection)    & 4 & 6 & fl, lv, ov \\
+\midrule
+\multirow{2}{*}{Complex (5-actor)}
+  & Lead + Neighbor + Opposite           & 5 & 8 & fl, lv, nv, ov \\
+  & Lead + Neighbor + Opposite (inters.) & 5 & 8 & fl, lv, nv, ov \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
 Also, information like which traffic actors are on an intersection are incorporated into the archetypes. Overall, the node coverage analysis across Argoverse and CARLA datasets achieved 62\% overall coverage. 
-The results are shown in Figure \ref{fig:subgraph_isomorphism_coverage_barcharts} to Figure \ref{fig:combined_distributions_plots_speed_distance_argo}.
+The results are shown in Figure \ref{fig:subgraph_isomorphism_coverage_barcharts} to Figure \ref{fig:argo_speed_path_distributions}.
 In Figure \ref{fig:subgraph_isomorphism_coverage_barcharts} there is a clear signal that for both datasets the coverage is not uniform per the different archetypes.
 Also, the distribution for the Carla dataset is not close to the Argoverse distribution, indicating that the CARLA data is not representative for the Argoverse data.
 Even worse, the Carla dataset is nearly completely missing out e.g. on the cut\_out\_intersection archetype, clearly indicating a  rather randomly generated Carla dataset.
 A next step of analysis is to check, which archetypes are occuring simultaneously in a traffic scene. 
-Figure \ref{fig:subgraph_isomorphism_agreement_matrix_manual_scenarios} shows the agreement matrix for the manually defined coverage scenarios for CARLA and Argoverse.
+Figure \ref{fig:cooccurrence_matrices} shows the agreement matrix for the manually defined coverage scenarios for CARLA and Argoverse.
 The heatmaps show the percentage of agreement between the manually defined coverage scenarios for CARLA and Argoverse.
 
 % TODO: Write a sentence about the agreement matrices once using the actual actor graph defintion.
 
 A last example of how to use the assignment of archetypes to traffic scenes is to check the parameter distribution for the speed and path length of the traffic scenes.
-Figure \ref{fig:combined_distributions_plots_speed_distance_carla} and Figure \ref{fig:combined_distributions_plots_speed_distance_argo} show the parameter distribution for the speed and path length of the traffic scenes for CARLA and Argoverse.
+Figure \ref{fig:carla_speed_path_distributions} and Figure \ref{fig:argo_speed_path_distributions} show the parameter distribution for the speed and path length of the traffic scenes for CARLA and Argoverse.
 The plots show that the distribution for the CARLA data differs from the Argoverse distribution, indicating that the CARLA data is not representative for the Argoverse data.
 Given the assignment of archetypes to traffic scenes based on the actors can be used in further analysis not done here, e.g. to check more divers parameters and distributions.
 
 
-\begin{figure}[h]
+% \begin{figure}[H]
+%     \centering
+%     \begin{subfigure}[b]{0.48\textwidth}
+%         \centering
+%         \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_carla_coverage_barchart.png}
+%         \caption{CARLA coverage scenarios}
+%         \label{fig:subgraph_isomorphism_carla_coverage_barchart}
+%     \end{subfigure}
+%     \hfill
+%     \begin{subfigure}[b]{0.48\textwidth}
+%         \centering
+%         \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_argo_coverage_barchart.png}
+%         \caption{Argoverse coverage scenarios}
+%         \label{fig:subgraph_isomorphism_argo_coverage_barchart}
+%     \end{subfigure}
+%     \caption{Coverage barcharts for the manually defined coverage scenarios for CARLA and Argoverse.}
+%     \label{fig:subgraph_isomorphism_coverage_barcharts}
+% \end{figure}
+
+\begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_carla_coverage_barchart.png}
-        \caption{CARLA coverage scenarios}
-        \label{fig:subgraph_isomorphism_carla_coverage_barchart}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{plots/subgraph_isomorphism_argo_coverage_barchart.png}
-        \caption{Argoverse coverage scenarios}
-        \label{fig:subgraph_isomorphism_argo_coverage_barchart}
-    \end{subfigure}
+    \includegraphics[width=0.85\textwidth]{plots/coverage_comparison_side_by_side.png}
     \caption{Coverage barcharts for the manually defined coverage scenarios for CARLA and Argoverse.}
     \label{fig:subgraph_isomorphism_coverage_barcharts}
 \end{figure}
@@ -117,7 +162,7 @@ Given the assignment of archetypes to traffic scenes based on the actors can be 
 % \end{figure}
 
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \begin{subfigure}[b]{0.48\textwidth}
         \centering
@@ -136,30 +181,16 @@ Given the assignment of archetypes to traffic scenes based on the actors can be 
     \label{fig:cooccurrence_matrices}
 \end{figure}
 
-% \begin{table}[htbp]
-%     \caption{My Table}
-%     \label{tab:mytable}
-%     \begin{tabular}{rrrrr}
-%     \toprule
-%     scn 1 & scn 2 & scn 3 & scn 4 & size \\
-%     \midrule
-%     False & False & False & False & 613 \\
-%     False & False & True & False & 3 \\
-%     True & True & False & True & 377 \\
-%     True & True & True & True & 7 \\
-%     \bottomrule
-%     \end{tabular}
-% \end{table}
-% % \cite{goodfellow2016deep} % needed?
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{plots/carla_speed_path_distributions.png}
     \caption{Speed and path length distributions for the top 5 most common scenario archetypes in CARLA. Each row shows a different scenario with speed (left) and path length (right) distributions.}
     \label{fig:carla_speed_path_distributions}
 \end{figure}
 
-\begin{figure}[h]
+
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{plots/argo_speed_path_distributions.png}
     \caption{Speed and path length distributions for the top 5 most common scenario archetypes in Argoverse. Each row shows a different scenario with speed (left) and path length (right) distributions.}
@@ -169,18 +200,18 @@ Given the assignment of archetypes to traffic scenes based on the actors can be 
 \subsection{Coverage gap analysis using subgraphs}
 
 
-%\subsection{Structural Coverage Analysis}
+\subsubsection{Structural Coverage Analysis}
 
 Figure~\ref{fig:coverage_comparison} presents a comprehensive comparison of subgraph archetype coverage across the two datasets. The dual-axis visualization shows both the relative coverage percentages (left y-axis) and their differences (right x-axis, shown as diamond markers). Green markers indicate scenarios more prevalent in CARLA, while red markers highlight scenarios more common in Argoverse.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.95\textwidth]{plots/coverage_comparison_dual_axis.png}
     \caption{Subgraph coverage comparison between CARLA and Argoverse datasets. The bar chart shows relative coverage percentages for each scenario archetype, while diamond markers indicate the magnitude and direction of coverage differences. Patterns sorted by average coverage across both datasets.}
     \label{fig:coverage_comparison}
 \end{figure}
 
-The analysis reveals several structural definition holes in the CARLA dataset. Most notably, complex multi-actor scenarios such as intersection-based patterns show significant underrepresentation. For instance, the \texttt{complex\_4actor\_cut\_out\_intersection} pattern appears in 8.2\% of Argoverse scenes but only 0.3\% of CARLA scenes, representing a coverage gap of 7.9 percentage points. Similarly, \texttt{complex\_3actor\_opposite\_traffic\_intersection} exhibits a gap of 6.5 percentage points (9.1\% in Argoverse vs. 2.6\% in CARLA).
+The analysis reveals several structural definition holes in the CARLA dataset. Most notably, complex multi-actor scenarios such as intersection-based patterns show significant underrepresentation. For instance, the \newline \texttt{complex\_4actor\_cut\_out\_intersection}  pattern appears in 8.2\% of Argoverse scenes but only 0.3\% of CARLA scenes, representing a coverage gap of 7.9 percentage points. Similarly, \newline \texttt{complex\_3actor\_opposite\_traffic\_intersection} exhibits a gap of 6.5 percentage points (9.1\% in Argoverse vs. 2.6\% in CARLA).
 
 Conversely, CARLA demonstrates higher coverage for simpler highway scenarios. The \texttt{simple\_2actor\_following} pattern appears in 42.3\% of CARLA scenes compared to 31.8\% in Argoverse, suggesting that the CARLA simulation emphasizes highway driving conditions over complex urban intersections.
 
@@ -194,7 +225,7 @@ To investigate parametric differences in greater depth, we analyze speed distrib
 
 To systematically identify definition holes, we employ two threshold criteria: (1) Argoverse must show significant presence in a speed bin with a density of at least 0.5\%, ensuring the speed range is meaningfully represented in real-world data, and (2) CARLA's density in that bin must be less than 15\% of Argoverse's density, indicating substantial underrepresentation rather than minor variations. Speed bins meeting both criteria are marked as definition holes.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.95\textwidth]{plots/role_comparison_lead_vehicle_in_front_with_neighbor_vehicle.png}
     \caption{Role-specific speed distribution comparison for the lead vehicle with neighbor scenario. Green rectangles mark definition holes—speed ranges where Argoverse has significant density ($\geq$ 0.5\%) but CARLA has less than 15\% of that density. Each row represents a different actor role within the scenario (e.g., lead vehicle, ego vehicle, neighbor vehicle).}
@@ -213,7 +244,7 @@ Traffic scenes in the real world often contain multiple scenario archetypes simu
 
 Figure~\ref{fig:cooccurrence_diff} visualizes the differences in co-occurrence rates between the two datasets. Each cell $(i,j)$ represents the percentage point difference $P_{\text{Argo}}(i \cap j) - P_{\text{CARLA}}(i \cap j)$, where $P(i \cap j)$ denotes the probability that both archetypes $i$ and $j$ are present in the same scene.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.95\textwidth]{plots/cooccurrence_difference_matrix.png}
     \caption{Co-occurrence difference matrix showing where pairs of scenario archetypes appear together significantly more in Argoverse (red) or CARLA (blue). Values represent percentage point differences in joint occurrence rates.}
@@ -247,7 +278,7 @@ The structured, bottom-up approach presented here demonstrates that subgraph iso
 
 \subsection{Graph Embeddings Coverage Analysis}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{plots/train_test_graph_embeddings_loss_plot.png}
     \caption{Training and test loss for the graph embeddings model trained jointly on CARLA and Argoverse 2.0 data.}
@@ -261,7 +292,7 @@ closest embedding vector (euclidean distance) has been visualized.
 This is shown in Figure \ref{fig:plausibility_checks}. This 
 includes comparison between CARLA and Argoverse scenarios.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{plots/graph_embeddings_pca_tsne_test_plot.png}
     \caption{PCA and t-SNE visualization of the embedding space for Carla and Argoverse 2.0 scenarios.}
@@ -287,7 +318,7 @@ Specifically, considering the Argoverse 2.0 scenarios as the target distribution
 if the CARLA scenarios cover the Argoverse 2.0 scenarios in the embedded space.
 
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_0.png}
     

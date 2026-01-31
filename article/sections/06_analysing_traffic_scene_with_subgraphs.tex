@@ -7,14 +7,14 @@ This chapter systematically identifies coverage gaps—scenarios present in the 
 
 %\subsection{Three-Tiered Analysis Framework}
 
-We employ three complementary approaches to identify definition holes in the CARLA dataset, each testing different aspects of traffic scenario representation:
+We employ three complementary approaches to identify definition holes in traffic scene dataset, each testing different aspects of traffic scenario representation. For each approach, we assume there is a dataset \textit{TEST} which is compared to another dataset \textit{REF}.
 
 \begin{enumerate}
-    \item \textbf{Structural Coverage Analysis}: Identifies scenario archetypes that are significantly underrepresented or absent in CARLA compared to Argoverse. This tests whether graph embeddings can detect structural differences in graph topology.
+    \item \textbf{Structural Coverage Analysis}: Identifies scenario archetypes that are significantly underrepresented or absent in the \textit{TEST} dataset compared to \textit{REF}. This tests whether graph embeddings can detect structural differences in graph topology.
     
-    \item \textbf{Parametric Distribution Analysis}: Examines differences in continuous node and edge attributes (e.g., vehicle speeds, path lengths) within the same scenario archetype. This tests whether embeddings can capture differences encoded in the parameters of graph nodes and edges.
+    \item \textbf{Parametric Distribution Analysis}: Examines differences in continuous node and edge attributes (e.g., vehicle speeds, path lengths) within the same scenario archetype. 
     
     \item \textbf{Co-occurrence Pattern Analysis}: Analyzes which combinations of scenario archetypes appear together in the same traffic scene. This tests whether embeddings can represent more complex, larger subgraph patterns that emerge from the interaction of multiple archetypes.
 \end{enumerate}
 
-These concepts will be applied to the CARLA and Argoverse datasets in the application chapter \ref{chapter:application}.
+These concepts will be applied to CARLA and Argoverse datasets in the application chapter \ref{chapter:application}.
