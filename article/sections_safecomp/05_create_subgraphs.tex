@@ -1,0 +1,11 @@
+\section{Create subgraphs for coverage analysis}
+\label{chapter:create_subgraphs_for_coverage_analysis}
+
+Traffic scene archetypes from the literature (e.g., lead vehicle following, opposite traffic) can be expressed as small graphs. To determine whether such an archetype appears in a larger traffic scene graph $G$, we check if any subgraph of $G$ is isomorphic to the archetype graph $A$. While subgraph isomorphism is NP-hard in general, the graphs considered here are small enough for practical computation using the VF2 algorithm~\cite{cordella2004subgraph}.
+
+Our strategy is as follows: (1)~Define a set of archetype subgraphs $S$ representing relevant traffic situations. (2)~Specify which node and edge attributes are considered for the isomorphism check. (3)~For each traffic scene graph $G$ (e.g., from CARLA or Argoverse), check if any subgraph of $G$ is isomorphic to any archetype in $S$ and record the result in a coverage table $C$.
+
+This bottom-up approach starts from individual situation archetypes and checks their presence across datasets. The resulting coverage table enables follow-up analyses such as visualizing attribute distributions (speed, distance) for matched scenes, cross-tabulating co-occurring archetypes, or computing AV performance metrics conditioned on specific archetypes.
+
+We defined 18 subgraph archetypes covering common traffic scenarios: simple 2-actor patterns (following, opposite, neighbor---used only for isolated pairs), 3-actor patterns (lead vehicle with neighbor, platoons, opposite traffic, lane change/cut-in scenarios with intersection variants), 4-actor patterns (cut-out, multi-vehicle platoons, lead-follow with opposite traffic and intersection variants), and 5-actor patterns combining lead, neighbor, and opposite vehicles with intersection variants.
+
