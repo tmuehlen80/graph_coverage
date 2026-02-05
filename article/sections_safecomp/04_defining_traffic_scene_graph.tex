@@ -1,135 +1,54 @@
 \section{Defining a traffic scene graph}
 \label{chapter:defining_a_traffic_scene_graph}
 
-% still to be added: \url{https://sagroups.ieee.org/adwg/wp-content/uploads/sites/661/2024/10/ADWG_STV2_whitepaper.pdf}
-
-% still to be added: \url{https://www.vvm-projekt.de/securedl/sdl-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NDc2OTIxNjgsImV4cCI6MTc0Nzc4MjE2OCwidXNlciI6MCwiZ3JvdXBzIjpbMCwtMV0sImZpbGUiOiJmaWxlYWRtaW4vdXNlcl91cGxvYWQvVlZNZXRob2Rlbl9adXNhbW1lbmZhc3NlbmRlcl9BYnNjaGx1c3NiZXJpY2h0X3YxLjBfenVyX1Zlc_f9d402f084002b57/VVMethoden_Zusammenfassender_Abschlussbericht_v1.0_zur_Veroeffentlichung.pdf}
-
-% \cite{newman2010networks}
-
-% \cite{bagschik2018ontologybasedscenecreation}
-
-% \cite{fremont2020scenic}
 
 \subsection{Map Graph Construction}
 \label{subsec:map_graph}
 
-The map graph serves as the foundational structure for traffic scene graph construction, encoding the 
-spatial relationships between lanes in the road network. It is a directed multigraph 
-$G_{\text{map}} = (V_{\text{map}}, E_{\text{map}})$ where nodes represent individual lanes and edges 
-encode three fundamental spatial relationships between lanes.
-
-Each node $v \in V_{\text{map}}$ represents a lane segment and stores geometric and semantic 
-information including:
-\begin{itemize}
-    \item Lane boundaries (left and right boundaries as polylines)
-    \item Lane length
-    \item Lane centerline
-    \item Intersection status (whether the lane is within an intersection)
-    \item Road type and lane type information
-\end{itemize}
-
-The map graph defines three edge types that capture different spatial relationships:
-
-\begin{enumerate}
-    \item \textbf{Following edges} ($e_{\text{following}}$): Connect lanes that form a continuous 
-          path in the same direction. 
-    
-    \item \textbf{Neighbor edges} ($e_{\text{neighbor}}$): Connect adjacent lanes traveling in 
-          the same direction. 
-    
-    \item \textbf{Opposite edges} ($e_{\text{opposite}}$): Connect lanes traveling in opposite 
-          directions. 
-\end{enumerate}
-
-The map graph construction algorithm processes the original map data from Argoverse or CARLA  
-to extract these relationships. For intersection detection, lanes are analyzed for geometric 
-overlap, and all overlapping lanes are marked as intersection lanes to ensure proper handling of 
-complex road geometries.
+The map graph is a directed multigraph $G_{\text{map}} = (V_{\text{map}}, E_{\text{map}})$ where each node $v \in V_{\text{map}}$ represents a lane segment, storing geometric information (boundaries, centerline, length) and semantic attributes (intersection status, road and lane type). Edges encode three spatial relationships between lanes:
+\textbf{following edges} connect lanes forming a continuous path in the same direction,
+\textbf{neighbor edges} connect adjacent lanes traveling in the same direction, and
+\textbf{opposite edges} connect lanes traveling in opposite directions.
+The map graph is constructed by processing map data from Argoverse or CARLA to extract these relationships. Lanes with geometric overlap are marked as intersection lanes.
 
 \subsection{Actor Graph Construction}
 \label{subsec:actor_graph}
 
-The actor graph $G_{\text{actor}} = (V_{\text{actor}}, E_{\text{actor}})$ represents the dynamic 
-relationships between vehicles and other actors in a traffic scene at a specific timestep. This 
-graph is constructed using a two-phase algorithm that separates relation discovery from graph 
-construction. The second step serves to reduce the number of relations in the graph for computational tractability, 
-and enables the representation of relationships between actors through indirect paths involving multiple intermediate nodes.
-
-
-Each node $v \in V_{\text{actor}}$ represents an actor (vehicle, pedestrian, etc.) and stores the 
-following attributes:
-
-\begin{itemize}
-    \item \textbf{Primary lane ID}: The lane on which the actor is primarily located
-    \item \textbf{Lane IDs}: List of all lanes the actor occupies (for actors spanning multiple 
-          lanes)
-    \item \textbf{Longitudinal position} ($s$): Position along the primary lane's centerline
-    \item \textbf{3D position} ($x, y, z$): Cartesian coordinates
-    \item \textbf{Longitudinal speed}: Speed along the lane direction
-    \item \textbf{Actor type}: Classification (vehicle, pedestrian, etc.)
-    \item \textbf{Lane change indicator}: Boolean flag indicating if the actor changed lanes from 
-          the previous timestep
-\end{itemize}
-
-Note that the node structure is extensible---users can add additional attributes such as 
-acceleration, heading angle, or vehicle dimensions as needed for their coverage model.
-
-
-Each edge $e \in E_{\text{actor}}$ represents a relationship between two actors and contains:
-
-\begin{itemize}
-    \item \textbf{Edge type}: One of four relation types between actors (leading, following, neighbor, opposite)
-    \item \textbf{Path length}: Distance in meters along the lane network 
-\end{itemize}
-
-Similar to nodes, edge attributes can be extended with additional information such as relative 
-velocities, time-to-collision, or interaction probabilities.
+The actor graph $G_{\text{actor}} = (V_{\text{actor}}, E_{\text{actor}})$ represents dynamic relationships between actors at a specific timestep. Each node $v \in V_{\text{actor}}$ represents an actor and stores attributes including primary lane ID, all occupied lane IDs, longitudinal position $s$ along the lane centerline, 3D position, longitudinal speed, actor type, and a lane change indicator. Each edge $e \in E_{\text{actor}}$ stores a relation type and a path length in meters along the lane network.
 
 \label{subsubsec:relation_types}
 
-The actor graph defines four types of relationships between actors, ordered by semantic hierarchy:
-
+Four relationship types are defined between actors, ordered by semantic hierarchy:
 \begin{enumerate}
-    \item \textbf{Following/Leading} (\texttt{following\_lead}, \texttt{leading\_vehicle}): 
-          Represents longitudinal relationships where one actor follows another in the same 
-          direction and lane.  
-    
-    \item \textbf{Neighbor} (\texttt{neighbor\_vehicle}): Represents lateral relationships 
-          between actors on lanes traveling in the same direction. The actors need not be on 
-          immediately adjacent lanes.
-    
-    \item \textbf{Opposite} (\texttt{opposite\_vehicle}): Represents relationships between actors 
-          on lanes traveling in opposite directions. Similar to neighbor relationships, the actors 
-          need not be on immediately opposite lanes.
+    \item \textbf{Following/Leading}: Longitudinal relationships where actors share the same lane or are connected entirely by following edges.
+    \item \textbf{Neighbor}: Lateral relationships via paths containing exactly one neighbor edge (actors need not be on immediately adjacent lanes).
+    \item \textbf{Opposite}: Relationships via paths containing exactly one opposite edge (actors need not be on immediately opposite lanes).
 \end{enumerate}
 
-\begin{figure}[ht]
-      \centering
-      \begin{subfigure}[b]{0.48\textwidth}
-          \centering
-          \includegraphics[width=\textwidth]{plots/actor_map_graph/0922f82c-0640-43a6-b5ce-c42bc729418e_map_graph.png}
-          \caption{Example graph representation of a map.}
-          \label{fig:map_graph_representation}
-      \end{subfigure}
-      \hfill
-      \begin{subfigure}[b]{0.48\textwidth}
-          \centering
-          \includegraphics[width=\textwidth]{plots/actor_map_graph/0922f82c-0640-43a6-b5ce-c42bc729418e_scene_at_1.0.png}
-          \caption{Example traffic graph.}
-          \label{fig:traffic_scene_timestep}
-      \end{subfigure}
-      \caption{The map graph (left) serves as the foundational structure for determining actor relations, encoding spatial relationships between lanes. 
-      The traffic scene (right) shows actors and their relationships at a specific timestep. 
-      Note that actors can be disconnected if they are far enough apart, as the graph construction algorithm only creates edges between actors within the specified distance thresholds.}
-      \label{fig:map_and_scene_graphs}
-  \end{figure}
+% \begin{figure}[ht]
+%       \centering
+%       \begin{subfigure}[b]{0.48\textwidth}
+%           \centering
+%           \includegraphics[width=\textwidth]{plots/actor_map_graph/0922f82c-0640-43a6-b5ce-c42bc729418e_map_graph.png}
+%           \caption{Map graph.}
+%           \label{fig:map_graph_representation}
+%       \end{subfigure}
+%       \hfill
+%       \begin{subfigure}[b]{0.48\textwidth}
+%           \centering
+%           \includegraphics[width=\textwidth]{plots/actor_map_graph/0922f82c-0640-43a6-b5ce-c42bc729418e_scene_at_1.0.png}
+%           \caption{Traffic scene graph at one timestep.}
+%           \label{fig:traffic_scene_timestep}
+%       \end{subfigure}
+%       \caption{The map graph (left) encodes spatial relationships between lanes. The traffic scene graph (right) shows actors and their relationships. Actors can be disconnected if they exceed the distance thresholds.}
+%       \label{fig:map_and_scene_graphs}
+%   \end{figure}
 
 \subsection{Hierarchical Graph Construction Algorithm}
 \label{subsec:construction_algorithm}
 
-The actor graph construction follows a two-phase approach that separates relation discovery from 
-graph building, enabling hierarchical processing and preventing redundant edge creation.
+The actor graph is constructed in two phases that separate relation discovery from graph building, enabling hierarchical processing and preventing redundant edges. All parameters are listed in Table~\ref{tab:construction_parameters}.
+
 \begin{table}[ht]
       \centering
       \caption{Input parameters for actor graph construction}
@@ -140,114 +59,31 @@ graph building, enabling hierarchical processing and preventing redundant edge c
       \hline
       \multicolumn{4}{l}{\textit{Distance limits (discovery phase)}} \\
       \hline
-      \texttt{max\_distance\_lead\_veh\_m} & float & Maximum distance in meters for leading/following 
-      relationships & 100 \\
-      \texttt{max\_distance\_neighbor\_forward\_m} & float & Maximum distance in meters for forward 
-      neighbor relationships & 50 \\
-      \texttt{max\_distance\_neighbor\_backward\_m} & float & Maximum distance in meters for backward 
-      neighbor relationships & 50 \\
-      \texttt{max\_distance\_opposite\_forward\_m} & float & Maximum distance in meters for forward 
-      opposite relationships & 100 \\
-      \texttt{max\_distance\_opposite\_backward\_m} & float & Maximum distance in meters for backward 
-      opposite relationships & 10 \\
+      \texttt{max\_distance\_lead\_veh\_m} & float & Max distance for leading/following & 100 \\
+      \texttt{max\_distance\_neighbor\_fwd\_m} & float & Max distance for forward neighbor & 50 \\
+      \texttt{max\_distance\_neighbor\_bwd\_m} & float & Max distance for backward neighbor & 50 \\
+      \texttt{max\_distance\_opposite\_fwd\_m} & float & Max distance for forward opposite & 100 \\
+      \texttt{max\_distance\_opposite\_bwd\_m} & float & Max distance for backward opposite & 10 \\
       \hline
       \multicolumn{4}{l}{\textit{Node distance limits (construction phase)}} \\
       \hline
-      \texttt{max\_node\_distance\_leading} & int & Maximum number of edges in actor graph path for 
-      leading/following & 3 \\
-      \texttt{max\_node\_distance\_neighbor} & int & Maximum number of edges in actor graph path for 
-      neighbor & 2 \\
-      \texttt{max\_node\_distance\_opposite} & int & Maximum number of edges in actor graph path for 
-      opposite & 2 \\
+      \texttt{max\_node\_dist\_leading} & int & Max edge count in path for leading/following & 3 \\
+      \texttt{max\_node\_dist\_neighbor} & int & Max edge count in path for neighbor & 2 \\
+      \texttt{max\_node\_dist\_opposite} & int & Max edge count in path for opposite & 2 \\
       \hline
       \multicolumn{4}{l}{\textit{Timestep configuration}} \\
       \hline
-      \texttt{delta\_timestep\_s} & float & Time step increment in seconds for temporal graph 
-      creation & 1.0 \\
+      \texttt{delta\_timestep\_s} & float & Time step increment in seconds & 1.0 \\
       \hline
       \end{tabular}
       \end{table}
+% \subsubsection{Phase 1: Relation Discovery}
+% \label{subsubsec:discovery_phase}
+\textbf{Phase 1: Relation Discovery}: For each actor pair $(A, B)$ at timestep $t$, the algorithm determines their primary lanes and checks if a connecting path exists in the map graph. The path structure determines the relationship type: paths consisting entirely of following edges yield following/leading relations, paths with exactly one neighbor (or opposite) edge yield neighbor (or opposite) relations. Both lane-based path length and Euclidean distance are checked against the thresholds in Table~\ref{tab:construction_parameters} to filter distant actors.
 
-\subsubsection{Phase 1: Relation Discovery}
-\label{subsubsec:discovery_phase}
+\textbf{Phase 2: Hierarchical Graph Construction}: Edges are added in hierarchical order---leading/following first (highest priority), then neighbor, then opposite---each sorted by path length (shortest first). Before adding an edge between actors $A$ and $B$, a breadth-first search checks whether a path of length $\leq \text{max\_node\_distance}$ already exists in the current graph. If so, the direct edge is skipped, as the relationship is already implicitly encoded. The graph is updated after each edge addition so that subsequent checks reflect the current state.
 
-The discovery phase identifies all potential relationships between actor pairs based on distance 
-constraints and map graph structure. For each pair of actors $(A, B)$ at timestep $t$, the 
-algorithm determines their primary lanes and checks if a path exists in the map graph connecting 
-them. The path structure determines the relationship type:
-
-\begin{itemize}
-    \item \textbf{Following/Leading}: If both actors are on the same lane, or if the connecting lane path consists 
-          entirely of following edges.
-    
-    \item \textbf{Neighbor}: If the connecting lane path contains exactly one neighbor edge and the remaining edges 
-          are following edges. Note that this does not require the actors to be on immediately 
-          adjacent lanes. 
-    
-    \item \textbf{Opposite}: If the path contains exactly one opposite edge and the remaining edges 
-          are following edges. Similar to neighbor relationships, this does not require the actors 
-          to be on immediately opposite lanes.
-\end{itemize}
-
-Far distance actors are not considered for relation discovery. This is done using two distance checks: 
-the lane-based path length ensures that 
-curved roads are properly accounted for, while the Euclidean distance ensures that only actors in 
-close proximity are considered. The maximum distances are defined in Table~\ref{tab:construction_parameters}. 
-All discovered relationships are stored in a relations dictionary 
-for the construction phase.
-
-\subsubsection{Phase 2: Hierarchical Graph Construction}
-\label{subsubsec:construction_phase}
-
-The construction phase builds the actor graph by adding edges in a hierarchical order, ensuring 
-that higher-priority relationships are established first and redundant edges are prevented.
-
-\paragraph{Construction Order}
-
-Edges are added in three stages, following the semantic hierarchy:
-
-\begin{enumerate}
-    \item \textbf{Leading/Following edges} (highest priority): All following/leading relationships 
-          are processed first, sorted by path length (shortest first).
-    
-    \item \textbf{Neighbor edges} (medium priority): Neighbor relationships are processed second, 
-          sorted by absolute path length.
-    
-    \item \textbf{Opposite edges} (lowest priority): Opposite relationships are processed last, 
-          sorted by absolute path length.
-\end{enumerate}
-
-\paragraph{Redundancy Prevention}
-
-Before adding an edge between actors $A$ and $B$, the algorithm checks if a path already exists 
-in the current actor graph with length $\leq \text{max\_node\_distance}$ for that relation type (see Table~\ref{tab:construction_parameters}). 
-This prevents redundant edges that would create triangles or long direct paths when an indirect path is already encoded in the graph 
-(see Figure~\ref{fig:graph_construction_comparison}).
-
-For leading/following and neighbor relationships, each direction ($A \to B$ and $B \to A$) is 
-checked independently, as these relationships can be asymmetric. For opposite relationships, if 
-either direction has an existing path, both directions are rejected, as opposite relationships are 
-inherently symmetric.
-
-The path checking uses breadth-first search to find the shortest path in the actor graph, counting 
-the number of edges (not nodes) in the path. This ensures that if a path exists with $k$ edges 
-where $k \leq \text{max\_node\_distance}$, the direct edge is not added.
-
-
-The graph is updated immediately after each edge addition, ensuring that path checks for 
-subsequent edges use the current graph state. This incremental approach guarantees that the 
-hierarchical construction works correctly and prevents race conditions.
-
-Figure~\ref{fig:graph_construction_comparison} illustrates the effect of redundancy prevention 
-by comparing the graph after relation discovery with the final graph after hierarchical selection. 
-The discovery graph respects the maximum distances chosen for discovery, but still contains 
-redundant relations. For example, three vehicles in a row can be described by pairwise 
-lead-follow relations, but the relation of the last vehicle to the first vehicle is already 
-encoded in the graph through the intermediate vehicle. Similarly, for a row of vehicles to a 
-neighboring or opposite vehicle, we only need the opposite/following relation to the closest 
-vehicle in the row; the other actor relations are encoded in the graph. This redundancy prevention 
-reduces the number of edges in the graph significantly, making it more efficient while preserving 
-all necessary connectivity information.
+This redundancy prevention significantly reduces edges while preserving connectivity. For example, three vehicles in a row need only two lead-follow edges; the third pairwise relation is encoded through the intermediate vehicle. Similarly, for a row of vehicles adjacent to an opposite-direction vehicle, only the closest pairwise relation needs an explicit edge (see Figure~\ref{fig:graph_construction_comparison}).
 
 \begin{figure}[ht]
     \centering
@@ -261,36 +97,10 @@ all necessary connectivity information.
     \begin{subfigure}[b]{0.48\textwidth}
         \centering
         \includegraphics[width=\textwidth]{plots/graph_construction/5758074f-be16-49da-8bb5-d43a0d8cd034_final.png}
-        \caption{Final graph after hierarchical selection}
+        \caption{After hierarchical selection}
         \label{fig:graph_final}
     \end{subfigure}
-    \caption{Comparison of the actor graph after relation discovery and after hierarchical 
-    selection with redundancy prevention. The discovery graph contains all relations found within 
-    the distance limits, while the final graph removes redundant edges that can be represented 
-    through existing paths, significantly reducing the number of edges while preserving connectivity.}
+    \caption{The discovery graph (left) contains all relations within distance limits. Hierarchical selection (right) removes redundant edges representable through existing paths.}
     \label{fig:graph_construction_comparison}
 \end{figure}
-
-\subsubsection{Input Parameters}
-\label{subsubsec:parameters}
-
-Table~\ref{tab:construction_parameters} summarizes all input parameters for the actor graph 
-construction algorithm, their descriptions, and the values used in our experiments.
-
-The distance limits in the discovery phase determine which potential relationships are identified, 
-while the node distance limits in the construction phase control redundancy prevention. The 
-asymmetric limits for opposite relationships (100m forward vs. 10m backward) reflect that vehicles 
-traveling in opposite directions are more relevant when they are ahead rather than behind.
-
-All parameters are configurable and can be adjusted based on the specific application 
-requirements, road network characteristics, or desired graph density. The values shown in 
-Table~\ref{tab:construction_parameters} represent default values that work well for urban traffic 
-scenarios, but may need adjustment for highway scenarios (longer distances) or dense urban 
-intersections (shorter distances).
-
-
-
-The graph creation strategy described above is assuming to create a graph for a single timestep. 
-An obvious extension is to create graphs for multiple timesteps, e.g. to analyze the evolution of 
-the traffic scene over time for the sake of coverage analysis. This will be part of future work streams of this project. 
 
