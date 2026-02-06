@@ -1,25 +1,12 @@
 \section{Summary}
 
 This paper presented a graph-based framework for coverage analysis in autonomous driving that represents traffic scenes as hierarchical graphs combining map topology with actor relationships.
-The framework employs a two-phase graph construction algorithm to systematically capture spatial relationships between traffic participants, encoding leading, following, neighboring, and opposing configurations as typed edges in a directed multigraph structure.
+Two complementary analysis approaches were developed: subgraph isomorphism using manually defined archetype graphs for interpretable pattern-based coverage metrics, and graph embeddings via GINE networks trained with contrastive learning for similarity-based assessment, clustering, and anomaly detection.
 
-Two complementary approaches for coverage analysis were developed and evaluated.
-The subgraph isomorphism approach utilizes a set of manually defined archetype graphs representing common driving scenarios.
-This method provides interpretable coverage metrics by identifying which specific traffic patterns are present in a given scene.
-The graph embedding approach leverages Graph Isomorphism Networks with Edge features trained via self-supervised contrastive learning to project traffic scenes into a continuous vector space.
-This representation enables similarity-based coverage assessment, clustering of related scenarios, and anomaly detection for identifying underrepresented traffic situations with arbitrary number of actors.
+Both approaches were validated on Argoverse 2.0 and CARLA data, demonstrating that the framework captures meaningful traffic scene structure and reveals distribution differences between real-world and simulated datasets (Section~\ref{chapter:application}).
+Compared to approaches like TNO Streetwise \cite{tno_streetwise}, the framework scales efficiently without scenario-specific handling rules and naturally accommodates varying numbers of actors.
 
-Both approaches were validated on real-world data from the Argoverse 2.0 dataset and synthetic data from the CARLA simulator, as presented in Section~\ref{chapter:application}.
-The experimental results demonstrate that the framework successfully captures meaningful traffic scene structure and reveals notable differences in scenario distributions between the two datasets.
+Future work will incorporate temporal information through multi-timestep graph structures and investigate automatic archetype extraction from real-world data.
 
-The proposed approach offers several advantages over traditional coverage analysis methods.
-Most significantly, it scales efficiently to diverse traffic scenarios without requiring scenario-specific handling rules.
-In contrast to approaches such as TNO Streetwise \cite{tno_streetwise}, where each scenario type must be manually defined and processed individually, the presented framework only requires the definition of actor graph construction rules and, optionally, archetype graphs.
-Furthermore, the approach naturally accommodates varying numbers of actors in a scene without excluding participants or focusing on arbitrary subsets.
-
-Future work will extend the framework in two directions.
-First, the actor graph representation will be enhanced to incorporate temporal information by including multiple time steps within a single graph structure.
-Second, methods for automatically extracting archetype graphs from real-world traffic observation data will be investigated, reducing the reliance on manual archetype definition.
-
-The source code for this research is publicly available at \url{https://github.com/tmuehlen80/graph_coverage}.
+The source code is publicly available at \url{https://github.com/tmuehlen80/graph_coverage}.
 

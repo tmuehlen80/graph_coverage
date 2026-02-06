@@ -1,0 +1,11 @@
+flowchart LR
+  subgraph Input
+    X["node_attr<br/>R[N,7]"]
+    EI["edge_index<br/>R[2,E]"]
+    EA["edge_attr<br/>R[E,7]"]
+    B["batch<br/>R[N]"]
+  end
+  X & EI & EA & B --> GINE["4x GINEConv<br/>+BN+ReLU+Dropout<br/>hidden=96"]
+  GINE --> POOL["Global Pooling<br/>(mean+max+sum)"]
+  POOL --> EMB["Linear 288→256→256<br/>ReLU+Dropout"]
+  EMB --> PROJ["Projection<br/>256→256→128<br/>ReLU"]
