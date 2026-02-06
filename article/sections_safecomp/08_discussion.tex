@@ -123,7 +123,7 @@ The heatmaps show the percentage of agreement between the manually defined cover
 % TODO: Write a sentence about the agreement matrices once using the actual actor graph defintion.
 
 A last example of how to use the assignment of archetypes to traffic scenes is to check the parameter distribution for the speed and path length of the traffic scenes.
-Figure \ref{fig:carla_speed_path_distributions} and Figure \ref{fig:argo_speed_path_distributions} show the parameter distribution for the speed and path length of the traffic scenes for CARLA and Argoverse.
+Figure \ref{fig:combined_speed_path_distributions} shows the parameter distribution for the speed and path length of the traffic scenes for CARLA and Argoverse.
 The plots show that the distribution for the CARLA data differs from the Argoverse distribution, indicating that the CARLA data is not representative for the Argoverse data.
 Given the assignment of archetypes to traffic scenes based on the actors can be used in further analysis not done here, e.g. to check more divers parameters and distributions.
 
@@ -182,20 +182,29 @@ Given the assignment of archetypes to traffic scenes based on the actors can be 
 \end{figure}
 
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[width=0.85\textwidth]{plots/carla_speed_path_distributions.png}
-    \caption{Speed and path length distributions for the top 5 most common scenario archetypes in CARLA. Each row shows a different scenario with speed (left) and path length (right) distributions.}
-    \label{fig:carla_speed_path_distributions}
-\end{figure}
-
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.85\textwidth]{plots/argo_speed_path_distributions.png}
-    \caption{Speed and path length distributions for the top 5 most common scenario archetypes in Argoverse. Each row shows a different scenario with speed (left) and path length (right) distributions.}
-    \label{fig:argo_speed_path_distributions}
+    \includegraphics[width=0.85\textwidth]{plots/combined_speed_path_distributions.png}
+    \caption{Speed and path length distributions for the top 3 most common scenario archetypes in CARLA and Argoverse. Each row shows a different scenario with speed (left) and path length (right) distributions.}
+    \label{fig:combined_speed_path_distributions}
 \end{figure}
+
+
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{plots/carla_speed_path_distributions.png}
+%     \caption{Speed and path length distributions for the top 5 most common scenario archetypes in CARLA. Each row shows a different scenario with speed (left) and path length (right) distributions.}
+%     \label{fig:carla_speed_path_distributions}
+% \end{figure}
+
+
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{plots/argo_speed_path_distributions.png}
+%     \caption{Speed and path length distributions for the top 5 most common scenario archetypes in Argoverse. Each row shows a different scenario with speed (left) and path length (right) distributions.}
+%     \label{fig:argo_speed_path_distributions}
+% \end{figure}
 
 \subsection{Coverage gap analysis using subgraphs}
 
@@ -278,12 +287,12 @@ The structured, bottom-up approach presented here demonstrates that subgraph iso
 
 \subsection{Graph Embeddings Coverage Analysis}
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[width=0.8\textwidth]{plots/train_test_graph_embeddings_loss_plot.png}
-    \caption{Training and test loss for the graph embeddings model trained jointly on CARLA and Argoverse 2.0 data.}
-    \label{fig:train_test_graph_embeddings_loss_plot}
-\end{figure}
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{plots/train_test_graph_embeddings_loss_plot.png}
+%     \caption{Training and test loss for the graph embeddings model trained jointly on CARLA and Argoverse 2.0 data.}
+%     \label{fig:train_test_graph_embeddings_loss_plot}
+% \end{figure}
     
 
 The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of 
