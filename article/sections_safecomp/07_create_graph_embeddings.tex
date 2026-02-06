@@ -1,61 +1,24 @@
 \section{Graph Embeddings for Traffic Scene Analysis}
 \label{chapter:implementation_of_graph_embeddings_for_traffic_scene_analysis}
 
-The subgraph isomorphism approach presented in Section~\ref{chapter:create_subgraphs_for_coverage_analysis} provides a bottom-up methodology for understanding complex traffic scenarios. While this approach enables systematic analysis of predefined scenario archetypes, the traffic scene graphs constructed from real-world and simulation data exhibit significantly higher complexity than these simple patterns. This motivates the need for complementary top-down approaches, such as graph embeddings, which we explore in this section.
-It describes the usage of graph embeddings to traffic scene graphs. 
-Embeddings are a widely used method to translate raw data like images or text into an embedding space in order to be 
-able to perform machine learning tasks on them. One well known example of this is the Word2Vec model, which is used to 
-translate words into a 
-vector space, where the distance between vectors can be used to measure the similarity between 
-words (\cite{mikolov2013efficientestimationwordrepresentations}).
+The subgraph isomorphism approach from Section~\ref{chapter:create_subgraphs_for_coverage_analysis} provides a bottom-up methodology for analyzing traffic scenarios through predefined archetypes. However, real-world traffic scene graphs exhibit significantly higher complexity than these patterns, motivating complementary top-down approaches such as graph embeddings.
 
-In the context of traffic scene graphs, embeddings are used to translate the graph structure into a vector space, 
-where the distance between vectors can be used to measure the similarity between traffic scenes.
-This is useful for coverage analysis, as it allows to compare traffic scenes among each other.
-For example, two traffic scenes can be considered similar if the distance between their embeddings is small. This enables
-to search for a most similar simulation scenario given a real world scenario, to identify areas with near duplicates or 
-to easily visualize structures in the embedding space, which in the original space of all possible traffic scenes
-would not be possible.
+Embeddings translate raw data into a vector space where distances measure similarity, analogous to the Word2Vec model for words (\cite{mikolov2013efficientestimationwordrepresentations}).
+For traffic scene graphs, embeddings enable coverage analysis by comparing scenes: identifying similar simulation--real-world scenario pairs, detecting near duplicates, or visualizing structures that would be intractable in the original space of all possible traffic scenes.
 
-Graph neural networks (GNNs) are a class of neural networks that are designed to process graph-structured data and have 
-gained a lot of popularity in the last years, see for example (add references).
-
-In this paper, a network architecture using a Graph Isomorphism Network with Edge features (GINE) as described 
-in \cite{hu2020strategiespretraininggraphneural} is used to generate embeddings for traffic scene graphs as implemented in the 
-pytorch geometric library (\cite{Fey/Lenssen/2019}). While edge-augmented versions of architectures like GraphSAGE and GAT 
-now exist \cite{gong2019exploiting}, GINE is chosen specifically because it directly incorporates edge features through 
-its aggregation function. This capability is actively utilized in this work: edge type and path length between actors 
-are encoded as edge features (see Section \ref{fig:graph_gine_architecture}) and directly influence the message-passing 
-process during embedding generation. 
+A Graph Isomorphism Network with Edge features (GINE) \cite{hu2020strategiespretraininggraphneural} is used to generate embeddings, implemented in PyTorch Geometric (\cite{Fey/Lenssen/2019}). GINE is chosen because it directly incorporates edge features through its aggregation function: edge type and path length between actors are encoded as edge features (see Section \ref{fig:graph_gine_architecture}) and directly influence the message-passing process.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.8\textwidth]{plots/graph_gine_architecture_manually_updated.png}
+    \includegraphics[width=0.8\textwidth]{plots/graph_gine_architecture_manually_updated_compact.png}
     \caption{Model architecture for the Graph Isomorphism Network with Edge features (GINE).}
     \label{fig:graph_gine_architecture}
 \end{figure}
 
-The exact architecture of the model is shown in Figure \ref{fig:graph_gine_architecture}. The features
-used are the actor type (as a one-hot encoding with four categories: vehicle, pedestrian, cyclist, motorcycle),
-the actor speed (float), if the actor is on an intersection (boolean), and if the actor changed its
-lane since the last timestep (boolean) for the nodes.
-For the edges, the edge type (as a one-hot encoding with six categories corresponding to different spatial relationships) and the path length (float) between the two nodes are used.
+The architecture is shown in Figure \ref{fig:graph_gine_architecture}. Node features are actor type (one-hot: vehicle, pedestrian, cyclist, motorcycle), speed, intersection presence, and lane change since the last timestep. Edge features are edge type (one-hot, six spatial relationship categories) and path length between nodes.
 
-The model has been trained on the CARLA and Argoverse 2.0 datasets using self-supervised contrastive learning 
+The model was trained on CARLA and Argoverse 2.0 using self-supervised contrastive learning
 \cite{chen2020simple}, \cite{hu2020strategiespretraininggraphneural}.
-
-
-Training employed a self-supervised contrastive objective on mini-batches of 384 graphs.
-For each batch, two correlated views of every graph were created through data augmentation:
-continuous attributes were perturbed with zero-mean Gaussian noise ($\sigma=0.08$) applied to node
-longitudinal speed and edge path length, and edges were randomly dropped with probability 0.1.
-A five-layer GINE encoder (hidden width 384) produced graph-level representations via the concatenation of
-mean, max, and sum pooling, followed by an embedding MLP (yielding 192-dimensional $\ell_2$-normalized embeddings)
-and a projection head. The contrastive loss was a temperature-scaled cross-entropy over in-batch similarities
-(cosine similarity of normalized projections, temperature $\tau=0.07$), maximizing agreement of the two views
-of the same graph while contrasting against other graphs in the batch. Optimization used AdamW with weight decay
-($5 \times 10^{-6}$), learning rate warmup over three epochs, and an exponentially decaying learning rate initialized
-at 0.0015 and multiplied by 0.85 across 15 successive training stages.
-This setup follows established practice in contrastive pretraining for GNNs \cite{hu2020strategiespretraininggraphneural}
-and is implemented using PyTorch Geometric \cite{Fey/Lenssen/2019}.
+For each mini-batch of 384 graphs, two augmented views were created by perturbing continuous attributes with Gaussian noise ($\sigma=0.08$) and randomly dropping edges (probability 0.1).
+A five-layer GINE encoder (hidden width 384) produced graph-level representations via concatenated mean, max, and sum pooling, followed by an embedding MLP (192-dimensional $\ell_2$-normalized) and a projection head. The contrastive loss maximized agreement between views of the same graph while contrasting against other in-batch graphs (cosine similarity, $\tau=0.07$). Optimization used AdamW (weight decay $5 \times 10^{-6}$), learning rate warmup over three epochs, and exponential decay (initial rate 0.0015, factor 0.85) across 15 training stages \cite{hu2020strategiespretraininggraphneural}, \cite{Fey/Lenssen/2019}.
 

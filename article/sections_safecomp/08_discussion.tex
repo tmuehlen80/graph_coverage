@@ -123,7 +123,7 @@ The heatmaps show the percentage of agreement between the manually defined cover
 % TODO: Write a sentence about the agreement matrices once using the actual actor graph defintion.
 
 A last example of how to use the assignment of archetypes to traffic scenes is to check the parameter distribution for the speed and path length of the traffic scenes.
-Figure \ref{fig:carla_speed_path_distributions} and Figure \ref{fig:argo_speed_path_distributions} show the parameter distribution for the speed and path length of the traffic scenes for CARLA and Argoverse.
+Figure \ref{fig:combined_speed_path_distributions} shows the parameter distribution for the speed and path length of the traffic scenes for CARLA and Argoverse.
 The plots show that the distribution for the CARLA data differs from the Argoverse distribution, indicating that the CARLA data is not representative for the Argoverse data.
 Given the assignment of archetypes to traffic scenes based on the actors can be used in further analysis not done here, e.g. to check more divers parameters and distributions.
 
@@ -182,20 +182,29 @@ Given the assignment of archetypes to traffic scenes based on the actors can be 
 \end{figure}
 
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[width=0.85\textwidth]{plots/carla_speed_path_distributions.png}
-    \caption{Speed and path length distributions for the top 5 most common scenario archetypes in CARLA. Each row shows a different scenario with speed (left) and path length (right) distributions.}
-    \label{fig:carla_speed_path_distributions}
-\end{figure}
-
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.85\textwidth]{plots/argo_speed_path_distributions.png}
-    \caption{Speed and path length distributions for the top 5 most common scenario archetypes in Argoverse. Each row shows a different scenario with speed (left) and path length (right) distributions.}
-    \label{fig:argo_speed_path_distributions}
+    \includegraphics[width=0.85\textwidth]{plots/combined_speed_path_distributions.png}
+    \caption{Speed and path length distributions for the top 3 most common scenario archetypes in CARLA and Argoverse. Each row shows a different scenario with speed (left) and path length (right) distributions.}
+    \label{fig:combined_speed_path_distributions}
 \end{figure}
+
+
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{plots/carla_speed_path_distributions.png}
+%     \caption{Speed and path length distributions for the top 5 most common scenario archetypes in CARLA. Each row shows a different scenario with speed (left) and path length (right) distributions.}
+%     \label{fig:carla_speed_path_distributions}
+% \end{figure}
+
+
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{plots/argo_speed_path_distributions.png}
+%     \caption{Speed and path length distributions for the top 5 most common scenario archetypes in Argoverse. Each row shows a different scenario with speed (left) and path length (right) distributions.}
+%     \label{fig:argo_speed_path_distributions}
+% \end{figure}
 
 \subsection{Coverage gap analysis using subgraphs}
 
@@ -215,75 +224,75 @@ The analysis reveals several structural definition holes in the CARLA dataset. M
 
 Conversely, CARLA demonstrates higher coverage for simpler highway scenarios. The \texttt{simple\_2actor\_following} pattern appears in 42.3\% of CARLA scenes compared to 31.8\% in Argoverse, suggesting that the CARLA simulation emphasizes highway driving conditions over complex urban intersections.
 
-\subsubsection{Parametric Distribution Analysis}
+% \subsubsection{Parametric Distribution Analysis}
 
-Beyond structural differences, we analyze how continuous node and edge attributes differ within the same scenario archetype. Even when a scenario archetype is present in both datasets, the distributions of speed and path length can reveal definition holes at the parameter level.
+% Beyond structural differences, we analyze how continuous node and edge attributes differ within the same scenario archetype. Even when a scenario archetype is present in both datasets, the distributions of speed and path length can reveal definition holes at the parameter level.
 
-\subsubsection{Role-Specific Speed Distribution Holes}
+% \subsubsection{Role-Specific Speed Distribution Holes}
 
-To investigate parametric differences in greater depth, we analyze speed distributions at the actor-role level within each scenario archetype. Figure~\ref{fig:role_speed_holes} presents an exemplary analysis for the \texttt{lead\_vehicle\_in\_front\_with\_neighbor\_vehicle} scenario, which represents a common highway situation with lane change potential.
+% To investigate parametric differences in greater depth, we analyze speed distributions at the actor-role level within each scenario archetype. Figure~\ref{fig:role_speed_holes} presents an exemplary analysis for the \texttt{lead\_vehicle\_in\_front\_with\_neighbor\_vehicle} scenario, which represents a common highway situation with lane change potential.
 
-To systematically identify definition holes, we employ two threshold criteria: (1) Argoverse must show significant presence in a speed bin with a density of at least 0.5\%, ensuring the speed range is meaningfully represented in real-world data, and (2) CARLA's density in that bin must be less than 15\% of Argoverse's density, indicating substantial underrepresentation rather than minor variations. Speed bins meeting both criteria are marked as definition holes.
+% To systematically identify definition holes, we employ two threshold criteria: (1) Argoverse must show significant presence in a speed bin with a density of at least 0.5\%, ensuring the speed range is meaningfully represented in real-world data, and (2) CARLA's density in that bin must be less than 15\% of Argoverse's density, indicating substantial underrepresentation rather than minor variations. Speed bins meeting both criteria are marked as definition holes.
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[width=0.95\textwidth]{plots/role_comparison_lead_vehicle_in_front_with_neighbor_vehicle.png}
-    \caption{Role-specific speed distribution comparison for the lead vehicle with neighbor scenario. Green rectangles mark definition holes—speed ranges where Argoverse has significant density ($\geq$ 0.5\%) but CARLA has less than 15\% of that density. Each row represents a different actor role within the scenario (e.g., lead vehicle, ego vehicle, neighbor vehicle).}
-    \label{fig:role_speed_holes}
-\end{figure}
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=0.95\textwidth]{plots/role_comparison_lead_vehicle_in_front_with_neighbor_vehicle.png}
+%     \caption{Role-specific speed distribution comparison for the lead vehicle with neighbor scenario. Green rectangles mark definition holes—speed ranges where Argoverse has significant density ($\geq$ 0.5\%) but CARLA has less than 15\% of that density. Each row represents a different actor role within the scenario (e.g., lead vehicle, ego vehicle, neighbor vehicle).}
+%     \label{fig:role_speed_holes}
+% \end{figure}
 
-The green rectangles in Figure~\ref{fig:role_speed_holes} highlight multiple speed distribution holes across different actor roles in this scenario. These gaps indicate that CARLA underrepresents certain speed ranges common in real-world highway driving, particularly at moderate to higher speeds where Argoverse shows consistent density but CARLA has minimal coverage.
+% The green rectangles in Figure~\ref{fig:role_speed_holes} highlight multiple speed distribution holes across different actor roles in this scenario. These gaps indicate that CARLA underrepresents certain speed ranges common in real-world highway driving, particularly at moderate to higher speeds where Argoverse shows consistent density but CARLA has minimal coverage.
 
-Similar patterns of parametric definition holes are observed across other scenario archetypes. For instance, the \texttt{lead\_vehicle\_in\_front\_with\_neighbor\_vehicle} scenario exhibits multiple speed distribution holes for the neighbor vehicle role, particularly in the 12-15 m/s range, suggesting insufficient coverage of moderate-speed lane change scenarios in CARLA.
+% Similar patterns of parametric definition holes are observed across other scenario archetypes. For instance, the \texttt{lead\_vehicle\_in\_front\_with\_neighbor\_vehicle} scenario exhibits multiple speed distribution holes for the neighbor vehicle role, particularly in the 12-15 m/s range, suggesting insufficient coverage of moderate-speed lane change scenarios in CARLA.
 
-This role-specific analysis demonstrates that definition holes can exist at the parameter level even when the structural scenario archetype is present in both datasets. Such parametric differences encode information in the node attributes that should be detectable by graph embedding methods.
+% This role-specific analysis demonstrates that definition holes can exist at the parameter level even when the structural scenario archetype is present in both datasets. Such parametric differences encode information in the node attributes that should be detectable by graph embedding methods.
 
-\subsection{Co-occurrence Pattern Analysis}
+% \subsection{Co-occurrence Pattern Analysis}
 
-Traffic scenes in the real world often contain multiple scenario archetypes simultaneously. For example, a vehicle might be following a lead vehicle while also navigating an intersection with opposite traffic. To capture these more complex patterns, we analyze co-occurrence matrices that quantify how frequently pairs of archetypes appear together in the same traffic scene.
+% Traffic scenes in the real world often contain multiple scenario archetypes simultaneously. For example, a vehicle might be following a lead vehicle while also navigating an intersection with opposite traffic. To capture these more complex patterns, we analyze co-occurrence matrices that quantify how frequently pairs of archetypes appear together in the same traffic scene.
 
-Figure~\ref{fig:cooccurrence_diff} visualizes the differences in co-occurrence rates between the two datasets. Each cell $(i,j)$ represents the percentage point difference $P_{\text{Argo}}(i \cap j) - P_{\text{CARLA}}(i \cap j)$, where $P(i \cap j)$ denotes the probability that both archetypes $i$ and $j$ are present in the same scene.
+% Figure~\ref{fig:cooccurrence_diff} visualizes the differences in co-occurrence rates between the two datasets. Each cell $(i,j)$ represents the percentage point difference $P_{\text{Argo}}(i \cap j) - P_{\text{CARLA}}(i \cap j)$, where $P(i \cap j)$ denotes the probability that both archetypes $i$ and $j$ are present in the same scene.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.95\textwidth]{plots/cooccurrence_difference_matrix.png}
-    \caption{Co-occurrence difference matrix showing where pairs of scenario archetypes appear together significantly more in Argoverse (red) or CARLA (blue). Values represent percentage point differences in joint occurrence rates.}
-    \label{fig:cooccurrence_diff}
-\end{figure}
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.95\textwidth]{plots/cooccurrence_difference_matrix.png}
+%     \caption{Co-occurrence difference matrix showing where pairs of scenario archetypes appear together significantly more in Argoverse (red) or CARLA (blue). Values represent percentage point differences in joint occurrence rates.}
+%     \label{fig:cooccurrence_diff}
+% \end{figure}
 
-The most significant co-occurrence holes are:
+% The most significant co-occurrence holes are:
 
-\begin{itemize}
-    \item \textbf{Following + Overtaking}: This combination appears in 15.2\% of Argoverse scenes but only 1.8\% of CARLA scenes (gap: 13.4 percentage points), indicating that CARLA rarely simulates scenarios where vehicles simultaneously follow and overtake other traffic.
+% \begin{itemize}
+%     \item \textbf{Following + Overtaking}: This combination appears in 15.2\% of Argoverse scenes but only 1.8\% of CARLA scenes (gap: 13.4 percentage points), indicating that CARLA rarely simulates scenarios where vehicles simultaneously follow and overtake other traffic.
     
-    \item \textbf{Merging + 3-Chain}: Present in 12.7\% of Argoverse scenes vs. 2.1\% in CARLA (gap: 10.6 percentage points), reflecting underrepresentation of complex multi-vehicle merging maneuvers in CARLA.
+%     \item \textbf{Merging + 3-Chain}: Present in 12.7\% of Argoverse scenes vs. 2.1\% in CARLA (gap: 10.6 percentage points), reflecting underrepresentation of complex multi-vehicle merging maneuvers in CARLA.
     
-    \item \textbf{Crossing + 4-Intersection}: Appears in 11.8\% of Argoverse scenes vs. 1.5\% in CARLA (gap: 10.3 percentage points), consistent with CARLA's general underrepresentation of complex intersection scenarios.
-\end{itemize}
+%     \item \textbf{Crossing + 4-Intersection}: Appears in 11.8\% of Argoverse scenes vs. 1.5\% in CARLA (gap: 10.3 percentage points), consistent with CARLA's general underrepresentation of complex intersection scenarios.
+% \end{itemize}
 
-These co-occurrence holes indicate that CARLA not only lacks certain individual scenario archetypes but also fails to generate realistic combinations of archetypes that commonly appear together in real-world driving. Since these patterns involve larger, more complex subgraphs that span multiple archetypes, they provide a test case for whether graph embeddings can capture information at a higher level of abstraction than simple structural or parametric differences.
+% These co-occurrence holes indicate that CARLA not only lacks certain individual scenario archetypes but also fails to generate realistic combinations of archetypes that commonly appear together in real-world driving. Since these patterns involve larger, more complex subgraphs that span multiple archetypes, they provide a test case for whether graph embeddings can capture information at a higher level of abstraction than simple structural or parametric differences.
 
-\subsubsection{coverage gap analysis summary}
+% \subsubsection{coverage gap analysis summary}
 
-This three-tiered analysis systematically identifies definition holes in the CARLA dataset across structural, parametric, and co-occurrence dimensions. These findings serve a dual purpose:
+% This three-tiered analysis systematically identifies definition holes in the CARLA dataset across structural, parametric, and co-occurrence dimensions. These findings serve a dual purpose:
 
-\begin{enumerate}
-    \item They provide actionable insights for improving simulation-based testing by highlighting which traffic scenarios need better representation.
+% \begin{enumerate}
+%     \item They provide actionable insights for improving simulation-based testing by highlighting which traffic scenarios need better representation.
     
-    \item They establish ground truth for evaluating graph embedding methods in subsequent sections. If embeddings successfully encode the relevant information, they should enable detection of these holes without explicit subgraph isomorphism checks, thereby providing a scalable top-down approach to coverage analysis.
-\end{enumerate}
+%     \item They establish ground truth for evaluating graph embedding methods in subsequent sections. If embeddings successfully encode the relevant information, they should enable detection of these holes without explicit subgraph isomorphism checks, thereby providing a scalable top-down approach to coverage analysis.
+% \end{enumerate}
 
 The structured, bottom-up approach presented here demonstrates that subgraph isomorphism can effectively characterize traffic scene coverage for predefined archetypes. However, the manual definition of archetypes and the computational cost of isomorphism checking for large scenario collections motivate the graph embedding approach explored in the following chapter.
 
 
 \subsection{Graph Embeddings Coverage Analysis}
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[width=0.8\textwidth]{plots/train_test_graph_embeddings_loss_plot.png}
-    \caption{Training and test loss for the graph embeddings model trained jointly on CARLA and Argoverse 2.0 data.}
-    \label{fig:train_test_graph_embeddings_loss_plot}
-\end{figure}
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{plots/train_test_graph_embeddings_loss_plot.png}
+%     \caption{Training and test loss for the graph embeddings model trained jointly on CARLA and Argoverse 2.0 data.}
+%     \label{fig:train_test_graph_embeddings_loss_plot}
+% \end{figure}
     
 
 The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of 
@@ -326,9 +335,10 @@ if the CARLA scenarios cover the Argoverse 2.0 scenarios in the embedded space.
     
     \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_2.png}
     
-    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_3.png}
+    %\includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_3.png}
     
-    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_4.png}
+    %\includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_4.png}
+
     \caption{Plausibility checks showing graph embedding comparisons. For randomly sampled scenarios, the most similar scenarios based on embedding distance (both Euclidean and cosine) are visualized, including comparisons between CARLA and Argoverse scenarios.}
     \label{fig:plausibility_checks}
 \end{figure}

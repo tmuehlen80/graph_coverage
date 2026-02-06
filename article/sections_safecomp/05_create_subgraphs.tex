@@ -9,3 +9,6 @@ This bottom-up approach starts from individual situation archetypes and checks t
 
 We defined 18 subgraph archetypes covering common traffic scenarios: simple 2-actor patterns (following, opposite, neighbor---used only for isolated pairs), 3-actor patterns (lead vehicle with neighbor, platoons, opposite traffic, lane change/cut-in scenarios with intersection variants), 4-actor patterns (cut-out, multi-vehicle platoons, lead-follow with opposite traffic and intersection variants), and 5-actor patterns combining lead, neighbor, and opposite vehicles with intersection variants.
 
+The last step in the analysis of the subgraphs is to identify coverage holes. These provide an intuitive understanding of what traffic situations are missing from the simulated environment. The approach identifies scenario archetypes that are significantly underrepresented or absent in one dataset compared to another \textit{REF} dataset. 
+
+These concepts will be applied to CARLA and Argoverse datasets in the application chapter \ref{chapter:application}.
