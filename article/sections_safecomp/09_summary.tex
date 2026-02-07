@@ -1,9 +1,11 @@
 \section{Summary}
 
 This paper presented a graph-based framework for coverage analysis in autonomous driving that represents traffic scenes as hierarchical graphs combining map topology with actor relationships.
-Two complementary analysis approaches were developed: subgraph isomorphism using manually defined archetype graphs for interpretable pattern-based coverage metrics, and graph embeddings via GINE networks trained with contrastive learning for similarity-based assessment, clustering, and anomaly detection.
+Two complementary analysis approaches were developed: subgraph isomorphism using manually defined archetype graphs for interpretable pattern-based coverage metrics, 
+and graph embeddings via GINE networks trained with contrastive learning for similarity-based assessment, clustering, and anomaly detection.
 
-Both approaches were validated on Argoverse 2.0 and CARLA data, demonstrating that the framework captures meaningful traffic scene structure and reveals distribution differences between real-world and simulated datasets (Section~\ref{chapter:application}).
+Validation on Argoverse 2.0 and CARLA data demonstrates that the graph representations capture complex traffic situations including lane changes, intersections, and multi-actor interactions (Section~\ref{chapter:application}).
+The coverage analysis reveals significant distribution differences between real-world and simulated datasets.
 Compared to approaches like TNO Streetwise \cite{tno_streetwise}, the framework scales efficiently without scenario-specific handling rules and naturally accommodates varying numbers of actors.
 
 Future work will incorporate temporal information through multi-timestep graph structures and investigate automatic archetype extraction from real-world data.

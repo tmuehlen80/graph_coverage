@@ -9,19 +9,12 @@ The second one is to translate graphs to graph embeddings, and then to compare t
 \subsection{Argoverse 2.0}
 
 Argoverse 2.0 \cite{Argoverse2} is a large-scale dataset for autonomous driving research,
-developed by Argo AI. It provides real-world sensor data collected from autonomous vehicle
-test fleets operating in six geographically diverse U.S. cities: Austin, Detroit, Miami,
-Palo Alto, Pittsburgh, and Washington D.C. The dataset includes high-definition LiDAR point
-clouds, ring camera imagery, and detailed vector map information. A key component is the
-Motion Forecasting Dataset, which contains 250,000 scenarios of 11 seconds each, featuring
+developed by Argo AI.  It contains a Dataset of 250,000 scenarios of 11 seconds each, featuring
 tracked object trajectories for vehicles, pedestrians, cyclists, and other road users.
 
-The dataset has become a standard benchmark in the autonomous driving community, particularly
-for motion prediction and trajectory forecasting tasks. Its rich annotations include object
-classifications, track identities across frames, and semantic map information such as lane
-boundaries, crosswalks, and traffic signal locations. The diverse geographic coverage ensures
-exposure to varying road geometries, traffic patterns, and driving behaviors, making it
-suitable for developing and evaluating generalizable autonomous driving algorithms.
+The dataset contains object classifications, track identities across frames, and semantic map
+information including lane boundaries, crosswalks, and traffic signal locations across diverse
+geographic locations.
 
 For this work, the Motion Forecasting Dataset is used, specifically focusing on the tracked
 object trajectories and their spatial relationships to construct traffic scene graphs. As the dataset is quite massive, a subset of 17000 scenes from the train partition is used for the analysis.
