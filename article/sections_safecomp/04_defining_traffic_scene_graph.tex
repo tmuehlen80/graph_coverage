@@ -10,11 +10,13 @@ The map graph is a directed multigraph $G_{\text{map}} = (V_{\text{map}}, E_{\te
 \textbf{neighbor edges} connect adjacent lanes traveling in the same direction, and
 \textbf{opposite edges} connect lanes traveling in opposite directions.
 The map graph is constructed by processing map data from Argoverse or CARLA to extract these relationships. Lanes with geometric overlap are marked as intersection lanes.
+%dataset is not yet introduced. 
 
 \subsection{Actor Graph Construction}
 \label{subsec:actor_graph}
 
-The actor graph $G_{\text{actor}} = (V_{\text{actor}}, E_{\text{actor}})$ represents dynamic relationships between actors at a specific timestep. Each node $v \in V_{\text{actor}}$ represents an actor and stores attributes including primary lane ID, all occupied lane IDs, longitudinal position $s$ along the lane centerline, 3D position, longitudinal speed, actor type, and a lane change indicator. Each edge $e \in E_{\text{actor}}$ stores a relation type and a path length in meters along the lane network.
+The actor graph $G_{\text{actor}} = (V_{\text{actor}}, E_{\text{actor}})$ represents dynamic relationships between actors at a specific timestep. Each node $v \in V_{\text{actor}}$ represents an actor and stores attributes including primary lane ID, 
+all occupied lane IDs, longitudinal position $s$ along the lane centerline, 3D position, longitudinal speed, actor type, and a lane change indicator. Each edge $e \in E_{\text{actor}}$ stores a actor-actor relation type and a path length along the lane network.
 
 \label{subsubsec:relation_types}
 
