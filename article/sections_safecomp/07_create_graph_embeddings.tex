@@ -1,24 +1,28 @@
 \section{Graph Embeddings for Traffic Scene Analysis}
 \label{chapter:implementation_of_graph_embeddings_for_traffic_scene_analysis}
 
-The subgraph isomorphism approach from Section~\ref{chapter:create_subgraphs_for_coverage_analysis} provides a bottom-up methodology for analyzing traffic scenarios through predefined archetypes. However, real-world traffic scene graphs exhibit significantly higher complexity than these patterns, motivating complementary top-down approaches such as graph embeddings.
+The subgraph isomorphism approach from Section~\ref{chapter:create_subgraphs_for_coverage_analysis} provides a bottom-up methodology for analyzing traffic scenarios through predefined archetypes. 
+However, real-world traffic scene graphs exhibit significantly higher complexity than these patterns, motivating complementary top-down approaches such as graph embeddings.
 
 Embeddings translate raw data into a vector space where distances measure similarity, analogous to the Word2Vec model for words (\cite{mikolov2013efficientestimationwordrepresentations}).
 For traffic scene graphs, embeddings enable coverage analysis by comparing scenes: identifying similar simulation--real-world scenario pairs, detecting near duplicates, or visualizing structures that would be intractable in the original space of all possible traffic scenes.
 
-A Graph Isomorphism Network with Edge features (GINE) \cite{hu2020strategiespretraininggraphneural} is used to generate embeddings, implemented in PyTorch Geometric (\cite{Fey/Lenssen/2019}). GINE is chosen because it directly incorporates edge features through its aggregation function: edge type and path length between actors are encoded as edge features (see Section \ref{fig:graph_gine_architecture}) and directly influence the message-passing process.
+A Graph Isomorphism Network with Edge features (GINE) \cite{hu2020strategiespretraininggraphneural} is used to generate embeddings, implemented in PyTorch Geometric (\cite{Fey/Lenssen/2019}). 
+GINE is chosen because it allows embedding of edge features, so we may encode actor relation type and distance as integral desciptors for a traffic scene (see Section \ref{fig:graph_gine_architecture}).
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=0.8\textwidth]{plots/graph_gine_architecture_manually_updated_compact.png}
     \caption{Model architecture for the Graph Isomorphism Network with Edge features (GINE).}
     \label{fig:graph_gine_architecture}
-\end{figure}
+\end{figure} %ist das notwendig? 
 
 The architecture is shown in Figure \ref{fig:graph_gine_architecture}. Node features are actor type (one-hot: vehicle, pedestrian, cyclist, motorcycle), speed, intersection presence, and lane change since the last timestep. Edge features are edge type (one-hot, six spatial relationship categories) and path length between nodes.
 
 The model was trained on CARLA and Argoverse 2.0 using self-supervised contrastive learning
 \cite{chen2020simple}, \cite{hu2020strategiespretraininggraphneural}.
 For each mini-batch of 384 graphs, two augmented views were created by perturbing continuous attributes with Gaussian noise ($\sigma=0.08$) and randomly dropping edges (probability 0.1).
-A five-layer GINE encoder (hidden width 384) produced graph-level representations via concatenated mean, max, and sum pooling, followed by an embedding MLP (192-dimensional $\ell_2$-normalized) and a projection head. The contrastive loss maximized agreement between views of the same graph while contrasting against other in-batch graphs (cosine similarity, $\tau=0.07$). Optimization used AdamW (weight decay $5 \times 10^{-6}$), learning rate warmup over three epochs, and exponential decay (initial rate 0.0015, factor 0.85) across 15 training stages \cite{hu2020strategiespretraininggraphneural}, \cite{Fey/Lenssen/2019}.
+A five-layer GINE encoder (hidden width 384) produced graph-level representations via concatenated mean, max, and sum pooling, followed by an embedding MLP (192-dimensional $\ell_2$-normalized) and a projection head. 
+The contrastive loss maximized agreement between views of the same graph while contrasting against other in-batch graphs (cosine similarity, $\tau=0.07$). 
+Optimization used AdamW (weight decay $5 \times 10^{-6}$), learning rate warmup over three epochs, and exponential decay (initial rate 0.0015, factor 0.85) across 15 training stages \cite{hu2020strategiespretraininggraphneural}, \cite{Fey/Lenssen/2019}. %Just make a reference to git where the local and the metadata are located? 
 
