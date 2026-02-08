@@ -2,6 +2,46 @@
 \label{chapter:defining_a_traffic_scene_graph}
 
 
+\subsection{Datasets}
+
+\subsubsection{Argoverse 2.0}
+
+Argoverse 2.0 \cite{Argoverse2} is a large-scale dataset for autonomous driving research,
+developed by Argo AI.  It contains a Dataset of 250,000 scenarios of 11 seconds each, featuring
+tracked object trajectories for vehicles, pedestrians, cyclists, and other road users.
+
+The dataset contains object classifications, track identities across frames, and semantic map
+information including lane boundaries, crosswalks, and traffic signal locations across diverse
+geographic locations. A subset of 17000 scenes from the train partition is used for the analysis.
+
+\subsubsection{Carla}
+
+CARLA (Car Learning to Act, \cite{Dosovitskiy17Carla}) is an open-source simulator specifically designed for autonomous driving research and 
+development. It provides a realistic urban driving environment with 
+diverse road layouts, weather conditions, and traffic scenarios.
+
+Here, Carla version $0.9.15$ is used, because it provides more maps than subsequent versions.
+Specifically, the following maps were used: Town01, Town02, Town03, Town04, Town05 and Town07. 
+% Plots of these maps are shown in Figure \ref{fig:carla_maps}.
+
+% \begin{figure}[ht]
+% \centering
+% \includegraphics[width=0.8\textwidth]{plots/carla_maps_used.png}
+% \caption{Overview of CARLA maps used in the simulation study: Town01, Town02, Town03, Town04, Town05, and Town07. These maps provide diverse urban driving environments with varying road layouts, intersections, and traffic patterns.}
+% \label{fig:carla_maps}
+% \end{figure}
+
+The simulation contains multiple vehicle types including trucks, motorcycles, 
+and regular cars are spawned with varying probabilities, each exhibiting different behavioral
+characteristics such as speed preferences, following distances, and lane-changing tendencies. 
+The script incorporates dynamic behavior modifications during simulation, including random slowdowns, 
+periodic behavior changes, and adaptive responses to traffic conditions, resulting in rich and 
+varied traffic scene data across multiple CARLA maps and simulation iterations. The simulation runs
+have between 20 and 60 vehicles each.
+
+The resulting data consists of 2050 scenes with 11 seconds of simulation time each. The actors are spread over the entire map, 
+so one scene produces multiple connected components, if the actors groups are far apart from each other.
+
 \subsection{Map Graph Construction}
 \label{subsec:map_graph}
 
@@ -9,8 +49,7 @@ The map graph is a directed multigraph $G_{\text{map}} = (V_{\text{map}}, E_{\te
 \textbf{following edges} connect lanes forming a continuous path in the same direction,
 \textbf{neighbor edges} connect adjacent lanes traveling in the same direction, and
 \textbf{opposite edges} connect lanes traveling in opposite directions.
-The map graph is constructed by processing map data from Argoverse or CARLA to extract these relationships. Lanes with geometric overlap are marked as intersection lanes.
-%dataset is not yet introduced. 
+The map graph is constructed by processing map data from Argoverse or CARLA (see Section \ref{chapter:datasets}) to extract these relationships. Lanes with geometric overlap are marked as intersection lanes.
 
 \subsection{Actor Graph Construction}
 \label{subsec:actor_graph}
