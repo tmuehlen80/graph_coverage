@@ -71,34 +71,34 @@ Notably, both \texttt{cut\_in} and \texttt{cut\_out} scenarios—fundamental lan
 
 
 
-\subsubsection{Method 2: Co-occurrence Pattern Analysis}
+% \subsubsection{Method 2: Co-occurrence Pattern Analysis}
 
-Beyond individual scenario coverage, real-world traffic scenes often contain multiple scenario archetypes simultaneously. Figure~\ref{fig:cooccurrence_diff} analyzes how combinations of archetypes differ between datasets.
+% Beyond individual scenario coverage, real-world traffic scenes often contain multiple scenario archetypes simultaneously. Figure~\ref{fig:cooccurrence_diff} analyzes how combinations of archetypes differ between datasets.
 
-\begin{figure}[ht]
-   \centering
-   \includegraphics[width=0.95\textwidth]{plots/cooccurrence_difference_matrix.png}
-   \caption{Co-occurrence difference matrix between CARLA and Argoverse. Blue cells indicate archetype pairs that co-occur more frequently in Argoverse, while red cells show combinations more prevalent in CARLA. Cell intensity represents the magnitude of the difference in percentage points.}
-   \label{fig:cooccurrence_diff}
-\end{figure}
+% \begin{figure}[ht]
+%    \centering
+%    \includegraphics[width=0.95\textwidth]{plots/cooccurrence_difference_matrix.png}
+%    \caption{Co-occurrence difference matrix between CARLA and Argoverse. Blue cells indicate archetype pairs that co-occur more frequently in Argoverse, while red cells show combinations more prevalent in CARLA. Cell intensity represents the magnitude of the difference in percentage points.}
+%    \label{fig:cooccurrence_diff}
+% \end{figure}
 
-The co-occurrence matrix reveals systematic patterns in how archetypes combine. Blue regions dominate the matrix, indicating that Argoverse exhibits substantially more co-occurrence of complex scenarios than CARLA. The strongest co-occurrence gaps appear in combinations involving intersection scenarios and simple following patterns: the joint occurrence of \texttt{simple\_following} with \texttt{opposite\_traffic\_at\_intersection} shows differences exceeding 20 percentage points, as does the combination with \texttt{lead\_with\_neighbor\_at\_intersection}.
+% The co-occurrence matrix reveals systematic patterns in how archetypes combine. Blue regions dominate the matrix, indicating that Argoverse exhibits substantially more co-occurrence of complex scenarios than CARLA. The strongest co-occurrence gaps appear in combinations involving intersection scenarios and simple following patterns: the joint occurrence of \texttt{simple\_following} with \texttt{opposite\_traffic\_at\_intersection} shows differences exceeding 20 percentage points, as does the combination with \texttt{lead\_with\_neighbor\_at\_intersection}.
 
-Notably, several intersection-related archetypes show deep blue columns and rows, suggesting that CARLA not only underrepresents these scenarios individually but also fails to generate them in realistic combination with other traffic patterns. For instance, \texttt{cut\_in\_intersection} rarely co-occurs with neighbor vehicles or opposite traffic in CARLA, despite these combinations being common in Argoverse. This reveals a fundamental gap: CARLA's intersection scenarios, when present, tend to appear in isolation rather than as part of richer, multi-archetype traffic situations.
+% Notably, several intersection-related archetypes show deep blue columns and rows, suggesting that CARLA not only underrepresents these scenarios individually but also fails to generate them in realistic combination with other traffic patterns. For instance, \texttt{cut\_in\_intersection} rarely co-occurs with neighbor vehicles or opposite traffic in CARLA, despite these combinations being common in Argoverse. This reveals a fundamental gap: CARLA's intersection scenarios, when present, tend to appear in isolation rather than as part of richer, multi-archetype traffic situations.
 
-The few red regions indicate scenarios that co-occur more frequently in CARLA than in Argoverse, primarily involving simple patterns. This aligns with the observation that CARLA emphasizes simpler traffic configurations.
+% The few red regions indicate scenarios that co-occur more frequently in CARLA than in Argoverse, primarily involving simple patterns. This aligns with the observation that CARLA emphasizes simpler traffic configurations.
 
-The coverage gaps identified through both individual scenario analysis and co-occurrence patterns provide actionable insights for simulation improvement. The systematic underrepresentation of intersection scenarios and their combinations suggests that CARLA's scenario generation could benefit from enhanced intersection modeling and multi-actor interaction logic.
+% The coverage gaps identified through both individual scenario analysis and co-occurrence patterns provide actionable insights for simulation improvement. The systematic underrepresentation of intersection scenarios and their combinations suggests that CARLA's scenario generation could benefit from enhanced intersection modeling and multi-actor interaction logic.
 
-\subsubsection{Method 3: Parameter Distribution Gaps}
+\subsubsection{Method 2: Parameter Distribution Gaps}
 
 Even when a scenario archetype is structurally present in both datasets, the distributions of continuous parameters such as speed can reveal additional coverage gaps. To investigate parametric differences, we analyze role-specific speed distributions within the \texttt{lead\_vehicle\_in\_front\_with\_neighbor\_vehicle} scenario, a common highway situation with potential for lane changes.
 
 Since each traffic scene graph contains multiple actors playing different roles within the scenario archetype, we must separate actors by their specific roles in the subgraph to obtain a meaningful comparison. In this three-actor scenario, role "a" represents the ego vehicle, role "b" is the leading vehicle in front of "a", and role "c" is the neighbor vehicle adjacent to "a". This role-based separation provides a detailed view of how different participants in the same scenario exhibit different parameter distributions.
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
    \centering
-   \includegraphics[width=0.95\textwidth]{plots/role_comparison_lead_vehicle_in_front_with_neighbor_vehicle.png}
+   \includegraphics[width=0.8\textwidth]{plots/role_comparison_lead_vehicle_in_front_with_neighbor_vehicle.png}
    \caption{Role-specific speed distribution comparison for the lead vehicle in front with neighbor vehicle scenario. Green rectangles mark identified coverage gaps where Argoverse shows sufficient density but CARLA is nearly empty. The three panels show distributions for role "a" (ego vehicle), role "b" (lead vehicle), and role "c" (neighbor vehicle).}
    \label{fig:role_speed_comparison}
 \end{figure}
@@ -125,14 +125,14 @@ The structured, bottom-up approach presented here demonstrates that subgraph iso
 
 The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of 
 randomly samples scenarios, the scenario with 
-closest embedding vector (euclidean distance) has been visualized in figure \ref{fig:embedding_space}. It shows that the embeddings are able to capture the similarity between scenarios.
+closest embedding vector (euclidean distance) has been visualized in figure \ref{fig:plausibility_checks}. It shows that the embeddings are able to capture the similarity between scenarios.
 
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
     \centering
     \includegraphics[width=0.8\textwidth]{plots/graph_embeddings_pca_tsne_test_plot.png}
     \includegraphics[width=0.8\textwidth]{plots/PCA_density_plots_manually_cropped.png}
-    \caption{PCA and t-SNE visualization of the embedding space for Carla and Argoverse 2.0 scenarios.}
+    \caption{Top row: PCA and t-SNE visualization of the embedding space for Carla and Argoverse 2.0 scenarios. Bottom row: PCA kernel density plots for Argoverse 2.0 scenarios.}
     \label{fig:embedding_space}
 \end{figure}
     
@@ -147,15 +147,14 @@ different flavors, like for example:
     \item do the same vice versa, i.e. to check for relevance of CARLA scenarios.
 \end{itemize} %Okay, aber was machen wir? konzentrier dich darauf, pack die anderen Sachen in den Ausblick. 
 
-As the embedding space is a normal metric space, representing scenarios across a large range of different driving situations, these embeddings can be used also for 
-many other tasks, like for example clustering, anomaly detection, similarity search, etc.
+As the embedding space is a normal metric space, representing scenarios across a large range of different driving situations, these embeddings can be used also for many other tasks, like for example clustering, anomaly detection, similarity search, etc.
 
 And, as the main task considered here is coverage analysis, the embeddings can be used to check if a target distribution is met by a test distribution in the embedded space. 
 Specifically, considering the Argoverse 2.0 scenarios as the target distribution, and the CARLA scenarios as the test distribution, the embeddings can be used to check 
 if the CARLA scenarios cover the Argoverse 2.0 scenarios in the embedded space.
 
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
     \centering
     \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_0.png}
     
