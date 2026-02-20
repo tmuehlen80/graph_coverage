@@ -1,4 +1,4 @@
-\section{Application: Analysing traffic scenes with coverage graphs}
+\section{Application: Analysing traffic scenes}
 \label{chapter:application}
 
 Having defined a graph-based traffic scene representation, we can now analyse the coverage of the system.
@@ -52,9 +52,7 @@ To comprehensively analyze coverage gaps, we employ three complementary methods:
 \end{tabular}
 \end{table}
 
-\subsubsection{Individual Scenario Archetype Coverage}
-
-Figure~\ref{fig:coverage_comparison} presents a comprehensive comparison of scenario archetype coverage between CARLA and Argoverse datasets. The dual-axis visualization displays coverage percentages (horizontal bars) alongside coverage differences (diamond markers). Red diamonds indicate scenarios that are more prevalent in Argoverse, while green diamonds mark scenarios with higher CARLA representation.
+\textbf{Individual Scenario Archetype Coverage Gaps:} Figure~\ref{fig:coverage_comparison} presents a comprehensive comparison of scenario archetype coverage between CARLA and Argoverse datasets. The dual-axis visualization displays coverage percentages (horizontal bars) alongside coverage differences (diamond markers). Red diamonds indicate scenarios that are more prevalent in Argoverse, while green diamonds mark scenarios with higher CARLA representation.
 
 \begin{figure}[ht]
    \centering
@@ -63,11 +61,12 @@ Figure~\ref{fig:coverage_comparison} presents a comprehensive comparison of scen
    \label{fig:coverage_comparison}
 \end{figure}
 
-The coverage distribution reveals a clear pattern: CARLA achieves higher coverage only for the three simple two-actor scenarios (\texttt{simple\_following}, \texttt{simple\_neighbor}, \texttt{simple\_opposite}), as indicated by green diamond markers. For all complex multi-actor scenarios, Argoverse exhibits substantially higher occurrence rates (red diamond markers), demonstrating that the simulation systematically fails to generate complex traffic situations at the same frequency as observed in real-world data.
+
+The coverage distribution reveals a clear pattern: CARLA achieves higher coverage only for the three simple two-actor scenarios (\texttt{simple\_following}, \linebreak \texttt{simple\_neighbor}, \texttt{simple\_opposite}), as indicated by green diamond markers. For all complex multi-actor scenarios, Argoverse exhibits substantially higher occurrence rates (red diamond markers), demonstrating that the simulation systematically fails to generate complex traffic situations at the same frequency as observed in real-world data.
 
 The identified coverage gaps in CARLA are substantial. The most critical gaps appear in intersection-related archetypes: \texttt{cut\_out\_intersection} shows nearly complete absence in CARLA (less than 1\% coverage) while appearing in approximately 8\% of Argoverse scenes, representing a gap of approximately 8 percentage points. Similarly, \texttt{lead\_neighbor\_opposite\_vehicle\_intersection} appears in roughly 6\% of Argoverse data but is virtually absent in CARLA (gap: $\sim$6 percentage points). The \texttt{cut\_in\_intersection} pattern exhibits a comparable gap of approximately 7 percentage points.
 
-Notably, both \texttt{cut\_in} and \texttt{cut\_out} scenarios—fundamental lane change maneuvers—show significant underrepresentation in CARLA regardless of whether they occur at intersections. The \texttt{cut\_out} pattern appears in less than 1\% of CARLA scenes compared to roughly 5\% in Argoverse, while \texttt{cut\_in} shows a gap of approximately 5 percentage points. This systematic absence of lane change scenarios indicates that CARLA's traffic generation lacks the dynamic lateral maneuvers characteristic of real-world driving, limiting its ability to test autonomous systems in scenarios involving merging, overtaking, and lane changes.
+Notably, both \texttt{cut\_in} and \texttt{cut\_out} scenarios—fundamental lane change maneuvers—show significant underrepresentation in CARLA regardless of whether they occur at intersections. The \texttt{cut\_out} pattern appears in less than 1\% of CARLA scenes compared to roughly 5\% in Argoverse, while \texttt{cut\_in} shows a gap of approximately 5 percentage points. This systematic absence of lane change scenarios indicates that the CARLA traffic generation script applied here lacks the dynamic lateral maneuvers characteristic of real-world driving, limiting its ability to test autonomous systems in scenarios involving merging, overtaking, and lane changes.
 
 
 
@@ -90,9 +89,7 @@ Notably, both \texttt{cut\_in} and \texttt{cut\_out} scenarios—fundamental lan
 
 % The coverage gaps identified through both individual scenario analysis and co-occurrence patterns provide actionable insights for simulation improvement. The systematic underrepresentation of intersection scenarios and their combinations suggests that CARLA's scenario generation could benefit from enhanced intersection modeling and multi-actor interaction logic.
 
-\subsubsection{Method 2: Parameter Distribution Gaps}
-
-Even when a scenario archetype is structurally present in both datasets, the distributions of continuous parameters such as speed can reveal additional coverage gaps. To investigate parametric differences, we analyze role-specific speed distributions within the \texttt{lead\_vehicle\_in\_front\_with\_neighbor\_vehicle} scenario, a common highway situation with potential for lane changes.
+\textbf{Parameter Distribution Gaps:} Even when a scenario archetype is structurally present in both datasets, the distributions of continuous parameters such as speed can reveal additional coverage gaps. To investigate parametric differences, we analyze role-specific speed distributions within the \linebreak \texttt{lead\_vehicle\_in\_front\_with\_neighbor\_vehicle} scenario, a common highway situation with potential for lane changes.
 
 Since each traffic scene graph contains multiple actors playing different roles within the scenario archetype, we must separate actors by their specific roles in the subgraph to obtain a meaningful comparison. In this three-actor scenario, role "a" represents the ego vehicle, role "b" is the leading vehicle in front of "a", and role "c" is the neighbor vehicle adjacent to "a". This role-based separation provides a detailed view of how different participants in the same scenario exhibit different parameter distributions.
 
@@ -110,63 +107,42 @@ Coverage gaps are identified when a speed bin is sufficiently filled in Argovers
 This role-specific parametric analysis demonstrates that coverage gaps exist not only at the structural level (which scenarios are present) and the co-occurrence level (which combinations appear), but also at the parameter level within structurally matching scenarios. The systematic underrepresentation of higher-speed conditions limits CARLA's utility for testing autonomous systems in realistic highway environments where lane changes and overtaking maneuvers typically occur at elevated speeds.
 
 
-The structured, bottom-up approach presented here demonstrates that subgraph isomorphism can effectively characterize traffic scene coverage for predefined archetypes. However, the manual definition of archetypes and the computational cost of isomorphism checking for large scenario collections motivate the graph embedding approach explored in the following chapter.
+The structured, bottom-up approach presented here demonstrates that subgraph isomorphism can effectively characterize traffic scene coverage for predefined archetypes. However, the manual definition of archetypes and the computational cost of isomorphism checking for large scenario collections motivate the graph embedding approach explored in the following paragraph.
 
 
-\subsection{Graph Embeddings Coverage Analysis}
+\subsection{Graph Embeddings Coverage Analysis} The graph embedding approach complements the subgraph isomorphism method by learning a continuous, metric representation of traffic scenes without requiring manually defined archetypes. The Graph Isomorphism Network with Edge features (GINE) described above is trained jointly on both CARLA and Argoverse datasets and the results discussed in this section.
 
-% \begin{figure}[ht]
-%     \centering
-%     \includegraphics[width=0.8\textwidth]{plots/train_test_graph_embeddings_loss_plot.png}
-%     \caption{Training and test loss for the graph embeddings model trained jointly on CARLA and Argoverse 2.0 data.}
-%     \label{fig:train_test_graph_embeddings_loss_plot}
-% \end{figure}
-    
+As a plausibility check, for a number of randomly sampled scenarios the scenario with the closest embedding vector (Euclidean distance) is visualised in Figure~\ref{fig:plausibility_checks}. The retrieved nearest neighbours consistently share the same actor configuration and road geometry as the query, confirming that the model captures traffic scene structure rather than superficial features.
 
-The resulting embeddings have been analysed in a number of ways. For plausibility checks, for a number of 
-randomly samples scenarios, the scenario with 
-closest embedding vector (euclidean distance) has been visualized in figure \ref{fig:plausibility_checks}. It shows that the embeddings are able to capture the similarity between scenarios.
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{plots/graph_embeddings_comparison_plausibility_check_0.png}
+
+    \includegraphics[width=0.85\textwidth]{plots/graph_embeddings_comparison_plausibility_check_1.png}
+
+    \includegraphics[width=0.85\textwidth]{plots/graph_embeddings_comparison_plausibility_check_2.png}
+
+    \caption{Plausibility checks showing graph embedding comparisons. For randomly sampled scenarios, the most similar scenarios based on embedding distance are visualised, including cross-dataset comparisons between CARLA and Argoverse scenarios.}
+    \label{fig:plausibility_checks}
+\end{figure}
+
+The embedding space is analysed using PCA and t-SNE as shown in Figure~\ref{fig:embedding_space}. The first two principal components already explain 40\% of the total variance. Both projections reveal that CARLA and Argoverse scenarios, while sharing a common region corresponding to simple following situations, differ substantially in their density distributions: For the Carla data, the main peak of the distribution is concentrated at higher values of the first principal component, while for Argoverse data the main peak is located at negative values of the first principal component. This indicates that the two datasets differ in their overall scenario characteristics, with CARLA scenarios clustering in a different region of the embedding space than Argoverse scenarios. 
 
 
 \begin{figure}[ht!]
     \centering
     \includegraphics[width=0.8\textwidth]{plots/graph_embeddings_pca_tsne_test_plot.png}
     \includegraphics[width=0.8\textwidth]{plots/PCA_density_plots_manually_cropped.png}
-    \caption{Top row: PCA and t-SNE visualization of the embedding space for Carla and Argoverse 2.0 scenarios. Bottom row: PCA kernel density plots for Argoverse 2.0 scenarios.}
+    \caption{Top row: PCA and t-SNE visualisation of the embedding space for CARLA and Argoverse 2.0 scenarios. Bottom row: PCA kernel density plots for Argoverse 2.0 scenarios, highlighting regions of high real-world density.}
     \label{fig:embedding_space}
 \end{figure}
-    
-As a next step, the embedding space has been analysed using dimension reduction techniques, specifically PCA and t-SNE. This is shown in Figure \ref{fig:embedding_space}. This can be done in a number of 
-different flavors, like for example:
 
-\begin{itemize}
-    \item distinguishing between CARLA and Argoverse scenarios by a color coding, 
-    \item visualizing just the CARLA scenarios and color code them by the map, in order to see if the maps deliver different types of scenarios,
-    \item by calculating a density distribution of the embedding space for the Argoverse scenarios, and to check if for a regions with a density 
-    about a certain threshold, there exist CARLA scenarios, i.e. do a coverage analysis in the embedded space
-    \item do the same vice versa, i.e. to check for relevance of CARLA scenarios.
-\end{itemize} %Okay, aber was machen wir? konzentrier dich darauf, pack die anderen Sachen in den Ausblick. 
-
-As the embedding space is a normal metric space, representing scenarios across a large range of different driving situations, these embeddings can be used also for many other tasks, like for example clustering, anomaly detection, similarity search, etc.
-
-And, as the main task considered here is coverage analysis, the embeddings can be used to check if a target distribution is met by a test distribution in the embedded space. 
-Specifically, considering the Argoverse 2.0 scenarios as the target distribution, and the CARLA scenarios as the test distribution, the embeddings can be used to check 
-if the CARLA scenarios cover the Argoverse 2.0 scenarios in the embedded space.
-
+\textbf{Coverage Gap Identification in Embedding Space:} To quantify coverage gaps, Argoverse graphs whose subgraph isomorphism labels indicate under-represented scenario types (identified in Section~\ref{chapter:application}) are projected into the joint embedding space and compared against the CARLA density. Figure~\ref{fig:embedding_coverage_gaps} shows the combined result: 23,148 Argoverse graphs are identified as coverage gaps, the majority belonging to \texttt{cut\_in} scenarios (21,643 graphs, representing approximately 94\% of all \texttt{cut\_in} instances in Argoverse), followed by \texttt{cut\_out} (6,653 graphs), \texttt{cut\_out\_intersection} (1,462 graphs), and \linebreak \texttt{lead\_neighbor\_opposite\_vehicle\_intersection} (330 graphs). In the embedding projection, these gap points (marked with crosses) cluster in regions where Argoverse exhibits high density but CARLA data is nearly absent, directly confirming and spatially localising the gaps found by the discrete archetype comparison.
 
 \begin{figure}[ht!]
     \centering
-    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_0.png}
-    
-    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_1.png}
-    
-    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_2.png}
-    
-    %\includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_3.png}
-    
-    %\includegraphics[width=0.95\textwidth]{plots/graph_embeddings_comparison_plausibility_check_4.png}
-
-    \caption{Plausibility checks showing graph embedding comparisons. For randomly sampled scenarios, the most similar scenarios based on embedding distance (both Euclidean and cosine) are visualized, including comparisons between CARLA and Argoverse scenarios.}
-    \label{fig:plausibility_checks}
+    \includegraphics[width=0.95\textwidth]{plots/graph_embeddings_coverage_gap_visualization.png}
+    \caption{Coverage gap visualisation in the embedding space. CARLA (blue) and Argoverse (green) scenarios are shown in PCA (left) and t-SNE (right) projections. Red crosses mark the 23,148 Argoverse graphs identified as coverage gaps, concentrated in regions where CARLA density is negligible.}
+    \label{fig:embedding_coverage_gaps}
 \end{figure}
 
