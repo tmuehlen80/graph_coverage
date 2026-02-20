@@ -17,12 +17,12 @@ GINE is chosen because it allows embedding of edge features, so we may encode ac
     \label{fig:graph_gine_architecture}
 \end{figure} %ist das notwendig? 
 
-The architecture is shown in Figure \ref{fig:graph_gine_architecture}. Node features are actor type (one-hot: vehicle, pedestrian, cyclist, motorcycle), speed, intersection presence, and lane change since the last timestep. Edge features are edge type (one-hot, six spatial relationship categories) and path length between nodes.
+The architecture is shown in Figure \ref{fig:graph_gine_architecture}. Node features are actor type (one-hot: vehicle, pedestrian, cyclist, motorcycle), speed, intersection presence, and lane change since the last timestep. Edge features are edge type (one-hot, 4 spatial relationship categories) and path length between nodes.
 
 The model was trained on CARLA and Argoverse 2.0 using self-supervised contrastive learning
 \cite{chen2020simple}, \cite{hu2020strategiespretraininggraphneural}.
-For each mini-batch of 384 graphs, two augmented views were created by perturbing continuous attributes with Gaussian noise ($\sigma=0.08$) and randomly dropping edges (probability 0.1).
-A five-layer GINE encoder (hidden width 384) produced graph-level representations via concatenated mean, max, and sum pooling, followed by an embedding MLP (192-dimensional $\ell_2$-normalized) and a projection head. 
+For each mini-batch, two augmented views were created by perturbing continuous attributes with Gaussian noise ($\sigma=0.08$) and randomly dropping edges (probability 0.1).
+A five-layer GINE encoder produced graph-level representations via concatenated mean, max, and sum pooling, followed by an embedding MLP ($\ell_2$-normalized) and a projection head. 
 The contrastive loss maximized agreement between views of the same graph while contrasting against other in-batch graphs (cosine similarity, $\tau=0.07$). 
 Optimization used AdamW (weight decay $5 \times 10^{-6}$), learning rate warmup over three epochs, and exponential decay (initial rate 0.0015, factor 0.85) across 15 training stages \cite{hu2020strategiespretraininggraphneural}, \cite{Fey/Lenssen/2019}. %Just make a reference to git where the local and the metadata are located? 
 
