@@ -109,22 +109,23 @@ This role-specific parametric analysis demonstrates that coverage gaps exist not
 
 The structured, bottom-up approach presented here demonstrates that subgraph isomorphism can effectively characterize traffic scene coverage for predefined archetypes. However, the manual definition of archetypes and the computational cost of isomorphism checking for large scenario collections motivate the graph embedding approach explored in the following paragraph.
 
+\begin{figure}[ht!]
+  \centering
+  \includegraphics[width=0.85\textwidth]{plots/graph_embeddings_comparison_plausibility_check_0.png}
 
-\subsection{Graph Embeddings Coverage Analysis} The graph embedding approach complements the subgraph isomorphism method by learning a continuous, metric representation of traffic scenes without requiring manually defined archetypes. The Graph Isomorphism Network with Edge features (GINE) described above is trained jointly on both CARLA and Argoverse datasets and the results discussed in this section.
+  \includegraphics[width=0.85\textwidth]{plots/graph_embeddings_comparison_plausibility_check_1.png}
+
+  \includegraphics[width=0.85\textwidth]{plots/graph_embeddings_comparison_plausibility_check_2.png}
+
+  \caption{Plausibility checks showing graph embedding comparisons. For randomly sampled scenarios, the most similar scenarios based on embedding distance are visualised, including cross-dataset comparisons between CARLA and Argoverse scenarios.}
+  \label{fig:plausibility_checks}
+\end{figure}
+
+\subsection{Graph Embeddings Coverage Analysis}
+
+The graph embedding approach complements the subgraph isomorphism method by learning a continuous, metric representation of traffic scenes without requiring manually defined archetypes. The Graph Isomorphism Network with Edge features (GINE) described above is trained jointly on both CARLA and Argoverse datasets and the results discussed in this section.
 
 As a plausibility check, for a number of randomly sampled scenarios the scenario with the closest embedding vector (Euclidean distance) is visualised in Figure~\ref{fig:plausibility_checks}. The retrieved nearest neighbours consistently share the same actor configuration and road geometry as the query, confirming that the model captures traffic scene structure rather than superficial features.
-
-\begin{figure}[ht!]
-    \centering
-    \includegraphics[width=0.85\textwidth]{plots/graph_embeddings_comparison_plausibility_check_0.png}
-
-    \includegraphics[width=0.85\textwidth]{plots/graph_embeddings_comparison_plausibility_check_1.png}
-
-    \includegraphics[width=0.85\textwidth]{plots/graph_embeddings_comparison_plausibility_check_2.png}
-
-    \caption{Plausibility checks showing graph embedding comparisons. For randomly sampled scenarios, the most similar scenarios based on embedding distance are visualised, including cross-dataset comparisons between CARLA and Argoverse scenarios.}
-    \label{fig:plausibility_checks}
-\end{figure}
 
 The embedding space is analysed using PCA and t-SNE as shown in Figure~\ref{fig:embedding_space}. The first two principal components already explain 40\% of the total variance. Both projections reveal that CARLA and Argoverse scenarios, while sharing a common region corresponding to simple following situations, differ substantially in their density distributions: For the Carla data, the main peak of the distribution is concentrated at higher values of the first principal component, while for Argoverse data the main peak is located at negative values of the first principal component. This indicates that the two datasets differ in their overall scenario characteristics, with CARLA scenarios clustering in a different region of the embedding space than Argoverse scenarios. 
 
