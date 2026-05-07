@@ -3,41 +3,9 @@
 
 
 \subsection{Datasets}
-In the following, 2 datasets are used for developing and demonstrating the suggested methods.
+\textbf{Argoverse 2.0} \cite{Argoverse2} is a large-scale dataset of 250,000 scenarios (11\,s each) with tracked trajectories for vehicles, pedestrians, and cyclists, plus semantic map information (lane boundaries, crosswalks, traffic signals) across diverse geographic locations. A subset of 17,000 training scenes is used.
 
-\textbf{Argoverse 2.0} \cite{Argoverse2} is a large-scale dataset for autonomous driving research,
-developed by Argo AI.  It contains a Dataset of 250,000 scenarios of 11 seconds each, featuring
-tracked object trajectories for vehicles, pedestrians, cyclists, and other road users.
-
-The dataset contains object classifications, track identities across frames, and semantic map
-information including lane boundaries, crosswalks, and traffic signal locations across diverse
-geographic locations. A subset of 17000 scenes from the train partition is used for the analysis.
-
-\textbf{CARLA} (Car Learning to Act, \cite{Dosovitskiy17Carla}) is an open-source simulator specifically designed for autonomous driving research and 
-development. It provides a realistic urban driving environment with 
-diverse road layouts, weather conditions, and traffic scenarios.
-
-Here, Carla version $0.9.15$ is used, because it provides more maps than subsequent versions.
-Specifically, the following maps were used: Town01, Town02, Town03, Town04, Town05 and Town07. 
-% Plots of these maps are shown in Figure \ref{fig:carla_maps}.
-
-% \begin{figure}[ht]
-% \centering
-% \includegraphics[width=0.8\textwidth]{plots/carla_maps_used.png}
-% \caption{Overview of CARLA maps used in the simulation study: Town01, Town02, Town03, Town04, Town05, and Town07. These maps provide diverse urban driving environments with varying road layouts, intersections, and traffic patterns.}
-% \label{fig:carla_maps}
-% \end{figure}
-
-A script has been generated to simulate multiple vehicle types including trucks, motorcycles, 
-and regular cars with varying probabilities, each exhibiting different behavioral
-characteristics such as speed preferences, following distances, and lane-changing tendencies. 
-The script incorporates dynamic behavior modifications during simulation, including random slowdowns, 
-periodic behavior changes, and adaptive responses to traffic conditions, resulting in rich and 
-varied traffic scene data across multiple CARLA maps and simulation iterations. The simulation runs
-have between 20 and 60 vehicles each.
-
-The resulting data consists of 2050 scenes with 11 seconds of simulation time each. The actors are spread over the entire map, 
-so one scene produces multiple connected components, if the actor groups are far apart from each other.
+\textbf{CARLA} (Car Learning to Act, \cite{Dosovitskiy17Carla}) is an open-source simulator for autonomous driving research. Version $0.9.15$ is used across six maps (Town01–Town05, Town07) with 20–60 vehicles per run, simulating mixed traffic with varied vehicle types and behavioural parameters. The resulting data consists of 2,050 scenes of 11 seconds each; actors spread across the map may form multiple disconnected components per scene.
 
 \subsection{Map Graph Construction}
 \label{subsec:map_graph}
