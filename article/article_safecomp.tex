@@ -1,5 +1,6 @@
-\documentclass{llncs}
-% \usepackage{cite}
+\documentclass[runningheads]{llncs}
+%
+\usepackage[T1]{fontenc}
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -11,9 +12,11 @@
 
 \title{A Graph-based Framework for Coverage Analysis in Autonomous Driving}
 
-\author{Thomas Mühlenstädt \and Marius Bause $^{1}$}
-\institute{$^{1}$ Holon GmbH }
-\date{\today}
+\titlerunning{Graph-based Framework for Coverage Analysis in AD}
+
+\author{Thomas Mühlenstädt \and Marius Bause}
+
+\authorrunning{T. Mühlenstädt and M. Bause}
 
 \begin{document}
 
@@ -28,6 +31,11 @@
 \input{sections_safecomp/07_create_graph_embeddings}
 \input{sections_safecomp/08_discussion}
 \input{sections_safecomp/09_summary}
+
+\begin{credits}
+\subsubsection{\discintname}
+The authors have no competing interests to declare that are relevant to the content of this article.
+\end{credits}
 
 \bibliographystyle{splncs04}
 \bibliography{lit}
