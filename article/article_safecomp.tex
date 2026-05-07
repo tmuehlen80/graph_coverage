@@ -10,13 +10,24 @@
 \usepackage{float}
 \usepackage{multirow}
 
+% Allow line breaks after underscores in typewriter identifiers
+\newcommand{\code}[1]{%
+  \begingroup
+  \renewcommand{\_}{\textunderscore\allowbreak}%
+  \texttt{#1}%
+  \endgroup
+}
+
 \title{A Graph-based Framework for Coverage Analysis in Autonomous Driving}
 
 \titlerunning{Graph-based Framework for Coverage Analysis in AD}
 
-\author{Thomas Mühlenstädt \and Marius Bause}
+\author{Thomas Mühlenstädt\inst{1} \and Marius Bause\inst{2}\orcidID{0000-0003-4105-8906}}
 
 \authorrunning{T. Mühlenstädt and M. Bause}
+
+\institute{Independent Researcher \\ \email{tmuehlenstaedt@gmail.com} \and
+Independent Researcher \\ \email{mariusbause@gmx.de}}
 
 \begin{document}
 
