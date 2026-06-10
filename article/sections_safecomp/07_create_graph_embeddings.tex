@@ -10,14 +10,18 @@ For traffic scene graphs, embeddings enable coverage analysis by comparing scene
 A Graph Isomorphism Network with Edge features (GINE) \cite{hu2020strategiespretraininggraphneural} is used to generate embeddings, implemented in PyTorch Geometric \cite{Fey/Lenssen/2019}.
 GINE is chosen because it allows embedding of edge features, so we may encode actor relation type and distance as integral descriptors for a traffic scene (see Figure~\ref{fig:graph_gine_architecture}).
 
+
 \begin{figure}[tb]
     \centering
-    \includegraphics[width=0.6\textwidth]{plots/graph_gine_architecture_manually_updated_compact.png}
-    \caption{Model architecture for the Graph Isomorphism Network with Edge features (GINE).}
+    \includegraphics[width=\textwidth]{plots/graph_gine_architecture_tikz.pdf}
+    \caption{Architecture of the GINE-based graph embedding model and its self-supervised training.
+    A traffic scene graph $G$ carries $7$-dimensional node features (speed, actor type, lane-change and intersection flags) and $7$-dimensional edge features (path length and one-hot edge type).
+    Two stochastically augmented views (Gaussian feature noise $\sigma=0.08$, edge dropout $p=0.1$) are passed through a weight-shared encoder $f_\theta$ of five GINE layers ($d=384$), each performing edge-conditioned message passing followed by batch normalisation, ReLU and dropout.
+    Node states are aggregated by concatenated mean/max/sum pooling ($\mathbb{R}^{1152}$), mapped by an $\ell_2$-normalised embedding MLP to the scene embedding $\mathbf{z}\in\mathbb{R}^{192}$ used downstream, and by a projection head $g_\psi$ to the space where the NT-Xent/InfoNCE contrastive loss ($\tau=0.07$) is computed between the two views.}
     \label{fig:graph_gine_architecture}
 \end{figure}
 
-The architecture is shown in Figure \ref{fig:graph_gine_architecture}. Node features are actor type (one-hot: vehicle, pedestrian, cyclist, motorcycle), speed, intersection presence, and lane change since the last timestep. Edge features are edge type (one-hot, 4 spatial relationship categories) and path length between nodes.
+The architecture is shown in Figure \ref{fig:graph_gine_architecture}. Node features are actor type (one-hot: vehicle, pedestrian, cyclist, motorcycle), speed, intersection presence, and lane change since the last timestep. Edge features are edge type (one-hot, 6 spatial relationship categories) and path length between nodes.
 
 The model was trained on CARLA and Argoverse 2.0 using self-supervised contrastive learning
 \cite{chen2020simple,hu2020strategiespretraininggraphneural}.
