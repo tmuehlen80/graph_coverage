@@ -61,7 +61,7 @@ The identified coverage gaps in CARLA are substantial. The most critical gaps ap
 \begin{figure}[tb]
    \centering
    \includegraphics[width=0.8\textwidth]{plots/role_comparison_lead_vehicle_in_front_with_neighbor_vehicle.png}
-   \caption{Role-specific speed distribution comparison for the lead vehicle in front with neighbor vehicle scenario. Green rectangles mark identified coverage gaps where Argoverse shows sufficient density but CARLA is nearly empty. Role~``a'' = ego vehicle, role~``b'' = lead vehicle, role~``c'' = neighbor vehicle.}
+   \caption{Role-specific speed distribution comparison for the lead vehicle in front with neighbor vehicle scenario. Only actors with speed $\geq 2$\,m/s are considered, binned into fixed $1$\,m/s intervals, and the histograms are density-normalised. Green rectangles mark identified coverage gaps, defined per bin as a normalised Argoverse density $\geq 0.005$ together with a CARLA density below $15\%$ of it---i.e.\ Argoverse shows sufficient density while CARLA is nearly empty. Role~``a'' = ego vehicle, role~``b'' = lead vehicle, role~``c'' = neighbor vehicle.}
    \label{fig:role_speed_comparison}
 \end{figure}
 
@@ -97,7 +97,7 @@ The embedding space is analysed using PCA and t-SNE as shown in Figure~\ref{fig:
     \label{fig:embedding_space}
 \end{figure}
 
-\textbf{Coverage Gap Identification in Embedding Space:} To quantify coverage gaps, Argoverse graphs whose subgraph isomorphism labels indicate under-represented scenario types are projected into the joint embedding space and compared against the CARLA density. 23,148 Argoverse graphs are identified as coverage gaps, dominated by \code{cut\_in} (${\sim}94\%$ of all Argoverse cut-in instances), \code{cut\_out}, \code{cut\_out\_intersection}, and \code{lead\_neighbor\_opposite\_vehicle\_intersection}. These gap graphs cluster in embedding regions where CARLA density is negligible (Fig.~\ref{fig:embedding_coverage_gaps}), reinforcing the gaps identified by subgraph isomorphism.
+\textbf{Coverage Gap Identification in Embedding Space:} No binning is required here, as the full graph is embedded. To quantify coverage gaps, Argoverse graphs whose subgraph isomorphism labels indicate under-represented scenario types are projected into the joint embedding space and compared against the CARLA density. 23,148 Argoverse graphs are identified as coverage gaps, dominated by \code{cut\_in} (${\sim}94\%$ of all Argoverse cut-in instances), \code{cut\_out}, \code{cut\_out\_intersection}, and \code{lead\_neighbor\_opposite\_vehicle\_intersection}. These gap graphs cluster in embedding regions where CARLA density is negligible (Fig.~\ref{fig:embedding_coverage_gaps}), reinforcing the gaps identified by subgraph isomorphism.
 
 \begin{figure}[tb]
     \centering
