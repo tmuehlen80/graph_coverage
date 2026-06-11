@@ -1,10 +1,15 @@
 \section{Introduction}
 
 In autonomous driving, coverage analysis is a crucial step to ensure the safety and reliability of the system.
-In most situations, coverage arguments are collected either per coverage factor, or maybe up to 2 or 3 factor interactions.
+At its core, a coverage argument asks whether the scenes observed so far have exhausted the space of traffic scenes that can occur in the real world.
+In most situations, such arguments are collected either per coverage factor, or maybe up to 2 or 3 factor interactions.
 See for example \cite{foretellix2019} for a production-grade implementation of state-of-the-art coverage analysis.
+
 In contrast to existing approaches, this paper proposes a graph-based framework for coverage analysis.
-While graph-based representations of traffic scenes already exist, they have not been specifically designed for this purpose.
+The framework takes the \emph{complete traffic scene} as the unit of coverage rather than an individual factor: each scene is represented as a single graph whose nodes carry the parameters describing the individual actors and whose edges carry the parameters describing the relations between them.
+The key advantage of this representation is that arbitrarily complex scenes---with varying numbers of actors and the higher-order interactions between them---are captured naturally within one object, instead of being decomposed into isolated coverage factors or low-order factor combinations.
+Coverage is therefore assessed against whole scenes: we ask how completely the observed scene graphs cover those that can occur in reality.
+While graph-based representations of traffic scenes already exist, they have not been specifically designed for this coverage analysis.
 This work bridges that gap by utilizing graph-based traffic scene representations explicitly for coverage analysis.
 
 
