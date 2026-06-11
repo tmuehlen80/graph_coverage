@@ -10,7 +10,7 @@
 \subsection{Map Graph Construction}
 \label{subsec:map_graph}
 
-The map graph is a directed multigraph $G_{\text{map}} = (V_{\text{map}}, E_{\text{map}})$ where each node $v \in V_{\text{map}}$ represents a lane segment, storing geometric information (boundaries, centerline, length) and semantic attributes (intersection status, road and lane type). Edges encode three spatial relationships between lanes:
+Following established practice of representing the road network as an explicit lane graph~\cite{liang2020lanegcn}, the map graph is a directed multigraph $G_{\text{map}} = (V_{\text{map}}, E_{\text{map}})$ where each node $v \in V_{\text{map}}$ represents a lane segment, storing geometric information (boundaries, centerline, length) and semantic attributes (intersection status, road and lane type). Edges encode three spatial relationships between lanes:
 \textbf{following edges} connect lanes forming a continuous path in the same direction,
 \textbf{neighbor edges} connect adjacent lanes traveling in the same direction, and
 \textbf{opposite edges} connect lanes traveling in opposite directions.
@@ -19,7 +19,7 @@ The map graph is constructed by processing map data from Argoverse or CARLA to e
 \subsection{Actor Graph Construction}
 \label{subsec:actor_graph}
 
-The actor graph $G_{\text{actor}} = (V_{\text{actor}}, E_{\text{actor}})$ represents dynamic relationships between actors at a specific timestep. Each node $v \in V_{\text{actor}}$ represents an actor and stores attributes including primary lane ID, 
+The actor graph $G_{\text{actor}} = (V_{\text{actor}}, E_{\text{actor}})$ represents dynamic relationships between actors at a specific timestep. Like LaneGCN's coupling of actor--map and actor--actor interactions over the lane graph~\cite{liang2020lanegcn}, these actor relationships are derived from the underlying lane network. Each node $v \in V_{\text{actor}}$ represents an actor and stores attributes including primary lane ID, 
 all occupied lane IDs, longitudinal position $s$ along the lane centerline, 3D position, longitudinal speed, actor type, and a lane change indicator. Each edge $e \in E_{\text{actor}}$ stores a actor-actor relation type and a path length along the lane network.
 Although each actor graph is built at a single timestep, the lane change indicator already encodes a one-step temporal signal: it is set by comparing an actor's lane to its lane one timestep earlier ($\Delta t = 1$\,s), so dynamic maneuvers such as cut-in and cut-out are captured even within a single-timestep graph.
 

@@ -8,7 +8,7 @@ Embeddings translate raw data into a vector space where distances measure simila
 For traffic scene graphs, embeddings enable coverage analysis by comparing scenes: identifying similar simulation--real-world scenario pairs, detecting near duplicates, or visualizing structures that would be intractable in the original space of all possible traffic scenes.
 
 A Graph Isomorphism Network with Edge features (GINE) \cite{hu2020strategiespretraininggraphneural} is used to generate embeddings, implemented in PyTorch Geometric \cite{Fey/Lenssen/2019}.
-GINE is chosen because it allows embedding of edge features, so we may encode actor relation type and distance as integral descriptors for a traffic scene (see Figure~\ref{fig:graph_gine_architecture}).
+GINE is chosen because it allows embedding of edge features, so we may encode actor relation type and distance as integral descriptors for a traffic scene (see Figure~\ref{fig:graph_gine_architecture}); attention-based architectures such as graph attention networks~\cite{velickovic2018gat} are a common alternative but do not natively encode edge attributes in their original formulation.
 
 
 \begin{figure}[tb]
