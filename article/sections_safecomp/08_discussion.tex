@@ -67,7 +67,7 @@ The identified coverage gaps in CARLA are substantial. The most critical gaps ap
 
 CARLA concentrates actors at lower speeds (peak around 3--5\,m/s) while Argoverse distributions extend to higher speeds (15--20\,m/s and beyond). Coverage gaps consistently appear in the 13--17\,m/s range for all three roles, demonstrating that coverage gaps exist both at the structural level (which scenarios are present) and at the parameter level within structurally matching scenarios.
 
-The structured, bottom-up approach presented here demonstrates that subgraph isomorphism can effectively characterize traffic scene coverage for predefined archetypes. However, the manual definition of archetypes and the computational cost of isomorphism checking for large scenario collections motivate the graph embedding approach explored in the following paragraph.
+The structured, bottom-up approach presented here demonstrates that subgraph isomorphism can effectively characterize traffic scene coverage for predefined archetypes. In a real application, these gaps could now e.g. be checked for safety critical aspects and prioritized accordingly, e.g. by analyzing the distribution of TTC values in the gaps. However, the manual definition of archetypes and the computational cost of isomorphism checking for large scenario collections motivate the graph embedding approach explored in the following paragraph.
 
 \subsection{Graph Embeddings Coverage Analysis}
 
