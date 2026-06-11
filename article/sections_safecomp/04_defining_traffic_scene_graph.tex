@@ -21,6 +21,7 @@ The map graph is constructed by processing map data from Argoverse or CARLA to e
 
 The actor graph $G_{\text{actor}} = (V_{\text{actor}}, E_{\text{actor}})$ represents dynamic relationships between actors at a specific timestep. Each node $v \in V_{\text{actor}}$ represents an actor and stores attributes including primary lane ID, 
 all occupied lane IDs, longitudinal position $s$ along the lane centerline, 3D position, longitudinal speed, actor type, and a lane change indicator. Each edge $e \in E_{\text{actor}}$ stores a actor-actor relation type and a path length along the lane network.
+Although each actor graph is built at a single timestep, the lane change indicator already encodes a one-step temporal signal: it is set by comparing an actor's lane to its lane one timestep earlier ($\Delta t = 1$\,s), so dynamic maneuvers such as cut-in and cut-out are captured even within a single-timestep graph.
 
 \label{subsubsec:relation_types}
 
