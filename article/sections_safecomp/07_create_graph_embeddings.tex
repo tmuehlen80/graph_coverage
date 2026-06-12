@@ -1,14 +1,13 @@
 \section{Graph Embeddings for Traffic Scene Analysis}
 \label{chapter:implementation_of_graph_embeddings_for_traffic_scene_analysis}
 
-The subgraph isomorphism approach from Section~\ref{chapter:create_subgraphs_for_coverage_analysis} provides a bottom-up methodology for analyzing traffic scenarios through predefined archetypes. 
-However, real-world traffic scene graphs exhibit significantly higher complexity than these patterns, motivating complementary top-down approaches such as graph embeddings.
+Real-world traffic scene graphs exhibit significantly higher complexity than the predefined archetypes of Section~\ref{chapter:create_subgraphs_for_coverage_analysis}, motivating a complementary top-down approach based on graph embeddings.
 
-Embeddings translate raw data into a vector space where distances measure similarity, analogous to the Word2Vec model for words \cite{mikolov2013efficientestimationwordrepresentations}.
+Embeddings translate raw data into a vector space where distances measure similarity.
 For traffic scene graphs, embeddings enable coverage analysis by comparing scenes: identifying similar simulation--real-world scenario pairs, detecting near duplicates, or visualizing structures that would be intractable in the original space of all possible traffic scenes.
 
-A Graph Isomorphism Network with Edge features (GINE) \cite{hu2020strategiespretraininggraphneural} is used to generate embeddings, implemented in PyTorch Geometric \cite{Fey/Lenssen/2019}.
-GINE is chosen because it allows embedding of edge features, so we may encode actor relation type and distance as integral descriptors for a traffic scene (see Figure~\ref{fig:graph_gine_architecture}); attention-based architectures such as graph attention networks~\cite{velickovic2018gat} are a common alternative but do not natively encode edge attributes in their original formulation.
+A Graph Isomorphism Network with Edge features (GINE) \cite{hu2020strategiespretraininggraphneural} is used to generate embeddings, implemented in PyG \cite{Fey/Lenssen/2019}.
+GINE is chosen as it allows embedding of edge features, so we may encode actor relation type and distance as integral descriptors for a traffic scene (see Figure~\ref{fig:graph_gine_architecture}); attention-based architectures such as graph attention networks~\cite{velickovic2018gat} are a common alternative but do not natively encode edge attributes in their original formulation.
 
 
 \begin{figure}[tb]
@@ -16,8 +15,8 @@ GINE is chosen because it allows embedding of edge features, so we may encode ac
     \includegraphics[width=\textwidth]{plots/graph_gine_architecture_tikz.pdf}
     \caption{Architecture of the GINE-based graph embedding model and its self-supervised training.
     A traffic scene graph $G$ carries $7$-dimensional node features (speed, actor type, lane-change and intersection flags) and $7$-dimensional edge features (path length and one-hot edge type).
-    Two stochastically augmented views (Gaussian feature noise $\sigma=0.08$, edge dropout $p=0.1$) are passed through a weight-shared encoder $f_\theta$ of five GINE layers ($d=384$), each performing edge-conditioned message passing followed by batch normalisation, ReLU and dropout.
-    Node states are aggregated by concatenated mean/max/sum pooling ($\mathbb{R}^{1152}$), mapped by an $\ell_2$-normalised embedding MLP to the scene embedding $\mathbf{z}\in\mathbb{R}^{192}$ used downstream, and by a projection head $g_\psi$ to the space where the NT-Xent/InfoNCE contrastive loss ($\tau=0.07$) is computed between the two views.}
+    Two stochastically augmented views (Gaussian noise $\sigma=0.08$, edge dropout $p=0.1$) are passed through a weight-shared encoder $f_\theta$ of five GINE layers ($d=384$), each performing edge-conditioned message passing followed by batch normalisation, ReLU and dropout.
+    Node states are aggregated by concatenated mean/max/sum pooling ($\mathbb{R}^{1152}$), mapped by an $\ell_2$-normalised MLP to the scene embedding $\mathbf{z}\in\mathbb{R}^{192}$ used downstream, and by a projection head $g_\psi$ to the space where the NT-Xent/InfoNCE contrastive loss ($\tau=0.07$) is computed between the two views.}
     \label{fig:graph_gine_architecture}
 \end{figure}
 

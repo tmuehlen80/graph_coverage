@@ -1,31 +1,28 @@
-\section{Defining a traffic scene graph}
+\section{Defining a Traffic Scene Graph}
 \label{chapter:defining_a_traffic_scene_graph}
 
+Two datasets are used in this work: \textbf{Argoverse 2.0} \cite{Argoverse2} is a large-scale dataset of 250,000 scenarios (11\,s each) with tracked trajectories for vehicles, pedestrians, and cyclists, plus semantic map information (lane boundaries, crosswalks, traffic signals) across diverse geographic locations. A subset of 17,000 training scenes is used.
 
-\subsection{Datasets}
-\textbf{Argoverse 2.0} \cite{Argoverse2} is a large-scale dataset of 250,000 scenarios (11\,s each) with tracked trajectories for vehicles, pedestrians, and cyclists, plus semantic map information (lane boundaries, crosswalks, traffic signals) across diverse geographic locations. A subset of 17,000 training scenes is used.
+\textbf{CARLA} (Car Learning to Act, \cite{Dosovitskiy17Carla}) is an open-source simulator for autonomous driving research. Version $0.9.15$ is used across six maps with 20–60 vehicles per run, simulating mixed traffic with varied vehicle types and behavioural parameters. The resulting data consists of 2,050 scenes of 11 seconds each; actors spread across the map may form multiple disconnected components per scene.
 
-\textbf{CARLA} (Car Learning to Act, \cite{Dosovitskiy17Carla}) is an open-source simulator for autonomous driving research. Version $0.9.15$ is used across six maps (Town01–Town05, Town07) with 20–60 vehicles per run, simulating mixed traffic with varied vehicle types and behavioural parameters. The resulting data consists of 2,050 scenes of 11 seconds each; actors spread across the map may form multiple disconnected components per scene.
-
-\subsection{Map Graph Construction}
+\subsection{Map Graph and Actor Graph Construction}
 \label{subsec:map_graph}
 
-Following established practice of representing the road network as an explicit lane graph~\cite{liang2020lanegcn}, the map graph is a directed multigraph $G_{\text{map}} = (V_{\text{map}}, E_{\text{map}})$ where each node $v \in V_{\text{map}}$ represents a lane segment, storing geometric information (boundaries, centerline, length) and semantic attributes (intersection status, road and lane type). Edges encode three spatial relationships between lanes:
-\textbf{following edges} connect lanes forming a continuous path in the same direction,
-\textbf{neighbor edges} connect adjacent lanes traveling in the same direction, and
-\textbf{opposite edges} connect lanes traveling in opposite directions.
-The map graph is constructed by processing map data from Argoverse or CARLA to extract these relationships. Lanes with geometric overlap are marked as intersection lanes.
+We represent the road network as an explicit lane graph~\cite{liang2020lanegcn}. The map graph is a directed multigraph $G_{\text{map}} = (V_{\text{map}}, E_{\text{map}})$ where each node $v \in V_{\text{map}}$ represents a lane segment, storing geometric information (boundaries, centerline, length) and semantic attributes (intersection status, road and lane type). Edges encode three spatial relationships between lanes:
+\textbf{following edges} are continuous lanes same direction,
+\textbf{neighbor edges} connect adjacent lanes in the same direction, and
+\textbf{opposite edges} connect lanes in opposite directions.
+The map graph is constructed from Argoverse or CARLA map data. Lanes with geometric overlap are marked as intersection lanes.
 
-\subsection{Actor Graph Construction}
-\label{subsec:actor_graph}
-
+% \subsection{Actor Graph Construction}
+% \label{subsec:actor_graph}
 The actor graph $G_{\text{actor}} = (V_{\text{actor}}, E_{\text{actor}})$ represents dynamic relationships between actors at a specific timestep. Like LaneGCN's coupling of actor--map and actor--actor interactions over the lane graph~\cite{liang2020lanegcn}, these actor relationships are derived from the underlying lane network. Each node $v \in V_{\text{actor}}$ represents an actor and stores attributes including primary lane ID, 
 all occupied lane IDs, longitudinal position $s$ along the lane centerline, 3D position, longitudinal speed, actor type, and a lane change indicator. Each edge $e \in E_{\text{actor}}$ stores a actor-actor relation type and a path length along the lane network.
 Although each actor graph is built at a single timestep, the lane change indicator already encodes a one-step temporal signal: it is set by comparing an actor's lane to its lane one timestep earlier ($\Delta t = 1$\,s), so dynamic maneuvers such as cut-in and cut-out are captured even within a single-timestep graph.
 
 \label{subsubsec:relation_types}
 
-Four relationship types are defined between actors, ordered by semantic hierarchy:
+Four relationship types are defined, ordered by semantic hierarchy:
 \begin{enumerate}
     \item \textbf{Following/Leading}: Longitudinal relationships where actors share the same lane or are connected entirely by following edges.
     \item \textbf{Neighbor}: Lateral relationships via paths containing exactly one neighbor edge (actors need not be on immediately adjacent lanes).
@@ -60,7 +57,7 @@ The actor graph is constructed in two phases that separate relation discovery fr
 
 \begin{table}[ht]
       \centering
-      \caption{Input parameters for actor graph construction, per relation type. Max.\ distance is the Euclidean limit used in the discovery phase (forward/backward); max.\ path length bounds the number of map-graph edges in a connecting path during construction. The timestep increment is $\Delta t = 1.0$\,s.}
+      \caption{Input parameters for actor graph construction, per relation type. Max.\ distance is the Euclidean limit used in the discovery phase (forward/backward); max.\ path length bounds the number of map-graph edges in a connecting path during construction.}
       \label{tab:construction_parameters}
       \begin{tabular}{lcc}
       \toprule
@@ -76,7 +73,7 @@ The actor graph is constructed in two phases that separate relation discovery fr
 % \label{subsubsec:discovery_phase}
 \textbf{Phase 1: Relation Discovery}: For each actor pair $(A, B)$ at timestep $t$, the algorithm determines their primary lanes and checks if a connecting path exists in the map graph. The path structure determines the relationship type: paths consisting entirely of following edges yield following/leading relations, paths with exactly one neighbor (or opposite) edge yield neighbor (or opposite) relations. Both lane-based path length and Euclidean distance are checked against the thresholds in Table~\ref{tab:construction_parameters} to filter distant actors.
 
-\textbf{Phase 2: Hierarchical Graph Construction}: Edges are added in hierarchical order---leading/following first (highest priority), then neighbor, then opposite---each sorted by path length (shortest first). Before adding an edge between actors $A$ and $B$, a breadth-first search checks whether a path of length $\leq \text{max\_node\_distance}$ already exists in the current graph. If so, the direct edge is skipped, as the relationship is already implicitly encoded. The graph is updated after each edge addition so that subsequent checks reflect the current state.
+\textbf{Phase 2: Hierarchical Graph Construction}: Edges are added hierarchically: leading/following first (highest priority), then neighbor, then opposite---each sorted by path length (shortest first). Before adding an edge between actors $A$ and $B$, a breadth-first search checks whether a path of length $\leq \text{max\_node\_distance}$ already exists in the current graph. If so, the direct edge is skipped, as the relationship is already implicitly encoded. The graph is updated after each edge addition so that subsequent checks reflect the current state.
 
 This redundancy prevention significantly reduces edges while preserving connectivity. For example, three vehicles in a row need only two lead-follow edges; the third pairwise relation is encoded through the intermediate vehicle. Similarly, for a row of vehicles adjacent to an opposite-direction vehicle, only the closest pairwise relation needs an explicit edge (see Figure~\ref{fig:graph_construction_comparison}).
 This is especially beneficial in dense traffic, where pairwise relations grow quadratically with the number of actors: pruning keeps the graph and the isomorphism checks tractable while the multi-actor interaction remains fully represented. Where every pairwise relation must stay explicit, the pruning can be gated by a lower bound on the implicit path length (a local-density threshold), so the closest, most safety-relevant relations are always retained.

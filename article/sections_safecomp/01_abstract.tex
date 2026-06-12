@@ -1,9 +1,9 @@
 \begin{abstract}
-Coverage analysis is essential for validating the safety of autonomous driving systems, yet existing approaches typically assess coverage factors individually, struggling to capture the complex interactions inherent in traffic scenes.
+Coverage analysis is essential for validating the safety of autonomous driving systems, yet existing approaches typically assess coverage factors individually, struggling to capture the complex interactions in traffic scenes.
 This paper proposes a graph-based framework that represents traffic scenes as hierarchical graphs combining maps with actor relationships, using a two-phase construction algorithm to capture spatial configurations such as leading, following, neighboring, and opposing.
 We present two complementary coverage methods: a subgraph isomorphism approach that matches scenes against manually defined archetype graphs, and a graph embedding approach using Graph Isomorphism Networks with Edge features (GINE) trained via self-supervised contrastive learning.
 Validated on real-world Argoverse 2.0 data and synthetic CARLA data, the isomorphism method yields node coverage percentages from predefined archetypes, while the embedding approach reveals latent structure suitable for clustering and anomaly detection.
-The framework scales efficiently across diverse scenarios without scenario-specific handling and naturally accommodates varying numbers of actors.
+The framework scales across diverse scenarios without scenario-specific handling and naturally accommodates varying numbers of actors.
 
 \keywords{Coverage Analysis \and Autonomous Driving \and Traffic Scene Graphs \and Subgraph Isomorphism \and Graph Neural Networks}
 \end{abstract}

@@ -1,4 +1,4 @@
-\section{Application: Analysing traffic scenes}
+\section{Application: Analysing Traffic Scenes}
 \label{chapter:application}
 
 We apply both methods to CARLA and Argoverse data to identify coverage gaps, targeting not the exact real-world distribution but gaps that could lead to insufficient testing of safety-critical scenarios.
@@ -53,7 +53,7 @@ We match the 18 archetypes (Table~\ref{tab:subgraph_archetypes}) against each sc
    \label{fig:coverage_comparison}
 \end{figure}
 
-The coverage distribution reveals a clear pattern: CARLA achieves higher coverage only for the three simple two-actor scenarios (\code{simple\_following}, \code{simple\_neighbor}, \code{simple\_opposite}), as indicated by green diamond markers. For all complex multi-actor scenarios, Argoverse exhibits substantially higher occurrence rates (red diamond markers), demonstrating that the simulation systematically fails to generate complex traffic situations at the same frequency as observed in real-world data.
+The coverage distribution reveals a clear pattern: CARLA achieves higher coverage only for the three simple two-actor scenarios (\code{simple\_following},\\ \code{simple\_neighbor}, \code{simple\_opposite}, green diamond markers). For all  multi-actor scenarios, Argoverse exhibits higher occurrence rates (red diamond markers), demonstrating that the simulation fails to generate complex traffic situations at the same frequency as observed in real-world data.
 
 The identified coverage gaps in CARLA are substantial. The most critical gaps appear in intersection-related archetypes: \code{cut\_out\_intersection} shows nearly complete absence in CARLA (less than 1\% coverage) while appearing in approximately 8\% of Argoverse scenes. Similarly, \code{lead\_neighbor\_opposite\_vehicle\_intersection} appears in roughly 6\% of Argoverse data but is virtually absent in CARLA. The \code{cut\_in\_intersection} pattern exhibits a comparable gap of approximately 7 percentage points. Both \code{cut\_in} and \code{cut\_out} scenarios show significant underrepresentation in CARLA regardless of intersections, indicating that the traffic generation script lacks the dynamic lateral maneuvers characteristic of real-world driving.
 
@@ -66,7 +66,7 @@ The identified coverage gaps in CARLA are substantial. The most critical gaps ap
    \label{fig:role_speed_comparison}
 \end{figure}
 
-CARLA concentrates actors at lower speeds (peak around 3--5\,m/s) while Argoverse distributions extend to higher speeds (15--20\,m/s and beyond). Coverage gaps consistently appear in the 13--17\,m/s range for all three roles, demonstrating that coverage gaps exist both at the structural level (which scenarios are present) and at the parameter level within structurally matching scenarios.
+CARLA concentrates actors at lower speeds (around 3--5\,m/s) while Argoverse distributions extend to higher speeds (15--20\,m/s and beyond). Coverage gaps appear in the 13--17\,m/s range for all three roles, confirming that gaps arise at the parameter level even within structurally matching scenarios.
 
 The structured, bottom-up approach presented here demonstrates that subgraph isomorphism can effectively characterize traffic scene coverage for predefined archetypes. In a real application, these gaps could now e.g. be checked for safety critical aspects and prioritized accordingly, e.g. by analyzing the distribution of TTC values in the gaps. However, the manual definition of archetypes and the computational cost of isomorphism checking for large scenario collections motivate the graph embedding approach explored in the following paragraph.
 
@@ -91,9 +91,9 @@ The embedding space is analysed using PCA and t-SNE as shown in Figure~\ref{fig:
     \label{fig:embedding_space}
 \end{figure}
 
-\textbf{Coverage Gap Identification in Embedding Space:} No binning is required here, as the full graph is embedded. To quantify coverage gaps, Argoverse graphs whose subgraph isomorphism labels indicate under-represented scenario types are projected into the joint embedding space and compared against the CARLA density. 23,148 Argoverse graphs are identified as coverage gaps, dominated by \code{cut\_in} (${\sim}94\%$ of all Argoverse cut-in instances), \code{cut\_out}, \code{cut\_out\_intersection}, and \code{lead\_neighbor\_opposite\_vehicle\_intersection}. These gap graphs cluster in embedding regions where CARLA density is negligible (Fig.~\ref{fig:embedding_coverage_gaps}), reinforcing the gaps identified by subgraph isomorphism. This agreement between the embedding and the independent, exact subgraph-isomorphism labels (23{,}148 graphs, ${\sim}94\%$ of all cut-ins) constitutes a quantitative, label-grounded validation rather than a purely visual one; a formal retrieval-precision and clustering-quality benchmark against these archetype labels, together with embedding-based baselines, is the natural next step for which the ground-truth labels are already available.
+\textbf{Coverage Gap Identification in Embedding Space:} No binning is required here, as the full graph is embedded. To quantify coverage gaps, Argoverse graphs whose subgraph isomorphism labels indicate under-represented scenario types are projected into the embedding space and compared against the CARLA density. 23,148 Argoverse graphs are identified as coverage gaps, dominated by \code{cut\_in} (${\sim}94\%$ of all Argoverse cut-in instances), \code{cut\_out}, \code{cut\_out\_intersection}, and \code{lead\_neighbor\_opposite\_vehicle\_intersection}. These gap graphs cluster in embedding regions where CARLA density is negligible (Fig.~\ref{fig:embedding_coverage_gaps}). This agreement between the embedding and the exact subgraph isomorphism labels constitutes a quantitative, label-grounded validation rather than a purely visual one; a formal retrieval-precision and clustering-quality benchmark against the archetype labels, together with embedding-based baselines, is the natural next step for which the ground-truth labels are already available.
 
-The embedding is used as a coverage-screening layer, not a standalone safety oracle: every gap it flags is cross-checked against the interpretable subgraph labels, which act as an auditable ground truth. Trusting it for safety-critical decisions would additionally require calibrated out-of-distribution guarantees---e.g.\ conformal or SafeML-style distance-to-training-distribution bounds on the embedding---which we leave to future work.
+The embedding is thus used as a coverage-screening layer, not a standalone safety oracle, with every flagged gap cross-checked against the interpretable subgraph labels that act as an auditable ground truth. Trusting it for safety-critical decisions would additionally require calibrated out-of-distribution guarantees---e.g.\ conformal or SafeML-style distance-to-training-distribution bounds on the embedding---which we leave to future work.
 
 \begin{figure}[tb]
     \centering
