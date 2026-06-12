@@ -40,6 +40,15 @@ def create_graph_construction_plots(scenario_id, dataroot=None, timestamp=1.0):
     
     with open(graph_after_discovery_path, "rb") as f:
         G_after_discovery = pickle.load(f)
+
+    # Drop isolated actors (no relations) from the data: they carry no edge
+    # information and only clutter the figure as far-away stray nodes.
+    isolated = [n for n in G_after_discovery.nodes() if G_after_discovery.degree(n) == 0]
+    if isolated:
+        G_after_discovery.remove_nodes_from(isolated)
+        with open(graph_after_discovery_path, "wb") as f:
+            pickle.dump(G_after_discovery, f)
+        print(f"Removed isolated nodes from discovery graph data: {isolated}")
     
     # Load the timestamp that was used when creating the graph
     timestamp_path = script_dir / f"{scenario_id}_timestamp.json"
@@ -99,12 +108,21 @@ def create_graph_construction_plots(scenario_id, dataroot=None, timestamp=1.0):
     
     # Final graph (from actor_graph with hierarchical selection)
     G_final = actor_graph.actor_graphs[timestamp]
-    
+
+    # Drop isolated actors (no relations) to match the cleaned discovery data.
+    G_final.remove_nodes_from([n for n in list(G_final.nodes()) if G_final.degree(n) == 0])
+
     # Create a temporary actor graph object for visualization
     class TempActorGraph:
         def __init__(self, graph):
             self.actor_graphs = {timestamp: graph}
-    
+
+    # Zoom both panels to the same fixed rectangle (chosen by reading the
+    # discovery-graph coordinates) so they stay comparable and focus on the
+    # intersection where the actors interact.
+    xlim = (-329.0, -248.0)
+    ylim = (-160.0, -125.0)
+
     # Plot 1: After discovery (all connections)
     temp_actor_graph = TempActorGraph(G_after_discovery)
     plot_scene_at_timestep(
@@ -117,9 +135,11 @@ def create_graph_construction_plots(scenario_id, dataroot=None, timestamp=1.0):
         actor_label_fontsize=12,
         actor_label_offset=2.0,
         legend_fontsize=12,
-        title="After Relation Discovery"
+        title="After Relation Discovery",
+        xlim=xlim,
+        ylim=ylim,
     )
-    
+
     # Plot 2: Final graph
     plot_scene_at_timestep(
         scenario,
@@ -131,7 +151,9 @@ def create_graph_construction_plots(scenario_id, dataroot=None, timestamp=1.0):
         actor_label_fontsize=12,
         actor_label_offset=2.0,
         legend_fontsize=12,
-        title="Final Graph (Hierarchical Selection)"
+        title="Final Graph (Hierarchical Selection)",
+        xlim=xlim,
+        ylim=ylim,
     )
     
     print(f"Plots saved to {script_dir}")

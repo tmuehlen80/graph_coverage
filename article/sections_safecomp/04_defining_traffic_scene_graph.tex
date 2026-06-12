@@ -60,30 +60,16 @@ The actor graph is constructed in two phases that separate relation discovery fr
 
 \begin{table}[ht]
       \centering
-      \caption{Input parameters for actor graph construction}
+      \caption{Input parameters for actor graph construction, per relation type. Max.\ distance is the Euclidean limit used in the discovery phase (forward/backward); max.\ path length bounds the number of map-graph edges in a connecting path during construction. The timestep increment is $\Delta t = 1.0$\,s.}
       \label{tab:construction_parameters}
-      \begin{tabular}{llp{6cm}l}
-      \hline
-      \textbf{Parameter} & \textbf{Type} & \textbf{Description} & \textbf{Value} \\
-      \hline
-      \multicolumn{4}{l}{\textit{Distance limits (discovery phase)}} \\
-      \hline
-      \texttt{max\_distance\_lead\_veh\_m} & float & Max distance for leading/following & 100 \\
-      \texttt{max\_distance\_neighbor\_fwd\_m} & float & Max distance for forward neighbor & 50 \\
-      \texttt{max\_distance\_neighbor\_bwd\_m} & float & Max distance for backward neighbor & 50 \\
-      \texttt{max\_distance\_opposite\_fwd\_m} & float & Max distance for forward opposite & 100 \\
-      \texttt{max\_distance\_opposite\_bwd\_m} & float & Max distance for backward opposite & 10 \\
-      \hline
-      \multicolumn{4}{l}{\textit{Node distance limits (construction phase)}} \\
-      \hline
-      \texttt{max\_node\_dist\_leading} & int & Max edge count in path for leading/following & 3 \\
-      \texttt{max\_node\_dist\_neighbor} & int & Max edge count in path for neighbor & 2 \\
-      \texttt{max\_node\_dist\_opposite} & int & Max edge count in path for opposite & 2 \\
-      \hline
-      \multicolumn{4}{l}{\textit{Timestep configuration}} \\
-      \hline
-      \texttt{delta\_timestep\_s} & float & Time step increment in seconds & 1.0 \\
-      \hline
+      \begin{tabular}{lcc}
+      \toprule
+      \textbf{Relation} & \textbf{Max.\ distance fwd/bwd [m]} & \textbf{Max.\ path length [edges]} \\
+      \midrule
+      Leading/following & 100 & 3 \\
+      Neighbor          & 50 / 50 & 2 \\
+      Opposite          & 100 / 10 & 2 \\
+      \bottomrule
       \end{tabular}
       \end{table}
 % \subsubsection{Phase 1: Relation Discovery}

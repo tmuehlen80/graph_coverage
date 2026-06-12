@@ -49,8 +49,9 @@ def plot_argoverse_map(map, save_path=None):
         fig.show()
 
 
-def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=None, lane_label=False, node_coverage_dict=None, 
-                          actor_label_fontsize=8, actor_label_offset=0.5, legend_fontsize=10, title=None):
+def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=None, lane_label=False, node_coverage_dict=None,
+                          actor_label_fontsize=8, actor_label_offset=0.5, legend_fontsize=10, title=None,
+                          zoom_to_actors=False, zoom_padding=20.0, xlim=None, ylim=None, show_ticks=False):
     fig = plt.figure(figsize=(20, 20))
     ax = fig.add_subplot()
 
@@ -198,16 +199,35 @@ def plot_scene_at_timestep(scenario, map, timestep, actor_graph=None, save_path=
         ]
         ax.legend(handles=legend_elements, loc='upper right', fontsize=legend_fontsize)
     
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    
+    if not show_ticks:
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+
+    # Optionally crop the view to a region of interest. Map polygons and actor
+    # positions share the same metric coordinates, so a coordinate rectangle
+    # zooms in while keeping the surrounding lanes as context.
+    save_kwargs = {}
+    if xlim is not None and ylim is not None:
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.set_aspect("equal")
+        save_kwargs["bbox_inches"] = "tight"
+    elif zoom_to_actors and actor_graph is not None:
+        xs = [G.nodes[n]["xyz"].x for n in G.nodes()]
+        ys = [G.nodes[n]["xyz"].y for n in G.nodes()]
+        if xs and ys:
+            ax.set_xlim(min(xs) - zoom_padding, max(xs) + zoom_padding)
+            ax.set_ylim(min(ys) - zoom_padding, max(ys) + zoom_padding)
+            ax.set_aspect("equal")
+            save_kwargs["bbox_inches"] = "tight"
+
     if title:
         plt.title(title, fontsize=30)
 
     if save_path:
-        fig.savefig(save_path)
+        fig.savefig(save_path, **save_kwargs)
     else:
         fig.show()
 
