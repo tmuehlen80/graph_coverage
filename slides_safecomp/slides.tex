@@ -22,38 +22,48 @@
 
 \title{A Graph-based Framework for Coverage Analysis in Autonomous Driving}
 \author{Thomas Mühlenstädt \and Marius Bause}
-\institute{Independent Researcher}
-\date{\today}
+\date{}
 
 \begin{document}
 
 \maketitle
 
 % ---------------------------------------------------------
-\begin{frame}{Motivation}
-\begin{itemize}
+\begin{frame}{Motivation and Existing Approaches}
+\begin{columns}[t]
+\begin{column}{0.5\textwidth}
+\textbf{Motivation}
+\begin{itemize}[itemsep=1pt,topsep=1pt,parsep=0pt]
+    \scriptsize
     \item Coverage analysis is crucial to ensure safety and reliability of autonomous driving systems
     \item Coverage argument: have the observed scenes exhausted the space of traffic scenes that can occur?
     \item Existing arguments are typically collected \textbf{per coverage factor}, or up to 2--3 factor interactions
     \item This work: take the \textbf{complete traffic scene} as the unit of coverage
-    \begin{itemize}
+    \begin{itemize}[itemsep=1pt,topsep=1pt,parsep=0pt]
         \item each scene $\rightarrow$ one graph
         \item nodes carry actor parameters, edges carry relation parameters
+        \item arbitrarily complex scenes (varying numbers of actors, higher-order interactions) captured in one object, not decomposed into isolated factors
     \end{itemize}
-    \item Arbitrarily complex scenes---varying numbers of actors, higher-order interactions---captured in one object, not decomposed into isolated factors
     \item Scope: completeness of observed scenes, \emph{not} safety of the system
 \end{itemize}
-\end{frame}
-
-% ---------------------------------------------------------
-\begin{frame}{Existing Coverage and Analysis Approaches}
-\begin{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\textbf{Existing Approaches}
+\begin{itemize}[itemsep=1pt,topsep=1pt,parsep=0pt]
+    \scriptsize
     \item Scenario-based testing is the dominant paradigm (PEGASUS: functional / logical / concrete scenario levels)
-    \item \textbf{Approval trap}: statistically demonstrating superior safety needs billions of test km $\rightarrow$ motivates simulation and systematic coverage methods
-    \item Standardized coverage criteria: ISO~21448, UL~4600; domain-specific coverage buckets (Foretellix)
-    \item Recent trend: represent traffic scenes as \textbf{graphs} for scalable, label-free analysis (semantic scene-graph embeddings, contrastive learning, heterogeneous scenario graphs)
+    \item \textbf{Approval trap}: statistically demonstrating superior safety needs billions of test km
+    \item $\rightarrow$ motivates simulation and systematic coverage methods
+    \item Standardized coverage criteria: ISO~21448, UL~4600
+    \item Domain-specific coverage buckets (Foretellix)
+    \item Recent trend: represent traffic scenes as \textbf{graphs} for scalable, label-free analysis
+    \begin{itemize}[itemsep=1pt,topsep=1pt,parsep=0pt]
+        \item semantic scene-graph embeddings, contrastive learning, heterogeneous scenario graphs
+    \end{itemize}
     \item Gap: these graph representations are not designed specifically for coverage analysis $\rightarrow$ this work
 \end{itemize}
+\end{column}
+\end{columns}
 \end{frame}
 
 % ---------------------------------------------------------
@@ -61,7 +71,8 @@
 \begin{itemize}
     \item \textbf{Argoverse 2.0}: large-scale real-world dataset
     \begin{itemize}
-        \item 250{,}000 scenarios, 11\,s each; tracked trajectories (vehicles, pedestrians, cyclists) + semantic map
+        \item 250{,}000 scenarios, 11\,s each
+        \item tracked trajectories (vehicles, pedestrians, cyclists) + semantic map
         \item subset of 17{,}000 training scenes used
     \end{itemize}
     \item \textbf{CARLA} 0.9.15: open-source simulator
@@ -73,34 +84,33 @@
 \end{frame}
 
 % ---------------------------------------------------------
-\begin{frame}{Defining a Traffic Scene Graph}
-\begin{itemize}
-    \item \textbf{Map graph} $G_{\text{map}}$: directed multigraph, nodes = lane segments (geometry + semantics)
-    \begin{itemize}
-        \item edges: \textbf{following}, \textbf{neighbor}, \textbf{opposite}
-    \end{itemize}
-    \item \textbf{Actor graph} $G_{\text{actor}}$: dynamic relationships between actors at one timestep
-    \begin{itemize}
-        \item nodes: primary/occupied lane IDs, position $s$, 3D position, speed, actor type, lane-change indicator
-        \item edges: actor--actor relation type + path length along the lane network
-    \end{itemize}
-    \item Three relation types, ordered by semantic hierarchy: \textbf{Following/Leading}, \textbf{Neighbor}, \textbf{Opposite}
-    \item Lane-change indicator ($\Delta t = 1$\,s) already captures cut-in/cut-out within a single-timestep graph
+\begin{frame}{Traffic Scene Graph and Construction Algorithm}
+\begin{columns}[t]
+\begin{column}{0.5\textwidth}
+\textbf{\footnotesize Defining a Traffic Scene Graph}
+\begin{itemize}[itemsep=1pt,topsep=1pt,parsep=0pt]
+    \scriptsize
+    \item \textbf{Map graph} $G_{\text{map}}$: nodes = lane segments (geometry + semantics)
+    \item Map graph edges: \textbf{following}, \textbf{neighbor}, \textbf{opposite}
+    \item \textbf{Actor graph} $G_{\text{actor}}$: nodes = actors at one timestep (lane, position, speed, type, lane-change indicator)
+    \item Actor graph edges: relation type + path length
+    \item Relation types (semantic hierarchy): \textbf{Following/Leading}, \textbf{Neighbor}, \textbf{Opposite}
+    \item Lane-change indicator ($\Delta t = 1$\,s) captures cut-in/cut-out within a single-timestep graph
 \end{itemize}
-\end{frame}
-
-% ---------------------------------------------------------
-\begin{frame}{Hierarchical Graph Construction Algorithm}
-\begin{itemize}
-    \item \textbf{Phase 1 -- Relation Discovery}: for each actor pair, find a connecting path in the map graph; path structure determines relation type; filtered by distance/path-length thresholds
+\end{column}
+\begin{column}{0.5\textwidth}
+\textbf{\footnotesize Hierarchical Graph Construction Algorithm}
+\begin{itemize}[itemsep=1pt,topsep=1pt,parsep=0pt]
+    \scriptsize
+    \item \textbf{Phase 1 -- Relation Discovery}: find a connecting path per actor pair; path structure sets relation type; filtered by distance/path-length thresholds
     \item \textbf{Phase 2 -- Hierarchical Construction}: add edges leading/following $\rightarrow$ neighbor $\rightarrow$ opposite (shortest path first); skip an edge if a path already exists (BFS)
 \end{itemize}
 \begin{table}
 \centering
-\footnotesize
+\tiny
 \begin{tabular}{lcc}
 \toprule
-\textbf{Relation} & \textbf{Max.\ distance fwd/bwd [m]} & \textbf{Max.\ path length [edges]} \\
+\textbf{Relation} & \textbf{Dist.\ fwd/bwd [m]} & \textbf{Max.\ path [edges]} \\
 \midrule
 Leading/following & 100 & 3 \\
 Neighbor          & 50 / 50 & 2 \\
@@ -108,8 +118,8 @@ Opposite          & 100 / 10 & 2 \\
 \bottomrule
 \end{tabular}
 \end{table}
-\vspace{-0.3em}
-{\small Redundancy pruning reduces edges while preserving connectivity, keeping isomorphism checks tractable in dense traffic.}
+\end{column}
+\end{columns}
 \end{frame}
 
 % ---------------------------------------------------------
@@ -132,10 +142,16 @@ Opposite          & 100 / 10 & 2 \\
 
 % ---------------------------------------------------------
 \begin{frame}{Coverage Method 1: Subgraph Isomorphism}
-\begin{itemize}
+\begin{itemize}[itemsep=2pt,topsep=2pt,parsep=0pt]
+    \small
     \item Traffic scene archetypes (lead-follow, cut-in, cut-out, opposite traffic, platoons, \dots) expressed as small graphs
     \item Check whether a subgraph of scene graph $G$ is isomorphic to archetype $A$ (VF2 algorithm)
-    \item Strategy: (1) define archetype set $S$; (2) fix node/edge attributes considered; (3) match each scene graph against $S$ $\rightarrow$ coverage table $C$
+    \item Strategy:
+    \begin{itemize}[itemsep=1pt,topsep=1pt,parsep=0pt]
+        \item define archetype set $S$
+        \item fix node/edge attributes considered
+        \item match each scene graph against $S$ $\rightarrow$ coverage table $C$
+    \end{itemize}
     \item \textbf{18 archetypes} defined: 2-actor (3), 3-actor (9), 4-actor (4), 5-actor (2)
     \item Archetypes are user-defined, illustrative---not a complete or safety-certified taxonomy
     \item Real safety case: archetypes derived top-down (HARA / UL~4600), completeness of the set is critical
@@ -203,7 +219,9 @@ Opposite          & 100 / 10 & 2 \\
 \begin{itemize}
     \item Plausibility check: nearest neighbours in embedding space share actor configuration and road geometry
     \item First two principal components explain 40\% of the total variance
-    \item CARLA peaks at higher PC1 values; Argoverse peaks at negative PC1 values $\rightarrow$ datasets occupy different regions of the embedding space
+    \item CARLA peaks at higher PC1 values
+    \item Argoverse peaks at negative PC1 values
+    \item $\rightarrow$ datasets occupy different regions of the embedding space
 \end{itemize}
 \end{frame}
 
@@ -232,8 +250,13 @@ Opposite          & 100 / 10 & 2 \\
         \item GINE embeddings via contrastive learning $\rightarrow$ similarity-based coverage, clustering, anomaly detection
     \end{itemize}
     \item Validated on Argoverse 2.0 and CARLA: reveals structural, parametric, and co-occurrence coverage gaps in simulation
-    \item Scales across scenarios without scenario-specific handling; naturally accommodates varying numbers of actors
-    \item \textbf{Future work}: multi-timestep temporal graphs; automatically extracting new archetype candidates from dense, unmatched embedding regions
+    \item Scales across scenarios without scenario-specific handling
+    \item Naturally accommodates varying numbers of actors
+    \item \textbf{Future work}:
+    \begin{itemize}
+        \item multi-timestep temporal graphs
+        \item automatically extracting new archetype candidates from dense, unmatched embedding regions
+    \end{itemize}
     \item Code: \url{https://github.com/tmuehlen80/graph_coverage}
 \end{itemize}
 \end{frame}
