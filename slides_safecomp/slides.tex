@@ -7,7 +7,14 @@
 \usepackage{subcaption}
 \usepackage{enumitem}
 
-\setlist[itemize]{itemsep=3pt,topsep=2pt,parsep=0pt}
+% visible bullet markers
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{\textendash}
+\setbeamertemplate{itemize subsubitem}{\textperiodcentered}
+
+\setlist[itemize,1]{label=\textbullet,leftmargin=1.4em,labelsep=0.5em,itemsep=3pt,topsep=2pt,parsep=0pt}
+\setlist[itemize,2]{label=\textendash,leftmargin=1.2em,labelsep=0.5em,itemsep=2pt,topsep=2pt,parsep=0pt}
+\setlist[itemize,3]{label=\textperiodcentered,leftmargin=1.2em,labelsep=0.5em,itemsep=1pt,topsep=1pt,parsep=0pt}
 
 \graphicspath{{../article/plots/}}
 
@@ -161,7 +168,7 @@ Opposite          & 100 / 10 & 2 \\
 % ---------------------------------------------------------
 \begin{frame}{Results: Scenario Archetype Coverage Gaps}
 \centering
-\includegraphics[width=0.42\textwidth]{coverage_comparison_dual_axis.png}
+\includegraphics[width=0.5\textwidth]{coverage_comparison_dual_axis.png}
 \begin{itemize}
     \footnotesize
     \item CARLA higher coverage only for the 3 simple 2-actor scenarios
@@ -170,25 +177,6 @@ Opposite          & 100 / 10 & 2 \\
     \item \code{lead\_neighbor\_opposite\_vehicle\_intersection}: $\sim$6\% Argoverse, virtually absent in CARLA
     \item \code{cut\_in}/\code{cut\_out}: underrepresented in CARLA regardless of intersections
 \end{itemize}
-\end{frame}
-
-% ---------------------------------------------------------
-\begin{frame}{Results: Parameter Distribution Gaps}
-\begin{columns}
-\begin{column}{0.55\textwidth}
-    \includegraphics[width=\textwidth]{role_comparison_lead_vehicle_in_front_with_neighbor_vehicle.png}
-\end{column}
-\begin{column}{0.45\textwidth}
-    \small
-    \begin{itemize}
-        \item Role-specific speed distributions, \code{lead\_vehicle\_in\_front\_with\_neighbor\_vehicle} scenario
-        \item CARLA concentrates around 3--5\,m/s
-        \item Argoverse extends to 15--20\,m/s and beyond
-        \item Coverage gap in the 13--17\,m/s range for all three roles
-        \item Gaps arise at the parameter level even within structurally matching scenarios
-    \end{itemize}
-\end{column}
-\end{columns}
 \end{frame}
 
 % ---------------------------------------------------------
@@ -207,35 +195,27 @@ Opposite          & 100 / 10 & 2 \\
 \begin{columns}
 \begin{column}{0.5\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{graph_embeddings_pca_tsne_test_plot.png}
+    \includegraphics[width=0.72\textwidth]{graph_embeddings_pca_tsne_test_plot.png}
 \end{column}
 \begin{column}{0.5\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{PCA_density_plots_manually_cropped.png}
+    \includegraphics[width=0.72\textwidth]{PCA_density_plots_manually_cropped.png}
 \end{column}
 \end{columns}
-\vspace{0.5em}
-\small
+\vspace{0.3em}
 \begin{itemize}
+    \footnotesize
     \item Plausibility check: nearest neighbours in embedding space share actor configuration and road geometry
     \item First two principal components explain 40\% of the total variance
     \item CARLA peaks at higher PC1 values
     \item Argoverse peaks at negative PC1 values
     \item $\rightarrow$ datasets occupy different regions of the embedding space
-\end{itemize}
-\end{frame}
-
-% ---------------------------------------------------------
-\begin{frame}{Results: Coverage Gaps in Embedding Space}
-\centering
-\includegraphics[width=0.5\textwidth]{graph_embeddings_coverage_gap_visualization.png}
-\begin{itemize}
-    \footnotesize
-    \item Argoverse graphs with under-represented archetype labels projected into embedding space and compared against CARLA density
-    \item \textbf{23{,}148} Argoverse graphs identified as coverage gaps
-    \item Dominated by \code{cut\_in} ($\sim$94\% of Argoverse cut-in instances), \code{cut\_out}, \code{cut\_out\_intersection}, \code{lead\_neighbor\_opposite\_vehicle\_intersection}
-    \item Gap graphs cluster where CARLA density is negligible $\rightarrow$ agreement between embedding and exact isomorphism labels
-    \item Used as a coverage-\emph{screening} layer, not a standalone safety oracle
+    \item \textbf{23{,}148} Argoverse graphs identified as coverage gaps, dominated by
+    \begin{itemize}
+        \item \code{cut\_in} ($\sim$94\% of all Argoverse cut-in instances)
+        \item \code{cut\_out} and \code{cut\_out\_intersection}
+        \item \code{lead\_neighbor\_opposite\_vehicle\_intersection}
+    \end{itemize}
 \end{itemize}
 \end{frame}
 
