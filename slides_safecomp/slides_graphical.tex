@@ -1,0 +1,143 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usetheme{metropolis}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+% visible bullet markers
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{\textendash}
+\setbeamertemplate{itemize subsubitem}{\textperiodcentered}
+
+\setlist[itemize,1]{label=\textbullet,leftmargin=1.4em,labelsep=0.5em,itemsep=3pt,topsep=2pt,parsep=0pt}
+\setlist[itemize,2]{label=\textendash,leftmargin=1.2em,labelsep=0.5em,itemsep=2pt,topsep=2pt,parsep=0pt}
+\setlist[itemize,3]{label=\textperiodcentered,leftmargin=1.2em,labelsep=0.5em,itemsep=1pt,topsep=1pt,parsep=0pt}
+
+\graphicspath{{./plots/}{../article/plots/}}
+
+\newcommand{\code}[1]{%
+  \begingroup
+  \renewcommand{\_}{\textunderscore\allowbreak}%
+  \texttt{#1}%
+  \endgroup
+}
+
+\setbeamerfont{title}{size=\Large}
+
+\title{A Graph-based Framework for Coverage Analysis in Autonomous Driving}
+\author{Thomas Mühlenstädt \and Marius Bause}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+% ---------------------------------------------------------
+\begin{frame}{Verification and Validation Workflow}
+\centering
+% vv_workflow_tikz.pdf is 650x394pt (w:h ratio 650/394); the bottom-left
+% band of the image (below the contribution boxes, left of the Safety Case
+% box) is intentionally left blank so bullet text can sit inside it.
+\newlength{\vvimgw}\setlength{\vvimgw}{0.70\textwidth}
+\newlength{\vvimgh}\setlength{\vvimgh}{0.606\vvimgw}
+\begin{tikzpicture}
+\node[anchor=north west,inner sep=0] (vvimg) at (0,0)
+  {\includegraphics[width=\vvimgw]{vv_workflow_tikz.pdf}};
+\node[anchor=north west,text width=0.68\vvimgw,align=left,font=\footnotesize]
+  at ($(vvimg.south west)+(0.04\vvimgw,0.16\vvimgh)$)
+  {\begin{itemize}
+     \item CARLA (simulation), Argoverse (real-world)
+     \item Ours: coverage argument via graph representation
+   \end{itemize}};
+\end{tikzpicture}
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Hierarchical Scene Graph Construction}
+\begin{columns}[t]
+\begin{column}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{graph_construction/5758074f-be16-49da-8bb5-d43a0d8cd034_after_discovery.png}
+    \\ \footnotesize After relation discovery
+\end{column}
+\begin{column}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{graph_construction/5758074f-be16-49da-8bb5-d43a0d8cd034_final.png}
+    \\ \footnotesize After hierarchical selection
+\end{column}
+\end{columns}
+\vspace{0.6em}
+\begin{itemize}
+    \footnotesize
+    \item Map graph edges types included: following, neighbor, opposite
+    \item Lane-change indicator: lane change within $\Delta t =1s$
+    \item Phase 1 -- Relation Discovery \quad$\rightarrow$\quad Phase 2 -- Hierarchical Construction by selecting by edge type and distance
+\end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Top-Down Analysis: Scenario Archetype Coverage Gaps}
+\begin{columns}[c]
+\begin{column}{0.36\textwidth}
+    \begin{itemize}
+        \footnotesize
+        \item Archetypes: 18 types user-defined (can be detected by algorithm) 
+        \item Subgraph matching via the \textbf{VF2} algorithm --- near-linear in the number of nodes of the scene graph (sparse graphs)
+        \item Result: missing archetypes reveal coverage gaps
+    \end{itemize}
+\end{column}
+\begin{column}{0.62\textwidth}
+    \centering
+    \includegraphics[height=5.8cm]{coverage_comparison_dual_axis.png}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Bottom-Up Analysis: Embedding Space Coverage Gaps}
+\begin{columns}[c]
+\begin{column}{0.38\textwidth}
+    \begin{itemize}
+        \footnotesize
+        \item \textbf{GINE}: edge-aware graph embeddings
+        \item Self-supervised contrastive training (CARLA + Argoverse)
+        \item Plausibility check: nearest neighbours match
+        \item First 2 principal components: 40\% variance
+        \item 23{,}148 Argoverse graphs flagged as gaps
+    \end{itemize}
+\end{column}
+\begin{column}{0.60\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{graph_embeddings_coverage_gap_visualization.png}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Summary and Future Work}
+\begin{itemize}
+    \footnotesize
+    \item Graph-based framework: hierarchical scene graphs combining map topology with actor relationships
+    \item Two complementary coverage methods:
+    \begin{itemize}
+        \item subgraph isomorphism against archetypes $\rightarrow$ interpretable, pattern-based coverage
+        \item GINE embeddings via contrastive learning $\rightarrow$ similarity-based coverage, clustering, anomaly detection
+    \end{itemize}
+    \item Validated on Argoverse 2.0 and CARLA: reveals structural, parametric, and co-occurrence coverage gaps in simulation
+    \item Scales across scenarios without scenario-specific handling
+    \item Naturally accommodates varying numbers of actors
+    \item \textbf{Future work}:
+    \begin{itemize}
+        \item multi-timestep temporal graphs
+        \item automatically extracting new archetype candidates from dense, unmatched embedding regions
+    \end{itemize}
+    \item Code: \url{https://github.com/tmuehlen80/graph_coverage}
+\end{itemize}
+\end{frame}
+
+\end{document}
